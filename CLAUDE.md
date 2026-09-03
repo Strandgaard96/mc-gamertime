@@ -64,7 +64,7 @@ The project includes a **"Full Stack" VS Code Launch Configuration**:
   URL would be cross-site and the `SameSite=Strict` cookie wouldn't be sent.
 - posts.py: `POST /upload` declared before `GET /{post_id}` — order prevents route shadowing
 - SafeHtml component: DOMPurify + DOMParser + replaceChildren — use for all HTML rendering in blog
-- DynamoDB table names: `boardsite-users`, `boardsite-games`, `boardsite-results`, `boardsite-posts`, `boardsite-recs`, `boardsite-notifications`, `boardsite-settings` — override via env vars `USERS_TABLE`, `GAMES_TABLE`, `RESULTS_TABLE`, `POSTS_TABLE`, `RECS_TABLE`, `NOTIFICATIONS_TABLE`, `SETTINGS_TABLE`
+- DynamoDB table names: `boardsite-users`, `boardsite-games`, `boardsite-results`, `boardsite-posts`, `boardsite-recs`, `boardsite-notifications`, `boardsite-settings`, `boardsite-reactions` — override via env vars `USERS_TABLE`, `GAMES_TABLE`, `RESULTS_TABLE`, `POSTS_TABLE`, `RECS_TABLE`, `NOTIFICATIONS_TABLE`, `SETTINGS_TABLE`, `REACTIONS_TABLE`
 - pk format: bare ULID for games/results/posts, username string for users/players — `idFromPk(pk)` in `web/src/lib/utils.ts` strips any `PREFIX#value` prefix (use for URL routing)
 - `cn(...classes)` in `web/src/lib/utils.ts` — clsx + tailwind-merge; use for conditional className merging
 - `Button` (`web/src/components/ui/button.tsx`) supports `asChild` (via `cloneElement`, no Radix dep) — use `<Button asChild><Link to="...">label</Link></Button>` instead of `<Link><Button>...</Button></Link>` (invalid nested `<a><button>`). Known remaining instances not yet converted: `PostViewPage.tsx:76`, `AdminRecommendedPage.tsx:139,146`.
