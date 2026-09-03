@@ -85,7 +85,3 @@ migration) must:
 - Tests must pass: `cd api && uv run pytest tests/ -v`
 - Keep scope small — one thing per PR
 - Fill-out the PR template
-
-## Questions
-
-Use [GitHub Discussions](https://github.com/Strandgaard96/mc-gamertime/discussions) for setup help and general questions. Keep Issues for bugs and feature requests.
