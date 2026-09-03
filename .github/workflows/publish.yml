@@ -5,10 +5,17 @@ on:
     branches: [main]
     tags: ["v*"]
 
+# Queue rather than cancel: a push already mid-flight to GHCR must finish
+# rather than be killed and leave a half-written tag.
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   push:
     name: Build and push to GHCR
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       packages: write
