@@ -2,7 +2,7 @@
 title: Security Model
 description: What the self-hosted stack exposes, what it assumes about your network, and what to change before putting it on the internet.
 sidebar:
-  order: 6
+  order: 4
 ---
 
 The defaults assume the app runs on a network you trust — your LAN, or a Tailscale

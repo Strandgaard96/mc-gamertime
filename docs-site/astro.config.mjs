@@ -10,6 +10,9 @@ const SITE = "https://mcgamertime-docs.drmaggi.com";
 
 export default defineConfig({
   site: SITE,
+  redirects: {
+    "/self-hosting/features/": "/features/",
+  },
   integrations: [
     mermaid({
       // Enabling autoTheme ensures diagrams match Starlight's dark/light mode
@@ -43,6 +46,7 @@ export default defineConfig({
         { tag: "link", attrs: { rel: "apple-touch-icon", href: "/apple-touch-icon.png" } },
       ],
       sidebar: [
+        { label: "Features", link: "/features/" },
         {
           label: "Self-Hosting",
           items: [{ autogenerate: { directory: "self-hosting" } }],

@@ -42,7 +42,9 @@ Routers are mounted at fixed prefixes:
 /api/comments      → api/routes/reactions.py (comments_router)
 /api/notifications → api/routes/notifications.py
 /api/settings      → api/routes/settings.py
-/storage           → api/routes/storage.py (only mounted when STORAGE_BACKEND=local or S3_ENDPOINT_URL is set)
+/avatars, /blog-images, /game-images
+                   → api/routes/storage.py (media_router — session-gated image serving, every deployment)
+/storage           → api/routes/storage.py (presigned-upload proxy, only when STORAGE_BACKEND=local or S3_ENDPOINT_URL is set)
 ```
 
 ---
@@ -83,10 +85,10 @@ Body: { username, password }
 ```
 
 Backend (`api/routes/auth.py`):
-1. Looks up user in DynamoDB users table via `get_user(username)`
+1. Looks up the user in the users table via `get_user(username)`
 2. `bcrypt.checkpw()` checks password hash. **Timing attack protection**: if user not found, still runs `checkpw` against a dummy hash to take the same time.
 3. If valid: calls `sign_token(...)` — creates a JWT with `sub`, `role`, `displayName`, expires in 7 days
-4. Sets the `token` cookie: `HttpOnly`, `Secure`, `SameSite=Strict`, 7-day `max_age`
+4. Sets the `token` cookie: `HttpOnly`, `SameSite=Strict`, 7-day `max_age`, `Secure` when the request arrived over HTTPS
 5. Returns `{ sub, role, displayName }`
 
 Frontend: response goes into `AuthContext.setUser()` → React re-renders → `AppShell` sees `user !== null` → switches to authenticated view.
@@ -131,7 +133,7 @@ Backend route
     ↓ calls
 lib/db/*.py function
     ↓
-DynamoDB table
+DynamoDB table (AWS) or SQLite table (self-hosted)
 ```
 
 **Hooks use TanStack Query.** Key concepts:
@@ -147,16 +149,19 @@ Each table has its own file. All files follow the same pattern:
 import lib.db.base as _db
 
 def list_results() -> list[dict]:
-    return _db.tables["results"].scan()["Items"]
+    return _db.paginated_scan(_db.tables["results"])
 
 def get_result(pk: str) -> dict | None:
     resp = _db.tables["results"].get_item(Key={"pk": pk})
     return resp.get("Item")
+
+def put_result(item: dict) -> None:
+    _db.tables["results"].put_item(Item=_db._floats_to_decimal(item))
 ```
 
-`lib/db/base.py` creates the boto3 DynamoDB table resources at import time using env vars for table names. **One important thing**: floats are rejected by DynamoDB, so `put_result` calls `_floats_to_decimal()` before writing.
+`lib/db/base.py` builds `tables` at import time: `DynamoTable` wrappers around boto3 resources when `DB_BACKEND=dynamodb`, `SqliteTable` objects (one JSON blob per row) otherwise. Both implement the same `Protocol` (`lib/db/protocol.py`), so route code never knows which it got. Two rules: always list via `paginated_scan` (a raw `scan()` truncates at 1MB), and always go through `put_*` (DynamoDB rejects Python floats; `_floats_to_decimal` converts them).
 
-**Tables:**
+**Tables** (SQLite uses the short name; DynamoDB the full name):
 | Table name | DynamoDB name | Env var |
 |---|---|---|
 | users | boardsite-users | USERS_TABLE |
@@ -288,7 +293,7 @@ export function idFromPk(pk: string): string {
 }
 ```
 
-DynamoDB items have pks like `GAME#01ABC` or `PLAYER#01ABC`. URLs use just the `01ABC` part. This function extracts it. Rec pks are bare ULIDs (no prefix) so `idFromPk` returns them unchanged.
+Pks are bare ULIDs for games, results and posts, and the username for users/players, so this usually returns its input unchanged. It strips a `PREFIX#` if one is present — use it whenever a pk becomes part of a URL.
 
 ### Query invalidation
 
@@ -326,8 +331,8 @@ results.py: GET "" handler
     ↓ require_auth(token cookie) → decode JWT → AuthUser
     ↓ list_results()
 lib/db/results.py: list_results()
-    ↓ _db.tables["results"].scan()
-DynamoDB: full table scan → returns all items
+    ↓ _db.paginated_scan(_db.tables["results"])
+DynamoDB (or SQLite): full table scan → returns all items
     ↓
 results.py: returns list as JSON
     ↓
@@ -351,5 +356,5 @@ React renders result cards
 | 403 on API call in production | `main.py` — is `x-origin-token` missing? |
 | DynamoDB write failing | `lib/db/base.py`'s `_floats_to_decimal` — float in payload? |
 | Post/result not appearing in list | DB `scan()` call — did `createdAt` get set? (GSI requires it) |
-| BGG search broken | `api/routes/games.py` — BGG token loaded from SSM? |
+| BGG search broken | `api/lib/bgg.py` — token set from Settings page, or the `BGG_TOKEN`/SSM fallback? |
 | Slug URL not working | `api/routes/recommended.py`'s `get_recommended` — pk vs slug fallback |

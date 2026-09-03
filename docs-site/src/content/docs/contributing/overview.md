@@ -12,7 +12,7 @@ cd api
 uv run pytest tests/ -v
 ```
 
-Requires [uv](https://docs.astral.sh/uv/) installed (`curl -LsSf https://astral.sh/uv/install.sh | sh`). Tests use an in-memory fake DynamoDB — no AWS credentials or running stack needed.
+Requires [uv](https://docs.astral.sh/uv/) installed (`curl -LsSf https://astral.sh/uv/install.sh | sh`). Tests use an in-memory fake table — no AWS credentials or running stack needed. The full suite takes a few minutes.
 
 ## First-time setup
 
@@ -20,20 +20,23 @@ Install [pre-commit](https://pre-commit.com/) and activate the hooks:
 
 ```bash
 pip install pre-commit
-cd web && npm install   # required so the oxlint/oxfmt hooks find node_modules
+cd web && npm install   # so the oxlint/oxfmt hooks find node_modules
 cd ..
-brew install trivy      # or see https://trivy.dev/latest/getting-started/installation/ — required for the trivy-fs hook
 pre-commit install
 ```
 
+Some hooks need tools on your `PATH`: [trivy](https://trivy.dev/latest/getting-started/installation/)
+and [terraform](https://developer.hashicorp.com/terraform/install); the hadolint and
+shellcheck hooks run in Docker.
+
 The hooks run automatically on `git commit`:
-- **gitleaks** — blocks commits containing secrets (API keys, tokens, passwords)
-- **check-added-large-files** — blocks files >500KB
-- **ruff** — Python lint + format (auto-fixes)
-- **oxlint** — TypeScript/JS lint
-- **oxfmt** — TypeScript/JS format (auto-fixes)
-- **trivy-fs** — only runs when `requirements.txt`/`pyproject.toml`/`uv.lock`/`package*.json`/`Dockerfile`
-  change; blocks commits that introduce a HIGH/CRITICAL dependency CVE with a known fix
+- **gitleaks** — blocks commits containing secrets
+- **ruff** (Python) and **oxlint** / **oxfmt** (TypeScript) — lint + format, auto-fixing
+- **trivy-fs** — blocks a HIGH/CRITICAL dependency CVE with a known fix; runs only when a
+  dependency manifest or the `Dockerfile` changes
+- **actionlint**, **terraform_fmt** / **terraform_validate**, **hadolint**, **shellcheck** — lint
+  workflows, Terraform, the Dockerfile, and shell scripts
+- file hygiene — large files (>500KB), merge-conflict markers, trailing whitespace, YAML/JSON/TOML syntax
 
 To run all hooks manually: `pre-commit run --all-files`
 
@@ -58,24 +61,24 @@ Use a `type:` prefix on every commit (`feat:`, `fix:`, `docs:`, `chore:`, `refac
 
 ### SQLite schema changes
 
-Any PR that changes the embedded SQLite schema (new table, new column — anything that needs a
-migration) must:
+The self-hosted SQLite backend stores each item as a JSON blob (`pk`, `data`), so adding a
+field to an existing type needs no migration, and a new table only needs its name added to
+`_TABLE_NAMES` in `api/lib/db/sqlite_backend.py` (it is created on next boot). See
+[Feature Recipes](/contributing/recipes/#recipe-4-add-a-completely-new-feature-new-dynamodb-table).
 
-1. Add a migration to the `MIGRATIONS` list in `api/lib/db/migrations.py` (see that file's
-   docstring for the framework). Self-hosters' existing data must upgrade automatically — there
-   is no "wipe and re-bootstrap" fallback for ordinary schema changes.
-2. Add a `BREAKING CHANGE:` footer to the commit message describing the schema change, even when
-   it isn't an API break. This is the mechanism `release-please` uses to surface a commit under
-   its own heading in `CHANGELOG.md` — without it, a schema-changing commit looks identical to
-   any other `feat:`/`fix:` in the changelog, and self-hosters have no signal to read closely
-   before upgrading. Example:
+Anything beyond that — a new index, reshaping stored data — is a migration, and the PR must:
+
+1. Add it to the `MIGRATIONS` list in `api/lib/db/migrations.py` (see that file's docstring).
+   Self-hosters' existing data must upgrade automatically on next boot.
+2. Add a `BREAKING CHANGE:` footer to the commit message, even when it isn't an API break.
+   `release-please` surfaces such commits under their own heading in `CHANGELOG.md`, which is
+   the only signal self-hosters get to read closely before upgrading. Example:
 
    ```
-   feat: add archived flag to results
+   feat: index results by gameId
 
-   BREAKING CHANGE: results table gains an `archived` column. Migration runs automatically
-   on next boot — no manual action needed, called out here so self-hosters notice it in the
-   changelog before upgrading.
+   BREAKING CHANGE: adds an index on results.gameId. Migration runs automatically on next
+   boot — no manual action needed, called out so self-hosters notice it before upgrading.
    ```
 
 ## Pull requests

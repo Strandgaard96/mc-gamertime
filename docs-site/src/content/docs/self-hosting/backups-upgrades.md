@@ -2,7 +2,7 @@
 title: Backups
 description: Back up and restore MC GamerTime's data.
 sidebar:
-  order: 7
+  order: 5
 ---
 
 Runtime data lives in `./config/` on the host — no Docker volume commands needed:
@@ -32,9 +32,7 @@ Add a crontab entry to run it nightly, keeping 14 days of backups:
 0 3 * * * cd /path/to/mc-gamertime && ./scripts/backup-selfhost.sh --dest /path/to/backups --keep 14
 ```
 
-**`docker compose down -v`** has no effect on data — bind-mounted directories are not
-deleted by `-v`. To fully wipe all data, delete the `config/` directory manually after
-bringing the stack down.
+>>>END
 
 ## Exporting and importing table data
 

@@ -147,7 +147,7 @@ graph LR
 | **Player profiles** | Favourite game, nemesis, best month, Elo history |
 | **Blog** | Session recaps with rich text and images |
 
-[Screenshots and detail →](https://mcgamertime-docs.drmaggi.com/self-hosting/features/)
+[Screenshots and detail →](https://mcgamertime-docs.drmaggi.com/features/)
 
 
 ## Contributing

@@ -103,18 +103,18 @@ Open any file in `api/routes/` or `api/lib/` and click in the gutter (left margi
 **Example: trace a login request**
 
 1. Open `api/routes/auth.py`
-2. Set a breakpoint on the line that calls `db_get` inside the `login` function
+2. Set a breakpoint on the `get_user(body.username)` line inside `login`
 3. In the browser, submit the login form
 4. VS Code pauses — hover over `body` to inspect `username` and `password`
 5. Step over (`F10`) to watch the password hash comparison
 6. Resume (`F5`) to let the response complete
 
-**Example: debug a DynamoDB query**
+**Example: debug a database write**
 
 1. Open `api/routes/results.py`
-2. Set a breakpoint on the `db_scan` or `db_put` call
-3. Trigger the action in the browser (e.g. submit a game result)
-4. Inspect the `item` dict before it's written — catches type errors and missing fields early
+2. Set a breakpoint on the `put_result(result)` call in `create_result`
+3. Log a result in the browser
+4. Inspect the `result` dict before it's written — catches type errors and missing fields early
 
 ### TypeScript (React frontend)
 
@@ -122,14 +122,14 @@ Open any file in `web/src/` and set a breakpoint. VS Code's Chrome debugger maps
 
 **Example: inspect API response data**
 
-1. Open `web/src/pages/Catalog.tsx`
-2. Set a breakpoint inside the `useQuery` `queryFn`
+1. Open `web/src/hooks/useGames.ts`
+2. Set a breakpoint inside the `useGames` query's `queryFn`
 3. Navigate to the Catalog page in the browser
-4. VS Code pauses — expand the `data` variable to see the raw API response
+4. VS Code pauses — step out to see the resolved data
 
 **Example: trace a form submission**
 
-1. Open `web/src/pages/AddResult.tsx` (or equivalent form component)
+1. Open `web/src/components/LogResultDialog.tsx`
 2. Set a breakpoint on the `mutate(...)` call
 3. Submit the form
 4. Inspect the payload before it's sent to the API
@@ -138,16 +138,14 @@ Open any file in `web/src/` and set a breakpoint. VS Code's Chrome debugger maps
 
 ## Running Tests
 
-Tests use an in-memory `FakeTable` (`api/tests/conftest.py`) standing in for DynamoDB — no real AWS calls, no data contamination.
+Tests use an in-memory `FakeTable` (`api/tests/conftest.py`) standing in for the database — no real AWS calls, no data contamination.
 
 ```bash
 cd api
-uv run pytest tests/ -v          # all tests
+uv run pytest tests/ -v          # all tests (takes a few minutes)
 uv run pytest tests/ -v -k auth  # filter by name
 uv run pytest tests/test_routes_results.py -v  # single file
 ```
-
-All 466 tests should pass in ~30s.
 
 ---
 
@@ -167,12 +165,14 @@ All 466 tests should pass in ~30s.
 
 ```bash
 cd api
-uv run python3 -c "
+DB_BACKEND=dynamodb uv run python3 -c "
 from lib.db.results import list_results
 import json
 print(json.dumps(list_results(), indent=2, default=str))
 "
 ```
+
+Without `DB_BACKEND=dynamodb` the snippet opens a local SQLite file instead — see the `.env` note above.
 
 ### Add a Python dependency
 
@@ -198,7 +198,7 @@ Run manually: `cd api && uv sync`. If it errors, check Python version: `uv pytho
 **Backend starts but login returns 503**
 The app failed to fetch secrets from SSM at startup. Check:
 - AWS credentials: `aws sts get-caller-identity`
-- Region: must be `eu-west-1` (set in launch.json env)
+- `AWS_REGION` in `.env` matches where the stack is deployed
 - SSM params exist: `aws ssm get-parameter --name /boardsite/jwt-secret --region eu-west-1`
 
 **Vite proxy returns 502 / ECONNREFUSED**

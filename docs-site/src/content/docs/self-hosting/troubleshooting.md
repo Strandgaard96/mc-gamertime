@@ -2,7 +2,7 @@
 title: Troubleshooting
 description: Common issues and fixes for the self-hosted Docker Compose stack.
 sidebar:
-  order: 8
+  order: 6
 ---
 
 ## App won't start / restarts in a loop

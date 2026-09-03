@@ -23,7 +23,7 @@ const frontmatter = `---
 title: Release Notes
 description: Every released version of MC GamerTime, with the changes in each.
 sidebar:
-  order: 9
+  order: 8
   badge:
     text: v${version}
     variant: note

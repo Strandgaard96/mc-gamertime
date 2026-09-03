@@ -163,7 +163,7 @@ from __future__ import annotations
 import lib.db.base as _db
 
 def list_ratings() -> list[dict]:
-    return _db.tables["ratings"].scan()["Items"]
+    return _db.paginated_scan(_db.tables["ratings"])
 
 def get_rating(pk: str) -> dict | None:
     return _db.tables["ratings"].get_item(Key={"pk": pk}).get("Item")
@@ -175,12 +175,19 @@ def delete_rating(pk: str) -> None:
     _db.tables["ratings"].delete_item(Key={"pk": pk})
 ```
 
-**Step 2 — Backend DB base: `api/lib/db/base.py`** — add the table
+**Step 2 — Register the table in both backends**
 
 ```python
-# in _make_tables(), add:
-"ratings": dynamo.Table(os.environ.get("RATINGS_TABLE", "boardsite-ratings")),
+# api/lib/db/base.py, in _make_tables():
+"ratings": DynamoTable(dynamo.Table(os.environ.get("RATINGS_TABLE", "boardsite-ratings"))),
 ```
+
+```python
+# api/lib/db/sqlite_backend.py, in _TABLE_NAMES:
+"ratings",
+```
+
+The SQLite table is created on next boot from that tuple — no migration needed.
 
 **Step 3 — Backend route: `api/routes/ratings.py`** (new file)
 
@@ -231,31 +238,16 @@ from routes import auth, games, players, posts, recommended, results, stats, use
 app.include_router(ratings.router, prefix="/api/ratings")
 ```
 
-**Step 5 — Infra: `infra/main.tf` or equivalent** — add DynamoDB table. Follow the pattern of existing tables (PITR enabled, deletion protection on).
+**Step 5 — Infra** — three files, following the existing tables:
 
-**Step 6 — SQLite migration (self-host parity): `api/lib/db/migrations.py`** — DynamoDB is schemaless, but the self-hosted SQLite backend isn't. Skip this and self-hosters' existing databases never get the new table — every route touching it 500s on their instance after the next upgrade:
+- `infra/variables.tf`: a `ratings_table_name` variable (default `boardsite-ratings`)
+- `infra/dynamodb.tf`: add `ratings = var.ratings_table_name` to `local.dynamo_tables` (the
+  `for_each` creates the table with PITR and deletion protection; the Lambda IAM policy
+  already covers every table in that map)
+- `infra/lambda.tf`: add `RATINGS_TABLE` to the Lambda environment block
 
-```python
-def _add_ratings_table(conn: sqlite3.Connection) -> None:
-    conn.execute("""
-        CREATE TABLE ratings (
-            pk TEXT PRIMARY KEY,
-            gameId TEXT NOT NULL,
-            stars INTEGER NOT NULL,
-            userId TEXT NOT NULL,
-            createdAt TEXT NOT NULL
-        )
-    """)
-
-MIGRATIONS = [
-    # ...existing entries...
-    (N, _add_ratings_table),  # N = next unused version number
-]
-```
-
-Also add a `BREAKING CHANGE:` footer to the commit message — see [SQLite schema
-changes](/contributing/overview/#sqlite-schema-changes) — so the change surfaces in
-`CHANGELOG.md` even though the migration itself runs automatically on next boot.
+**Step 6 — Tests** — nothing to register: `fake_db` builds one fake table per `_TABLE_NAMES`
+entry, so `fake_db["ratings"]` works as soon as Step 2 is done.
 
 **Step 7 — Frontend types: `web/src/lib/types.ts`**
 
@@ -360,10 +352,9 @@ Tests live in `api/tests/test_routes_<name>.py`. The test infrastructure (`conft
 **Template for a new test file:**
 
 ```python
-import pytest
 from fastapi.testclient import TestClient
 from main import app
-from conftest import ORIGIN
+from tests.conftest import ORIGIN
 
 # Seed helper — always include all required fields + createdAt
 def _seed_rating(fake_db, pk: str = "01RATING"):
@@ -440,7 +431,7 @@ export interface Result {
 
 2. Anywhere you create/edit results — add the field to the form and include it in the API call payload.
 
-No migration needed. DynamoDB items are schemaless — old items without `notes` return the field as missing/undefined, which TypeScript's `?` optional handles fine.
+No migration needed on either backend: DynamoDB is schemaless and the SQLite backend stores each item as a JSON blob. Old items without `notes` return the field as missing/undefined, which TypeScript's `?` optional handles fine.
 
 ---
 

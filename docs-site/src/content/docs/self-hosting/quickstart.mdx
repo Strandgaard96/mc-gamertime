@@ -30,10 +30,9 @@ import compose from '../../../../../docker-compose.yml?raw';
    overwritten.
 
    <Aside type="caution">
-   Don't skip this. With no admin account and no `ADMIN_USERNAME`/`ADMIN_PASSWORD`, the app
-   refuses to serve anything — every request returns `503 {"detail": "Service unavailable"}`,
-   including the login page. Set both here, or create the account by hand as shown in the
-   next step. Setting only one of the two is a hard error at startup.
+   Don't skip this. Until an admin account exists, every request — the login page included —
+   returns `503 {"detail": "Service unavailable"}`. Set both here, or create the account by
+   hand as shown in the next step. Setting only one of the two is a startup error.
    </Aside>
 
 3. **Start the stack**
@@ -42,21 +41,19 @@ import compose from '../../../../../docker-compose.yml?raw';
    docker compose up -d
    ```
 
-   Pulls the pre-built image from GHCR. On first run, the SQLite schema and local storage directory are created lazily inside the container. Wait a few seconds for the `app` container to become healthy.
+   Pulls the pre-built image from GHCR and creates the SQLite database and storage directory under `./config/app/` on first run. Wait a few seconds for the `app` container to become healthy.
 
    <Aside type="tip">
-   Prefer creating the account by hand — or need a second one later?
+   To create accounts by hand — the first one if you skipped step 2, or more later:
 
    ```bash
    docker compose exec app python3 scripts/create-user.py \
      --username alice --display-name "Alice" --role admin --password <your-password>
    ```
 
-   Run it with no arguments and it prompts for each value instead (needs a real terminal,
-   so `docker compose exec` works but `exec -T` does not).
-
-   If you skipped step 2, the container is up and serving 503s — that is expected, and this
-   command is how you get out of it. It takes effect on the next request; no restart needed.
+   Run it with no arguments and it prompts for each value (needs a real terminal, so
+   `docker compose exec` works but `exec -T` does not). Takes effect on the next request; no
+   restart needed.
    </Aside>
 
 4. **Open the app**
@@ -104,6 +101,6 @@ Only `app` is exposed to the host at `localhost:4263`.
 
 ## Next steps
 
-- [Configure environment variables](/self-hosting/configuration/) — BGG token, custom settings
-- [Set up HTTPS](/self-hosting/https/) — Tailscale, public domain, or LAN
+- [Configuration](/self-hosting/configuration/) — BGG token for game search, password reset email, metrics
+- [HTTPS / Reverse proxy](/self-hosting/https/) — before exposing it beyond your LAN
 - [Backups](/self-hosting/backups-upgrades/)

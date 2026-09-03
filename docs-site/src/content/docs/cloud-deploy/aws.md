@@ -16,6 +16,7 @@ An optional path — for public access without running your own reverse proxy, A
 - [AWS CLI](https://aws.amazon.com/cli/) configured with credentials
 - [Terraform](https://developer.hashicorp.com/terraform/install) >= 1.5
 - [Node.js](https://nodejs.org) >= 20
+- [uv](https://docs.astral.sh/uv/) (packages the Lambda and runs the user scripts)
 - [Task](https://taskfile.dev/installation/) (task runner)
 
 You will add two DNS records by hand during setup: one to validate the certificate, one to
@@ -27,33 +28,24 @@ Misconfiguring an AWS environment can lead to SEVERE billing consequences. This 
 
 ## Configure your deployment
 
-**At a glance: `domain` is the only required variable.** Everything else below has a
-working default. There is no separate Lambda environment-variable setup — `infra/lambda.tf`
-derives it all from these Terraform vars.
-
-Do this before the first `task apply`. Terraform reads deployment-specific values from
-`infra/terraform.tfvars`, which is gitignored so nobody's domain or AWS account id ends up
-in version control:
+Terraform reads deployment-specific values from `infra/terraform.tfvars`, which is
+gitignored so nobody's domain or AWS account id ends up in version control. Do this before
+the first `task apply`:
 
 ```sh
 cp infra/terraform.tfvars.example infra/terraform.tfvars
 ```
 
-### You must fill in
-
-| Variable | What it does |
-|---|---|
-| `domain` | The root domain you own, e.g. `example.com`. The only variable with no default — `terraform apply` fails outright without it |
-
-That is the whole required list. Everything else has a working default, so a `terraform.tfvars`
-containing one `domain = "example.com"` line is enough for a first deploy.
+**`domain` is the only required variable.** A file containing just `domain = "example.com"`
+is enough for a first deploy; there is no separate Lambda environment setup — `infra/lambda.tf`
+derives everything from these variables.
 
 ### Worth setting before the first apply
 
 | Variable | Default | Why now rather than later |
 |---|---|---|
 | `subdomain` | `mcgamertime` | Gives `mcgamertime.example.com`. Changing it later means a new certificate and a new DNS record |
-| `bgg_token` | empty | Stored in SSM with `lifecycle.ignore_changes`, so it is read **only on the first apply**. Adding it afterwards means editing the SSM parameter by hand |
+| `bgg_token` | empty | Enables Board Game Geek search ([apply for a token](https://boardgamegeek.com/using_the_xml_api)). Stored in SSM with `lifecycle.ignore_changes`, so it is read **only on the first apply**; adding it afterwards means editing the SSM parameter by hand |
 | `aws_region` | `eu-west-1` | Where Lambda, DynamoDB and S3 land. Moving region later means recreating everything, data included |
 
 ### Optional, changeable any time
@@ -83,27 +75,21 @@ is one reason this file stays gitignored. Keep a copy of `terraform.tfvars` some
 outside the repo; losing it breaks your next apply.
 :::
 
-## Quick start
+## Deploy
 
-1. Assuming AWS credentials have been configured, the initial deploy is done with the following sequence of commands:
+### 1. Provision the infrastructure
 
 ```sh
-task init    # terraform init + install dependencies
+task init    # terraform init + npm ci
 task build   # bundle Lambda + build Vite SPA
 task plan    # review what Terraform will create
 task apply   # provision infrastructure
 ```
 
-This sets up the AWS infrastructure, including an ACM certificate that must be validated externally with your domain provider before proceeding.
+The first apply stops at the ACM certificate, which stays `PENDING_VALIDATION` until you
+prove you own the domain — the next step.
 
-:::tip[Optional: Game Search Token]
-Game search (`/api/games/search`) requires a Board Game Geek API token. Without it, the search feature is disabled — users can still log results for games already in your library. To enable search, add `bgg_token = "your-bgg-token"` to `infra/terraform.tfvars` before running the first `task apply`. You obtain one by applying for it at the [BGG website](https://boardgamegeek.com/using_the_xml_api) The token is stored in AWS SSM Parameter Store and is only required during this initial deployment; subsequent applies don't need it.
-:::
-
-The first apply stops when pending validation: the ACM certificate stays `PENDING_VALIDATION`
-until you prove you own the domain, which is the next step.
-
-2. Validate the certificate (one-time)
+### 2. Validate the certificate (one-time)
 
 Get the records ACM wants:
 
@@ -115,7 +101,7 @@ Add each one as a **CNAME** at whatever DNS provider hosts your domain, using th
 `name` field as the record name and `value` as the target. Wait ~2 minutes for it to
 propagate, then run `task apply` again — this time it completes.
 
-3. Point your subdomain at CloudFront
+### 3. Point your subdomain at CloudFront
 
 ```sh
 terraform -chdir=infra output cloudfront_url
@@ -130,7 +116,7 @@ carrying Cloudflare's proxy headers, so an orange-cloud record breaks the site r
 protecting it. Security is handled at the AWS level.
 :::
 
-4. Ship the frontend
+### 4. Ship the frontend
 
 Once the subdomain resolves to CloudFront:
 
@@ -138,7 +124,7 @@ Once the subdomain resolves to CloudFront:
 task deploy   # run this every time you want to update your live application
 ```
 
-5. Create the first admin user
+### 5. Create the first admin user
 
 Nothing on the cloud path creates an account for you — `ADMIN_USERNAME`/`ADMIN_PASSWORD`
 bootstrap only applies to the self-hosted container. Until you run this, the login page

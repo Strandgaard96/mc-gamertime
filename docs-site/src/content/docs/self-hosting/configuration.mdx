@@ -2,7 +2,7 @@
 title: Configuration
 description: Environment variables and configuration for the self-hosted stack.
 sidebar:
-  order: 4
+  order: 2
 ---
 
 import { Code, Aside, Badge } from '@astrojs/starlight/components';
@@ -10,16 +10,11 @@ import envExample from '../../../../../.env.example?raw';
 
 ## At a glance
 
-**Required:** `ADMIN_USERNAME` + `ADMIN_PASSWORD` together, in `.env`, once — this
-bootstraps your first admin account on first boot (see [Quickstart](/self-hosting/quickstart/)).
-Skip both and create the account by hand instead
-(`docker compose exec app python3 scripts/create-user.py ...`); either way, until *some*
-admin exists the app returns `503` on every request, including the login page. Setting only
-one of the two (not both, not neither) is a hard startup error — it's a pair, not two
-independent variables.
+**Required:** `ADMIN_USERNAME` + `ADMIN_PASSWORD` together in `.env`, or create the first
+admin by hand — see [Quickstart](/self-hosting/quickstart/). Until an admin exists every
+request returns `503`. Setting only one of the pair is a startup error.
 
-**Everything else below is optional** with a working default — the container runs fine
-with zero configuration beyond the admin account.
+**Everything else is optional** with a working default.
 
 ## App service variables
 
@@ -41,11 +36,11 @@ SQLite database file and uploaded images both live under `config/app/` on the ho
 
 ## Resource requirements
 
-The `app` service's default limits (`docker-compose.yml`) are `512MB` memory / `1.0` CPU, with `128MB` / `0.25` CPU reserved. `512MB`/`1` CPU is comfortable for a handful of concurrent users on its own host. If running alongside other containers on a Raspberry Pi or small VPS, you can lower the limit to `256MB` by editing the `app.deploy.resources.limits.memory` value in `docker-compose.yml` — SQLite and local file storage have a much smaller footprint than DynamoDB/S3 connection pooling did in the cloud path, so the app itself doesn't need much headroom.
+The `app` service's default limits (`docker-compose.yml`) are `512MB` memory / `1.0` CPU, with `128MB` / `0.25` CPU reserved — comfortable for a handful of concurrent users. On a Raspberry Pi or small VPS shared with other containers, `256MB` is enough: edit `app.deploy.resources.limits.memory` in `docker-compose.yml`.
 
 ## .env variables
 
-Optional — create a `.env` file next to `docker-compose.yml` (compose auto-loads it, no clone or script needed) to configure optional features.
+Create a `.env` file next to `docker-compose.yml` (compose auto-loads it) to configure optional features. Every variable, with its default:
 
 <Code code={envExample} lang="bash" title=".env.example" />
 
@@ -108,15 +103,14 @@ origin guard, scraping will also need the `x-origin-token` header.
 ## Reverse proxy and rate limiting
 
 Login and password-reset rate limiting (`5` requests/minute) keys off each request's
-real IP address. Behind a reverse proxy (see [HTTPS / Reverse
-Proxy](/self-hosting/https/)), every request looks like it comes from the proxy
-unless the app is told to trust that proxy's forwarded headers —
-`FORWARDED_ALLOW_IPS` does this. The default already covers nginx-on-host, Traefik on
-the compose network, and Tailscale `serve` (it trusts standard private/
-Docker-internal IP ranges), so most self-hosters don't need to set it. Only override
-it if your own LAN itself shouldn't be trusted to set forwarded headers.
+real IP. Behind a reverse proxy (see [HTTPS / Reverse Proxy](/self-hosting/https/)) that
+only works if the app trusts the proxy's `X-Forwarded-*` headers — `FORWARDED_ALLOW_IPS`
+lists who is trusted. The default covers nginx on the host, Traefik on the compose network,
+and Tailscale `serve` (standard private and Docker-internal ranges), so most self-hosters
+never set it. Override it only if your own LAN shouldn't be trusted to set those headers.
 
-There is a separate `TRUSTED_PROXY_HOPS` variable in the codebase, but it applies **only to the cloud (AWS) deployment** — the self-hosted stack does not use it and it is intentionally absent from `docker-compose.yml`. Self-hosters behind a proxy only need `FORWARDED_ALLOW_IPS` (above).
+`TRUSTED_PROXY_HOPS` also exists in the codebase but is for the AWS deployment only; the
+self-hosted stack ignores it.
 
 ## Cross-origin frontend <Badge text="optional" variant="note" />
 

@@ -2,7 +2,7 @@
 title: HTTPS / Reverse Proxy
 description: Put your own reverse proxy (nginx, Traefik) in front of the app for Tailscale, public domains, or LAN access.
 sidebar:
-  order: 5
+  order: 3
 ---
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
@@ -107,26 +107,13 @@ Do not forward port 4263 directly to the internet (e.g. via a router port-forwar
   </TabItem>
 </Tabs>
 
-## Rate limiting behind your proxy
+## Behind the proxy
 
-No extra configuration is needed for login/password-reset rate limiting to keep
-working correctly with any of the proxy setups above — `FORWARDED_ALLOW_IPS`
-(see [Configuration](/self-hosting/configuration/)) already trusts the private/
-Docker-internal IP ranges these examples connect from, by default.
+All three setups above work with the defaults. The app trusts `X-Forwarded-For` and
+`X-Forwarded-Proto` from private and Docker-internal IP ranges (`FORWARDED_ALLOW_IPS`, see
+[Configuration](/self-hosting/configuration/#reverse-proxy-and-rate-limiting)), so:
 
-## Cookie security
-
-The session cookie is always `HttpOnly` and `SameSite=Strict`. The `Secure` flag follows
-the transport: set when the request arrives over HTTPS, omitted over plain HTTP.
-
-That is not a weakening. A browser refuses to *store* a `Secure` cookie delivered over
-plain HTTP from anything other than `localhost`, so marking it unconditionally would make
-the app unusable on a LAN address — login returns 200, the browser silently drops the
-cookie, and you land back on the sign-in page with no error. Over plain HTTP the cookie has
-already crossed the network in the clear, so the flag protects nothing there; TLS is what
-protects it, and behind TLS the flag is set exactly as you would want.
-
-Behind a reverse proxy this is detected from `X-Forwarded-Proto`, which uvicorn honours for
-the trusted ranges in `FORWARDED_ALLOW_IPS`. So terminating TLS at nginx, Traefik or
-Tailscale gives you a `Secure` cookie even though the proxy talks plain HTTP to the
-container.
+- login rate limiting sees each visitor's real IP rather than the proxy's
+- the session cookie gets its `Secure` flag when TLS terminates at the proxy, even though
+  the proxy talks plain HTTP to the container — see
+  [Security Model → Passwords and sessions](/self-hosting/security/#passwords-and-sessions)
