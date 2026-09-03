@@ -62,10 +62,8 @@ Any PR that changes the embedded SQLite schema (new table, new column — anythi
 migration) must:
 
 1. Add a migration to the `MIGRATIONS` list in `api/lib/db/migrations.py` (see that file's
-   docstring for the framework). Self-hosters' existing data must upgrade automatically on next
-   boot (`docker compose pull && docker compose up -d`) — there is no "wipe and re-bootstrap"
-   fallback for ordinary schema changes; that path was a one-time exception for the pre-SQLite
-   storage-engine swap.
+   docstring for the framework). Self-hosters' existing data must upgrade automatically — there
+   is no "wipe and re-bootstrap" fallback for ordinary schema changes.
 2. Add a `BREAKING CHANGE:` footer to the commit message describing the schema change, even when
    it isn't an API break. This is the mechanism `release-please` uses to surface a commit under
    its own heading in `CHANGELOG.md` — without it, a schema-changing commit looks identical to
