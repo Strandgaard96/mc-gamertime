@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "docs-site/**"
+      - ".env.example"
       - ".github/workflows/docs.yml"
   push:
     branches: [main]
@@ -15,6 +16,9 @@ on:
       # rebuild the site.
       - "CHANGELOG.md"
       - ".release-please-manifest.json"
+      # configuration.mdx embeds this file with ?raw, so an edit to it
+      # changes the published page and has to rebuild the site.
+      - ".env.example"
       - ".github/workflows/docs.yml"
 
 # GITHUB_TOKEN needs pages:write to deploy and id-token:write for the
@@ -36,11 +40,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # lastUpdated needs full git history for per-page dates
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: "npm"
@@ -56,7 +60,7 @@ jobs:
 
       - name: Upload Pages artifact
         if: github.event_name == 'push'
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: docs-site/dist
 
@@ -81,4 +85,4 @@ jobs:
     steps:
       - name: Deploy
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

@@ -12,6 +12,8 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
-      - uses: googleapis/release-please-action@v4
-        with:
-          release-type: simple
+      # No `release-type` input on purpose: passing one puts the action in
+      # legacy non-manifest mode, which ignores release-please-config.json
+      # (including its changelog-sections) and derives the current version
+      # from the latest GitHub release tag instead of the manifest.
+      - uses: googleapis/release-please-action@v5

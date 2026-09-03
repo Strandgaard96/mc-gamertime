@@ -26,6 +26,10 @@ lambda.zip
 # Environment
 .env
 .env.*
+# ...but the selfhost template is tracked: docs-site/src/content/docs/
+# self-hosting/configuration.mdx imports it with ?raw, so the Docs build
+# fails if it is missing from the checkout.
+!.env.example
 
 # Selfhost runtime data (bind-mounted; never commit)
 config/
