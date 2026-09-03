@@ -21,39 +21,8 @@ hero:
       variant: minimal
 ---
 
-import { CardGrid, Card, LinkCard } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 import version from '../../version.json';
-
-<CardGrid>
-  <Card title="Self-hosted by default" icon="seti:docker">
-    One container, embedded SQLite, local file storage. No cloud account, no database to
-    provision, no API keys required to start.
-
-    ```bash
-    docker compose up -d
-    ```
-
-    [Quickstart →](/self-hosting/quickstart/)
-  </Card>
-  <Card title="Or serverless on AWS" icon="cloud">
-    The same app on Lambda + DynamoDB + S3 + CloudFront, provisioned by Terraform.
-    Pay-per-request — roughly $0/month for a group of friends.
-
-    [AWS deploy →](/cloud-deploy/aws/)
-  </Card>
-  <Card title="What you get" icon="star">
-    Elo leaderboard and head-to-head records, a game catalog backed by Board Game Geek,
-    per-game custom result fields, automatic achievements, per-player stats, and a blog
-    for session recaps.
-
-    [All features →](/self-hosting/features/)
-  </Card>
-  <Card title="Built with Claude Code" icon="pencil">
-    Claude wrote most of the code; I decided what to build, reviewed it, and made the
-    calls. Worth knowing before you run it on your own machine — read what you care
-    about, don't trust it blindly.
-  </Card>
-</CardGrid>
 
 ## Start here
 
