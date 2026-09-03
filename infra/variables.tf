@@ -16,7 +16,7 @@ variable "extra_cors_origins" {
 }
 
 variable "cloudfront_web_acl_arn" {
-  description = "ARN of the CloudFront-managed WAF ACL to associate with the prod distribution. Contains the AWS account id, so it lives in terraform.tfvars (gitignored), not in source. Empty = no WAF association."
+  description = "ARN of the CloudFront-managed WAF ACL to associate with the prod distribution. Contains the AWS account id, so it lives in terraform.tfvars (gitignored), not in source. Empty = no WAF association (warned about on the default workspace by the check block in cloudfront.tf, never blocked). Get one free: CloudFront console -> distribution -> Security tab -> Enable protections -> Core protections (not Additional protections, which bills separately)."
   type        = string
   default     = ""
 }

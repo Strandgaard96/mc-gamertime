@@ -77,15 +77,14 @@ Proxy](https://mcgamertime-docs.drmaggi.com/self-hosting/https/) and the
 
 ### 2. Cloud-hosted on AWS
 
-The same app, hosted on AWS serverless infrastructure and provisioned by Terraform. Everything
+Host the app on AWS serverless infrastructure and provisioned by Terraform. Everything
 is pay-per-request, which for regular personal use amounts to roughly **$0/month** — the free tier covers
 it. Worth choosing if you want easy remote access and experience with cloud hosting while gaining the security benefits of AWS hosted infrastructure.
 
 #### Prerequisites
 An AWS account, plus Terraform, Node.js and Task installed — and **a domain name you own**.
 The domain is not optional: CloudFront needs an ACM certificate, and ACM only issues one for
-a domain you control. Any registrar works; Route 53 is not required, since you add the DNS
-records by hand.
+a domain you control.
 
 ```bash
 cp infra/terraform.tfvars.example infra/terraform.tfvars

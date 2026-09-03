@@ -64,6 +64,18 @@ containing one `domain = "example.com"` line is enough for a first deploy.
 | `cloudfront_web_acl_arn` | empty | ARN of a CloudFront-scoped WAF ACL. Empty deploys without a WAF |
 | `extra_cors_origins` | `[]` | Extra credentialed CORS origins beyond the deployed FQDN. The FQDN and the distribution's own `*.cloudfront.net` name are always included |
 
+:::tip[Free WAF: enable Core protections]
+Leaving `cloudfront_web_acl_arn` empty on the prod (`default`) workspace prints a
+non-blocking warning on every `plan`/`apply` — the app's own auth, rate limiting and CSRF
+checks hold with no WAF at all, so this is a nudge, not a gate.
+
+To close it at no extra cost: after your first `task apply`, open the CloudFront console →
+your distribution → **Security** tab → **Enable protections** → **Core protections**. Do
+**not** pick Additional protections (Bot Control, Account Takeover Prevention, etc.) — those
+bill separately. Copy the Web ACL ARN it creates into `cloudfront_web_acl_arn` in
+`terraform.tfvars`, then `task apply` again.
+:::
+
 :::caution
 Once you have set `cloudfront_web_acl_arn`, do not apply with it emptied — that
 disassociates the WAF from the live distribution. The ARN embeds your AWS account id, which

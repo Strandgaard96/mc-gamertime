@@ -23,8 +23,11 @@ alert_email = ""
 bgg_token = ""
 
 # ARN of a CloudFront-managed WAF ACL to associate with the distribution.
-# Empty deploys without a WAF. The ARN embeds your AWS account id, which is one
-# reason this file is gitignored.
+# Empty deploys without a WAF (warned about, not blocked, on the prod/default
+# workspace). Free to add: CloudFront console -> your distribution -> Security
+# tab -> Enable protections -> Core protections (NOT Additional protections,
+# which bills separately) -> paste the created Web ACL's ARN here. The ARN
+# embeds your AWS account id, which is one reason this file is gitignored.
 cloudfront_web_acl_arn = ""
 
 # Extra credentialed CORS origins beyond the deployed FQDN — for example a

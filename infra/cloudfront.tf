@@ -136,3 +136,26 @@ resource "aws_cloudfront_distribution" "web" {
     Project = var.project_name
   }
 }
+
+# ─── WAF nudge (warns, never blocks) ──────────────────────────────────────────
+#
+# Deliberately a warning, not a hard requirement: the app's own auth, rate
+# limiting and CSRF checks hold with no WAF at all, and forcing a WAF ACL would
+# mean either hardcoding a shared one (impossible — the ARN is account-specific
+# and CF-managed ACLs aren't shareable across distributions/accounts) or making
+# every deployer provision a self-managed aws_wafv2_web_acl, which bills
+# per-rule/per-request. This only fires for the prod (default) workspace, since
+# dev is documented as deliberately running with no WAF.
+check "cloudfront_web_acl_set_in_prod" {
+  assert {
+    condition = !local.is_default_ws || var.cloudfront_web_acl_arn != ""
+    error_message = join(" ", [
+      "cloudfront_web_acl_arn is unset on the prod (default) workspace — this",
+      "distribution has no WAF. Free to add: AWS Console -> CloudFront ->",
+      "this distribution -> Security tab -> Enable protections -> Core",
+      "protections (NOT Additional protections, which bills separately) ->",
+      "copy the created Web ACL's ARN into cloudfront_web_acl_arn in",
+      "terraform.tfvars -> re-apply.",
+    ])
+  }
+}
