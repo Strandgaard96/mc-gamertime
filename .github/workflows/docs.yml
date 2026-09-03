@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "docs-site/**"
+      - ".env.example"
       - ".github/workflows/docs.yml"
   push:
     branches: [main]
@@ -15,6 +16,9 @@ on:
       # rebuild the site.
       - "CHANGELOG.md"
       - ".release-please-manifest.json"
+      # configuration.mdx embeds this file with ?raw, so an edit to it
+      # changes the published page and has to rebuild the site.
+      - ".env.example"
       - ".github/workflows/docs.yml"
 
 # GITHUB_TOKEN needs pages:write to deploy and id-token:write for the
