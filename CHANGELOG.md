@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.0 (2026-09-03)
+
+
+### Bug Fixes
+
+* pin setup-uv to v10.0.1 and track .env.example ([39e9f39](https://github.com/Strandgaard96/mc-gamertime/commit/39e9f39e3484e9c8666749268fcece6ee2515547))
+* rebuild docs when .env.example changes ([e4e4ed5](https://github.com/Strandgaard96/mc-gamertime/commit/e4e4ed570d27c9c1a6e288900ba656cdd93667d1))
+
 ## 1.7.2 (2026-08-28)
 
 
