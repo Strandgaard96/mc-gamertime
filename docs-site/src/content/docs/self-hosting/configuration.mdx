@@ -8,6 +8,17 @@ sidebar:
 import { Code, Aside, Badge } from '@astrojs/starlight/components';
 import envExample from '../../../../../.env.example?raw';
 
+## At a glance
+
+**Required:** `ADMIN_USERNAME` + `ADMIN_PASSWORD` together, in `.env`, once — this
+bootstraps your first admin account on first boot (see [Quickstart](/self-hosting/quickstart/)).
+Skip both and create the account by hand instead
+(`docker compose exec app python3 scripts/create-user.py ...`); either way, until *some*
+admin exists the app returns `503` on every request, including the login page.
+
+**Everything else below is optional** with a working default — the container runs fine
+with zero configuration beyond the admin account.
+
 ## App service variables
 
 These are **baked into the image**, so a plain `docker run` with no environment at all gives you a

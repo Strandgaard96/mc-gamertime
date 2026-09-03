@@ -27,6 +27,10 @@ Misconfiguring an AWS environment can lead to SEVERE billing consequences. This 
 
 ## Configure your deployment
 
+**At a glance: `domain` is the only required variable.** Everything else below has a
+working default. There is no separate Lambda environment-variable setup — `infra/lambda.tf`
+derives it all from these Terraform vars.
+
 Do this before the first `task apply`. Terraform reads deployment-specific values from
 `infra/terraform.tfvars`, which is gitignored so nobody's domain or AWS account id ends up
 in version control:

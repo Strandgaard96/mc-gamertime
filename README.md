@@ -59,6 +59,13 @@ echo "ADMIN_PASSWORD=<your-password>" >> .env
 docker compose up -d
 ```
 
+`ADMIN_USERNAME`/`ADMIN_PASSWORD` are the **only required setting** — they bootstrap your
+first admin account on first boot (skip them and the app 503s on every request until you
+create one by hand). Everything else — `BGG_TOKEN` for game search, `SMTP_*` for
+password-reset email, `APP_BASE_URL`, `CORS_ALLOWED_ORIGINS`, etc. — is optional with a
+working default; see [`.env.example`](./.env.example) or the [full config
+reference](https://mcgamertime-docs.drmaggi.com/self-hosting/configuration/).
+
 Open <http://localhost:4263> and log in.
 
 Going beyond your own machine? Put TLS in front of it — Tailscale is the least work, a
@@ -78,8 +85,21 @@ it. Worth choosing if you want easy remote access and experience with cloud host
 An AWS account, plus Terraform, Node.js and Task installed — and **a domain name you own**.
 The domain is not optional: CloudFront needs an ACM certificate, and ACM only issues one for
 a domain you control. Any registrar works; Route 53 is not required, since you add the DNS
-records by hand. Set `domain` in `infra/terraform.tfvars` before the first apply — it is the
-only variable with no default, and Terraform refuses to run without it.
+records by hand.
+
+```bash
+cp infra/terraform.tfvars.example infra/terraform.tfvars
+# then set: domain = "example.com"
+```
+
+`domain` in `infra/terraform.tfvars` is the **only required setting** — it's the sole
+variable with no default, and `terraform apply` refuses to run without it. Everything
+else (`subdomain`, `bgg_token`, `alert_email`, `cloudfront_web_acl_arn`,
+`extra_cors_origins`, `aws_region`) has a working default; see
+[`infra/terraform.tfvars.example`](./infra/terraform.tfvars.example) or the [full AWS
+guide](https://mcgamertime-docs.drmaggi.com/cloud-deploy/aws/) for what each does. There's
+no separate Lambda env-var setup — `infra/lambda.tf` derives it all from these Terraform
+vars.
 
 For full installation instructions see: [Full AWS guide →](https://mcgamertime-docs.drmaggi.com/cloud-deploy/aws/).
 
