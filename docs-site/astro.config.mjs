@@ -32,6 +32,7 @@ export default defineConfig({
         { icon: "github", label: "GitHub", href: "https://github.com/Strandgaard96/mc-gamertime" },
       ],
       favicon: "/favicon.svg",
+      customCss: ["./src/styles/custom.css"],
       head: [
         // Link previews (Discord, Slack, Reddit, X). og:image must be an
         // absolute URL — relative paths are ignored by every scraper.
