@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/Strandgaard96/mc-gamertime/compare/v0.1.2...v0.1.3) (2026-09-03)
+
+
+### Documentation
+
+* bring docs site in line with the dual-backend code, dedupe, fix navigation ([9d495e2](https://github.com/Strandgaard96/mc-gamertime/commit/9d495e2f9e78317621fa68220de0427d2f521045))
+
 ## [0.1.2](https://github.com/Strandgaard96/mc-gamertime/compare/v0.1.1...v0.1.2) (2026-09-03)
 
 
