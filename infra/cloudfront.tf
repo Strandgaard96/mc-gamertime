@@ -140,7 +140,7 @@ resource "aws_cloudfront_distribution" "web" {
 # ─── WAF nudge (warns, never blocks) ──────────────────────────────────────────
 #
 # Deliberately a warning, not a hard requirement: the app's own auth, rate
-# limiting and CSRF checks hold with no WAF at all, and forcing a WAF ACL would
+# limiting and CSRF checks hold with no WAF at all, and forcing a Web ACL would
 # mean either hardcoding a shared one (impossible — the ARN is account-specific
 # and CF-managed ACLs aren't shareable across distributions/accounts) or making
 # every deployer provision a self-managed aws_wafv2_web_acl, which bills

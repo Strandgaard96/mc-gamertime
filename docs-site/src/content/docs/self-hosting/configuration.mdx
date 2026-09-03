@@ -14,7 +14,9 @@ import envExample from '../../../../../.env.example?raw';
 bootstraps your first admin account on first boot (see [Quickstart](/self-hosting/quickstart/)).
 Skip both and create the account by hand instead
 (`docker compose exec app python3 scripts/create-user.py ...`); either way, until *some*
-admin exists the app returns `503` on every request, including the login page.
+admin exists the app returns `503` on every request, including the login page. Setting only
+one of the two (not both, not neither) is a hard startup error — it's a pair, not two
+independent variables.
 
 **Everything else below is optional** with a working default — the container runs fine
 with zero configuration beyond the admin account.

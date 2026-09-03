@@ -233,7 +233,31 @@ app.include_router(ratings.router, prefix="/api/ratings")
 
 **Step 5 — Infra: `infra/main.tf` or equivalent** — add DynamoDB table. Follow the pattern of existing tables (PITR enabled, deletion protection on).
 
-**Step 6 — Frontend types: `web/src/lib/types.ts`**
+**Step 6 — SQLite migration (self-host parity): `api/lib/db/migrations.py`** — DynamoDB is schemaless, but the self-hosted SQLite backend isn't. Skip this and self-hosters' existing databases never get the new table — every route touching it 500s on their instance after the next upgrade:
+
+```python
+def _add_ratings_table(conn: sqlite3.Connection) -> None:
+    conn.execute("""
+        CREATE TABLE ratings (
+            pk TEXT PRIMARY KEY,
+            gameId TEXT NOT NULL,
+            stars INTEGER NOT NULL,
+            userId TEXT NOT NULL,
+            createdAt TEXT NOT NULL
+        )
+    """)
+
+MIGRATIONS = [
+    # ...existing entries...
+    (N, _add_ratings_table),  # N = next unused version number
+]
+```
+
+Also add a `BREAKING CHANGE:` footer to the commit message — see [SQLite schema
+changes](/contributing/overview/#sqlite-schema-changes) — so the change surfaces in
+`CHANGELOG.md` even though the migration itself runs automatically on next boot.
+
+**Step 7 — Frontend types: `web/src/lib/types.ts`**
 
 ```typescript
 export interface Rating {
@@ -245,7 +269,7 @@ export interface Rating {
 }
 ```
 
-**Step 7 — Frontend API: `web/src/lib/api.ts`**
+**Step 8 — Frontend API: `web/src/lib/api.ts`**
 
 ```typescript
 import type { ..., Rating } from './types'
@@ -263,7 +287,7 @@ export function createRating(data: { gameId: string; stars: number }): Promise<R
 }
 ```
 
-**Step 8 — Frontend hook: `web/src/hooks/useRatings.ts`** (new file)
+**Step 9 — Frontend hook: `web/src/hooks/useRatings.ts`** (new file)
 
 ```typescript
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -287,7 +311,7 @@ export function useCreateRating() {
 }
 ```
 
-**Step 9 — Use in a page component** — import `useRatings` and `useCreateRating`, render.
+**Step 10 — Use in a page component** — import `useRatings` and `useCreateRating`, render.
 
 ---
 

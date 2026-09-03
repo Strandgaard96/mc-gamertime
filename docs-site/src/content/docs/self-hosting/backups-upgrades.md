@@ -57,29 +57,6 @@ database. The app holds a 30s busy timeout on its own connections, but these scr
 running `sqlite_import.py` against a writing app can fail with "database is locked" after a
 few seconds, and `sqlite_export.py` could capture a partially-consistent snapshot.
 
-## Upgrading from pre-SQLite versions
-
-Versions before this release used `dynamodb-local` + `seaweedfs` containers for storage.
-This version replaces both with an embedded SQLite database and local filesystem storage —
-there is no migration path; existing selfhost data does not carry forward.
-
-```bash
-# 1. Back up config/ first if you want to keep anything (optional — the old
-#    format isn't read by the new version)
-tar czf old-data-backup.tar.gz config/
-
-# 2. Stop the stack and remove the old data directories
-docker compose down
-rm -rf config/dynamodb config/seaweed
-
-# 3. Pull and start the new version
-docker compose pull
-docker compose up -d
-
-# 4. Re-bootstrap
-docker compose exec app python3 scripts/create-user.py --username admin --display-name "Admin" --role admin --password <your-password>
-```
-
 ## Upgrading
 
 ```bash
@@ -101,3 +78,28 @@ publishes **`4263:4263`**. After upgrading:
 
 8080 was dropped because it collides with almost every other self-hosted app; 4263 is
 unclaimed (and spells GAME on a phone keypad).
+
+## Upgrading from a pre-SQLite version (rare)
+
+Only relevant if you're upgrading from a very old install that still has `config/dynamodb`
+and `config/seaweed` directories — those versions used `dynamodb-local` + `seaweedfs`
+containers for storage. This version replaces both with an embedded SQLite database and
+local filesystem storage — there is no migration path; existing selfhost data does not
+carry forward.
+
+```bash
+# 1. Back up config/ first if you want to keep anything (optional — the old
+#    format isn't read by the new version)
+tar czf old-data-backup.tar.gz config/
+
+# 2. Stop the stack and remove the old data directories
+docker compose down
+rm -rf config/dynamodb config/seaweed
+
+# 3. Pull and start the new version
+docker compose pull
+docker compose up -d
+
+# 4. Re-bootstrap
+docker compose exec app python3 scripts/create-user.py --username admin --display-name "Admin" --role admin --password <your-password>
+```

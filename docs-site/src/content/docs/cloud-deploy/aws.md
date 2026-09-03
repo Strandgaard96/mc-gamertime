@@ -5,13 +5,13 @@ sidebar:
   order: 1
 ---
 
-An optional path — for public access without running your own reverse proxy, AWS's built-in security, or simply to learn AWS hosting. Costs ~$0/month for personal use.
+An optional path — for public access without running your own reverse proxy, AWS's built-in security, or simply to learn AWS hosting. Costs roughly $0/month for personal use.
 
 ## Prerequisites
 
 - **A domain name you own.** There is no way around this: CloudFront needs an ACM
-  certificate, and ACM only issues one for a domain you can prove you control. Register one at any registrar.
-  by hand, so any provider works.
+  certificate, and ACM only issues one for a domain you can prove you control. Register one
+  at any registrar — DNS records are added by hand (see below), so any provider works.
 - An AWS account
 - [AWS CLI](https://aws.amazon.com/cli/) configured with credentials
 - [Terraform](https://developer.hashicorp.com/terraform/install) >= 1.5
@@ -61,7 +61,7 @@ containing one `domain = "example.com"` line is enough for a first deploy.
 | Variable | Default | What it does |
 |---|---|---|
 | `alert_email` | empty | Subscribes an address to the CloudWatch alarm topic (Lambda errors, throttles, API Gateway 5xx). AWS emails a confirmation link once — until you click it, alarms fire into a topic nobody reads |
-| `cloudfront_web_acl_arn` | empty | ARN of a CloudFront-scoped WAF ACL. Empty deploys without a WAF |
+| `cloudfront_web_acl_arn` | empty | ARN of a CloudFront-scoped WAF Web ACL. Empty deploys without a WAF |
 | `extra_cors_origins` | `[]` | Extra credentialed CORS origins beyond the deployed FQDN. The FQDN and the distribution's own `*.cloudfront.net` name are always included |
 
 :::tip[Free WAF: enable Core protections]

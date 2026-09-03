@@ -27,6 +27,15 @@ Every route requires a logged-in session except these:
 There is **no public signup**. Accounts exist only if an admin creates them, so an
 internet-exposed instance is not a spam target the way an open-registration app is.
 
+## Optional public surface
+
+One more thing becomes public, but only if you turn it on: setting
+`PUBLIC_RECOMMENDED_ENABLED=true` (default `false` for self-hosted — see [App service
+variables](/self-hosting/configuration/#app-service-variables)) exposes the landing page's
+recommended-games list, `GET /api/recommended*`, without a session — the same behavior the
+AWS deployment defaults to. Leave it `false` if you want nothing at all visible without
+logging in.
+
 ## What the defaults assume
 
 :::caution

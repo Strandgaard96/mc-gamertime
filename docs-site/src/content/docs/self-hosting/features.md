@@ -5,7 +5,7 @@ sidebar:
   order: 2
 ---
 
-MC GamerTime is a full-stack web app for tracking board game nights with friends. It can be either self-hosted or deployed to AWS for near 0 cost. Here's what you get out of the box.
+MC GamerTime is a full-stack web app for tracking board game nights with friends. It can be either self-hosted or deployed to AWS for roughly $0/month. Here's what you get out of the box.
 
 ## Leaderboard
 

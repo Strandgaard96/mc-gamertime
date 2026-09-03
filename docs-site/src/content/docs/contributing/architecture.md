@@ -24,9 +24,9 @@ This is where React boots. It sets up three things that wrap the entire app:
 FastAPI app created here. Every incoming request goes through this file.
 
 **Critical: the `origin_guard` middleware.** Every request — before hitting any route — passes through it. It:
-1. Calls an internal `_initialize()` on first request (cold start). This fetches three secrets from AWS SSM Parameter Store: JWT secret, origin token, BGG API token.
-2. In production: checks that the `x-origin-token` header matches the SSM secret. This header is injected by CloudFront. Direct calls to API Gateway without it get a 403.
-3. In dev (`DEV_MODE=true`): skips the token check entirely.
+1. Calls an internal `_initialize()` on first request (cold start on Lambda; first request after container start when self-hosted). Two branches depending on `SECRETS_PROVIDER`: `ssm` (AWS) fetches the JWT secret, origin token, and BGG API token from AWS SSM Parameter Store; `env` (self-hosted, the default) reads the same three from environment variables and also bootstraps the first admin account from `ADMIN_USERNAME`/`ADMIN_PASSWORD` if set. Either branch failing (missing JWT secret, mismatched admin vars, unreachable SSM) doesn't crash the process — it turns into a `503` on every route, including `/`, until fixed.
+2. Checks that the `x-origin-token` header matches the stored secret — only when `ORIGIN_GUARD_ENABLED=true` (the default on AWS; off by default self-hosted, since there's no CDN in front to inject the header). On AWS this header is injected by CloudFront; a direct call to API Gateway without it gets a 403.
+3. `DEV_MODE=true` skips the token check entirely regardless of `ORIGIN_GUARD_ENABLED` — used for local dev against real AWS resources.
 
 Routers are mounted at fixed prefixes:
 ```

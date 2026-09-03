@@ -110,6 +110,9 @@ The deployment is only as private as the account it runs in:
 - **Guard `infra/terraform.tfvars` and any table dumps.** They are gitignored for a
   reason.
 - **Rotate the JWT secret** if you suspect it leaked; every session dies with it.
+- **Consider enabling CloudFront's WAF Core protections** — off by default, free to turn on,
+  and warned about (not blocked) by `terraform plan`/`apply` if you don't. See
+  [AWS Deploy](/cloud-deploy/aws/#optional-changeable-any-time) for the one-click steps.
 
 ## Verifying it yourself
 
