@@ -9,6 +9,6 @@ Report it privately instead, by either:
 - **GitHub private advisory (preferred):** go to the repository's **Security**
   tab → **Report a vulnerability**. This opens a private report visible only to
   the maintainer.
-- **Email:** magnus.str@gmail.com
+- **Email:** magnus@strandgaard.dev
 
 This is a hobby project with no formal SLA. I'll do my best to respond promptly.
