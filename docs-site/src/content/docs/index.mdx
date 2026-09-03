@@ -1,0 +1,106 @@
+---
+title: MC GamerTime
+description: Board game inventory and session tracker — catalog, results, leaderboard, achievements. Self-host with Docker or deploy on AWS.
+template: splash
+hero:
+  tagline: Track board game nights with friends — catalog, results, Elo leaderboard, achievements. Self-host it with one command, or run it on AWS for about $0 a month.
+  image:
+    file: ../../assets/hero-leaderboard.png
+  actions:
+    - text: Self-host with Docker
+      link: /self-hosting/quickstart/
+      icon: right-arrow
+      variant: primary
+    - text: Deploy on AWS
+      link: /cloud-deploy/aws/
+      icon: cloud-download
+      variant: minimal
+    - text: GitHub
+      link: https://github.com/Strandgaard96/mc-gamertime
+      icon: github
+      variant: minimal
+---
+
+import { CardGrid, Card, LinkCard } from '@astrojs/starlight/components';
+import version from '../../version.json';
+
+<CardGrid stagger>
+  <Card title="Self-hosted by default" icon="seti:docker">
+    One container, embedded SQLite, local file storage. No cloud account, no database to
+    provision, no API keys required to start.
+
+    ```bash
+    docker compose up -d
+    ```
+
+    [Quickstart →](/self-hosting/quickstart/)
+  </Card>
+  <Card title="Or serverless on AWS" icon="cloud">
+    The same app on Lambda + DynamoDB + S3 + CloudFront, provisioned by Terraform.
+    Pay-per-request — roughly $0/month for a group of friends.
+
+    [AWS deploy →](/cloud-deploy/aws/)
+  </Card>
+  <Card title="What you get" icon="star">
+    Elo leaderboard and head-to-head records, a game catalog backed by Board Game Geek,
+    per-game custom result fields, automatic achievements, per-player stats, and a blog
+    for session recaps.
+
+    [All features →](/self-hosting/features/)
+  </Card>
+  <Card title="Built with Claude Code" icon="pencil">
+    Claude wrote most of the code; I decided what to build, reviewed it, and made the
+    calls. Worth knowing before you run it on your own machine — read what you care
+    about, don't trust it blindly.
+  </Card>
+</CardGrid>
+
+## Start here
+
+<CardGrid>
+  <LinkCard
+    title="Quickstart"
+    description="Compose file, admin account, running app — a few minutes."
+    href="/self-hosting/quickstart/"
+  />
+  <LinkCard
+    title="Configuration"
+    description="Every environment variable, and which ones you actually need."
+    href="/self-hosting/configuration/"
+  />
+  <LinkCard
+    title="HTTPS / Reverse proxy"
+    description="nginx, Traefik, or Tailscale in front of the app."
+    href="/self-hosting/https/"
+  />
+  <LinkCard
+    title="Security model"
+    description="What is exposed, what is not, and what to lock down before opening it up."
+    href="/self-hosting/security/"
+  />
+  <LinkCard
+    title="Security & privacy on AWS"
+    description="What the cloud deployment exposes, what stays private, and how to check."
+    href="/cloud-deploy/security/"
+  />
+  <LinkCard
+    title="Backups & upgrades"
+    description="Back up config/, upgrade the image, export and import tables."
+    href="/self-hosting/backups-upgrades/"
+  />
+  <LinkCard
+    title="Contributing"
+    description="Run the tests, set up pre-commit, learn the codebase."
+    href="/contributing/overview/"
+  />
+</CardGrid>
+
+## Stack
+
+- **Frontend:** React 18, Vite, Tailwind CSS, TanStack Query, Recharts
+- **Backend:** Python / FastAPI — uvicorn when self-hosted, Lambda + Mangum on AWS
+- **Data:** embedded SQLite (self-hosted) or DynamoDB (AWS)
+- **Storage:** local filesystem (self-hosted) or S3 + CloudFront (AWS)
+
+These docs describe **v{version.version}** — see the [release notes](/self-hosting/release-notes/)
+for what changed, and pin the matching image tag if you upgrade deliberately.

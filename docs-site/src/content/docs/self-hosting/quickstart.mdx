@@ -1,0 +1,109 @@
+---
+title: Quickstart
+description: Run MC GamerTime locally with Docker Compose in minutes.
+sidebar:
+  order: 1
+---
+
+import { Code, Steps, Aside } from '@astrojs/starlight/components';
+import compose from '../../../../../docker-compose.yml?raw';
+
+<Steps>
+
+1. **Get the compose file**
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/Strandgaard96/mc-gamertime/main/docker-compose.yml -o docker-compose.yml
+   ```
+
+   No clone needed — this one file is the whole self-host setup.
+
+2. **Set your admin credentials**
+
+   ```bash
+   echo "ADMIN_USERNAME=admin" >> .env
+   echo "ADMIN_PASSWORD=<your-password>" >> .env
+   ```
+
+   Compose auto-loads `.env` from the same directory. The first boot creates this admin
+   account; afterwards the variables are ignored, so an existing password is never
+   overwritten.
+
+   <Aside type="caution">
+   Don't skip this. With no admin account and no `ADMIN_USERNAME`/`ADMIN_PASSWORD`, the app
+   refuses to serve anything — every request returns `503 {"detail": "Service unavailable"}`,
+   including the login page. Set both here, or create the account by hand as shown in the
+   next step. Setting only one of the two is a hard error at startup.
+   </Aside>
+
+3. **Start the stack**
+
+   ```bash
+   docker compose up -d
+   ```
+
+   Pulls the pre-built image from GHCR. On first run, the SQLite schema and local storage directory are created lazily inside the container. Wait a few seconds for the `app` container to become healthy.
+
+   <Aside type="tip">
+   Prefer creating the account by hand — or need a second one later?
+
+   ```bash
+   docker compose exec app python3 scripts/create-user.py \
+     --username alice --display-name "Alice" --role admin --password <your-password>
+   ```
+
+   Run it with no arguments and it prompts for each value instead (needs a real terminal,
+   so `docker compose exec` works but `exec -T` does not).
+
+   If you skipped step 2, the container is up and serving 503s — that is expected, and this
+   command is how you get out of it. It takes effect on the next request; no restart needed.
+   </Aside>
+
+4. **Open the app**
+
+   Navigate to `http://localhost:4263` and log in.
+
+</Steps>
+
+<Aside type="tip">
+**No Compose?** The image is self-hosted by default — SQLite, local file storage, no cloud
+account — so a bare `docker run` works too:
+
+```bash
+docker run -d -p 4263:4263 -v ./config/app:/data \
+  -e ADMIN_USERNAME=admin -e ADMIN_PASSWORD=<your-password> \
+  ghcr.io/strandgaard96/mc-gamertime
+```
+
+Mount `/data` as shown, or the database and generated JWT secret vanish with the container.
+</Aside>
+
+<Aside type="tip">
+**Want to build from source instead?** Clone the repo and build locally:
+
+```bash
+git clone https://github.com/Strandgaard96/mc-gamertime && cd mc-gamertime
+docker build -t mc-gamertime-local .
+```
+
+Then point `image:` in your `docker-compose.yml` at `mc-gamertime-local` before `docker compose up -d`.
+</Aside>
+
+## What's running
+
+| Container | Role | Port (internal) |
+|---|---|---|
+| `app` | FastAPI + React frontend, embedded SQLite, local filesystem storage | 4263 |
+| `boardsite-init` | One-shot, fixes ownership on `config/app` then exits | none |
+
+Only `app` is exposed to the host at `localhost:4263`.
+
+## docker-compose.yml
+
+<Code code={compose} lang="yaml" title="docker-compose.yml" />
+
+## Next steps
+
+- [Configure environment variables](/self-hosting/configuration/) — BGG token, custom settings
+- [Set up HTTPS](/self-hosting/https/) — Tailscale, public domain, or LAN
+- [Backups and upgrades](/self-hosting/backups-upgrades/)

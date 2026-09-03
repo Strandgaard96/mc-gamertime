@@ -1,0 +1,133 @@
+---
+title: Configuration
+description: Environment variables and configuration for the self-hosted stack.
+sidebar:
+  order: 4
+---
+
+import { Code, Aside, Badge } from '@astrojs/starlight/components';
+import envExample from '../../../../../.env.example?raw';
+
+## App service variables
+
+These are **baked into the image**, so a plain `docker run` with no environment at all gives you a
+working self-hosted instance. `docker-compose.yml` repeats them so the compose file documents its
+own behaviour; the AWS deployment overrides them in `infra/lambda.tf`. Don't change them unless you
+know what you're doing.
+
+| Variable | Default | Why |
+|---|---|---|
+| `DB_BACKEND` | `sqlite` | Embedded SQLite file instead of DynamoDB |
+| `STORAGE_BACKEND` | `local` | Local filesystem storage instead of S3 |
+| `SECRETS_PROVIDER` | `env` | Read `JWT_SECRET`/`ORIGIN_TOKEN`/`BGG_TOKEN` from env instead of AWS SSM |
+| `ORIGIN_GUARD_ENABLED` | `false` | No CloudFront in front of selfhost — the guard would block everything |
+| `PUBLIC_RECOMMENDED_ENABLED` | `false` | Nothing is reachable without logging in |
+
+SQLite database file and uploaded images both live under `config/app/` on the host —
+`/data/boardsite.db` and `/data/storage/` inside the container.
+
+## Resource requirements
+
+The `app` service's default limits (`docker-compose.yml`) are `512MB` memory / `1.0` CPU, with `128MB` / `0.25` CPU reserved. `512MB`/`1` CPU is comfortable for a handful of concurrent users on its own host. If running alongside other containers on a Raspberry Pi or small VPS, you can lower the limit to `256MB` by editing the `app.deploy.resources.limits.memory` value in `docker-compose.yml` — SQLite and local file storage have a much smaller footprint than DynamoDB/S3 connection pooling did in the cloud path, so the app itself doesn't need much headroom.
+
+## .env variables
+
+Optional — create a `.env` file next to `docker-compose.yml` (compose auto-loads it, no clone or script needed) to configure optional features.
+
+<Code code={envExample} lang="bash" title=".env.example" />
+
+<Aside type="note">
+`JWT_SECRET` is **not** in `.env` — it's auto-generated on first boot and persisted to `/data/.jwt_secret`, bind-mounted from `config/app/` on the host (mode `0600`, never served over HTTP).
+</Aside>
+
+## Host port
+
+The container listens on `4263` and Compose publishes it as `4263:4263`. Set `APP_PORT` in `.env` to publish it on a different host port — the container's own port never changes, so a reverse proxy reaching `app` over the Docker network keeps targeting `4263`.
+
+<Aside type="caution">
+`APP_PORT` is read by docker-compose itself, not by the app. It is deliberately absent from the `app` service's `environment:` block — putting it there does nothing.
+</Aside>
+
+## BGG Token
+
+Game search (`/api/games/search`) requires a Board Game Geek API token. Without it, the game catalog search is disabled — you can still log results for games already in your library.
+
+Set `BGG_TOKEN=your-token` in `.env` and restart the stack:
+
+```bash
+docker compose up -d
+```
+
+## Password reset
+
+Users can reset their own password from `/forgot-password` if their account has an
+email address on file (set via `--email` on `scripts/create-user.py` or
+`scripts/update-user.py` — there's no UI for it yet).
+
+Without an SMTP server configured, reset links are logged to the container's stdout
+(`docker compose logs app`) instead of emailed — useful for testing, or for an admin
+to retrieve a link on a user's behalf. To actually send email, set the `SMTP_*`
+variables in `.env` and restart the stack.
+
+Set `APP_BASE_URL` (e.g. `https://games.example.com`) to the URL you actually use —
+the reset link is built from it. If unset, the link falls back to the incoming
+request's `Host` header, which is fine for local zero-config use but spoofable by
+anyone who can reach the app's port directly without going through your reverse
+proxy. Set it explicitly once you're past local testing.
+
+You can also set this from **Settings → Instance URL** in the app itself (admin
+only) — no restart needed. The Settings-page value takes precedence over
+`APP_BASE_URL` when both are set, so you can override or correct it without
+touching `.env`.
+
+## Metrics <Badge text="optional" variant="note" />
+
+Set `METRICS_ENABLED=true` in `.env` and restart to expose `GET /metrics` in
+Prometheus text format — request counts, latency histograms, and status codes,
+labeled by HTTP method and route path. `/metrics` is a normal route — it has no
+authentication beyond the container's `ORIGIN_GUARD_ENABLED` setting (see [App
+service variables](#app-service-variables)), which is disabled by default in
+self-hosted mode, so the endpoint is reachable unauthenticated. Only expose it
+inside your Docker network (e.g. scrape from a Prometheus container on the same
+`docker compose` network), never through the public reverse proxy. If you enable
+origin guard, scraping will also need the `x-origin-token` header.
+
+## Reverse proxy and rate limiting
+
+Login and password-reset rate limiting (`5` requests/minute) keys off each request's
+real IP address. Behind a reverse proxy (see [HTTPS / Reverse
+Proxy](/self-hosting/https/)), every request looks like it comes from the proxy
+unless the app is told to trust that proxy's forwarded headers —
+`FORWARDED_ALLOW_IPS` does this. The default already covers nginx-on-host, Traefik on
+the compose network, and Tailscale `serve` (it trusts standard private/
+Docker-internal IP ranges), so most self-hosters don't need to set it. Only override
+it if your own LAN itself shouldn't be trusted to set forwarded headers.
+
+There is a separate `TRUSTED_PROXY_HOPS` variable in the codebase, but it applies **only to the cloud (AWS) deployment** — the self-hosted stack does not use it and it is intentionally absent from `docker-compose.yml`. Self-hosters behind a proxy only need `FORWARDED_ALLOW_IPS` (above).
+
+## Cross-origin frontend <Badge text="optional" variant="note" />
+
+The default stack serves the web UI and the API from the same origin, so the
+browser never issues a cross-origin request and no CORS configuration is needed.
+
+If you put the frontend on a *different* hostname than the API, list the
+frontend origins in `CORS_ALLOWED_ORIGINS` (comma-separated, scheme included):
+
+```bash
+CORS_ALLOWED_ORIGINS=https://games.example.com,https://app.example.com
+```
+
+Session cookies are sent with these requests, so only list origins you control.
+A wildcard (`*`) is rejected — it cannot be combined with credentialed requests.
+
+## Rotating the JWT secret
+
+If you suspect the JWT secret has leaked (e.g. a stolen backup, a compromised host), rotate it to invalidate every existing session:
+
+```bash
+docker compose down
+rm config/app/.jwt_secret
+docker compose up -d
+```
+
+A new secret is generated automatically on the next boot (`docker/entrypoint.sh`). Every user — including you — is signed out and must log in again. This does not affect any other data (games, results, posts); only active sessions are invalidated.

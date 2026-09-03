@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Setup & Usage Questions
+    url: https://github.com/Strandgaard96/mc-gamertime/discussions
+    about: Use GitHub Discussions for questions about configuration, self-hosting, and general usage.
+  - name: Self-Hosting Docs
+    url: https://mcgamertime-docs.drmaggi.com/self-hosting/quickstart/
+    about: Check the self-hosting docs before opening an issue.

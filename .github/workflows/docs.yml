@@ -1,0 +1,84 @@
+name: Docs
+
+on:
+  pull_request:
+    paths:
+      - "docs-site/**"
+      - ".github/workflows/docs.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs-site/**"
+      # The Release Notes page and the version badge are generated from these
+      # at build time (docs-site/scripts/sync-release-info.mjs), so a release
+      # commit that touches neither docs-site/ nor this file still has to
+      # rebuild the site.
+      - "CHANGELOG.md"
+      - ".release-please-manifest.json"
+      - ".github/workflows/docs.yml"
+
+# GITHUB_TOKEN needs pages:write to deploy and id-token:write for the
+# deployment's OIDC attestation.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two doc deploys race; let an in-flight one finish rather than
+# cancelling it half-published.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Docs build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # lastUpdated needs full git history for per-page dates
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: docs-site/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: docs-site
+
+      - name: Build (runs link validation)
+        run: npm run build
+        working-directory: docs-site
+
+      - name: Upload Pages artifact
+        if: github.event_name == 'push'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs-site/dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    # Pull requests build only; publishing happens on main. A broken link
+    # fails the build above, so nothing unbuildable can reach the site.
+    #
+    # Also gated on the PAGES_ENABLED repository variable, because GitHub Pages
+    # is unavailable on this plan while the repository is private and the
+    # deploy step 404s. Turn publishing on with:
+    #   Settings -> Pages -> Source: GitHub Actions
+    #   gh variable set PAGES_ENABLED --body true
+    if: github.event_name == 'push' && vars.PAGES_ENABLED == 'true'
+    needs: build
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,153 @@
+version: '3'
+
+vars:
+  BUCKET:
+    sh: cd infra && terraform output -raw s3_bucket_name 2>/dev/null || echo ""
+  DISTRIBUTION_ID:
+    sh: cd infra && terraform output -raw cloudfront_distribution_id 2>/dev/null ||
+      echo ""
+
+tasks:
+  init:
+    desc: "Initialize Terraform and install npm dependencies"
+    cmds:
+      - cd infra && terraform init
+      - cd web && npm ci
+
+  build-api:
+    desc: "Build API lambda.zip (skipped if api/ source unchanged)"
+    cmds:
+      - |
+        CURRENT_HASH=$(find api/ -type f \
+          ! -path 'api/dist/*' \
+          ! -path 'api/.venv/*' \
+          ! -path 'api/.pytest_cache/*' \
+          ! -name 'lambda.zip' \
+          ! -name '*.pyc' \
+          ! -path '*/__pycache__/*' \
+          | sort | xargs sha256sum | sha256sum | cut -d' ' -f1)
+        STORED_HASH=$(cat .api-build-hash 2>/dev/null || echo "")
+        if [ "$CURRENT_HASH" = "$STORED_HASH" ]; then
+          echo "API source unchanged — skipping Lambda build"
+          exit 0
+        fi
+        bash api/build.sh
+        echo "$CURRENT_HASH" > .api-build-hash
+
+  build-frontend:
+    desc: "Build web frontend (Vite)"
+    cmds:
+      - cd web && npm run build
+
+  build:
+    desc: "Build API (smart, skips if unchanged) and web (Vite)"
+    cmds:
+      - task: build-api
+      - task: build-frontend
+
+  test:
+    desc: "Run API tests (runs automatically before deploy)"
+    cmds:
+      - cd api && uv run pytest tests/ -v
+
+  plan:
+    desc: "Terraform plan (prod / default workspace)"
+    dir: infra
+    cmds:
+      - terraform workspace select default
+      - terraform plan
+
+  apply:
+    desc: "Terraform apply (prod / default workspace)"
+    dir: infra
+    cmds:
+      - terraform workspace select default
+      - terraform apply
+
+  plan:dev:
+    desc: "Terraform plan (dev workspace)"
+    dir: infra
+    cmds:
+      - terraform workspace select dev
+      - defer: terraform workspace select default
+      - terraform plan
+
+  apply:dev:
+    desc: "Terraform apply (dev workspace)"
+    dir: infra
+    cmds:
+      - terraform workspace select dev
+      - defer: terraform workspace select default
+      - terraform apply
+
+  deploy:
+    desc: "Build, apply Terraform, sync web assets to S3, invalidate CloudFront,
+      print URL"
+    cmds:
+      - task: test
+      - task: build
+      - task: apply
+      - |
+        BUCKET=$(cd infra && terraform output -raw s3_bucket_name)
+        DISTRIBUTION_ID=$(cd infra && terraform output -raw cloudfront_distribution_id)
+        aws s3 sync web/dist/ s3://$BUCKET/ --delete --exclude "blog-images/*" --exclude "avatars/*" --exclude "exports/*"
+        aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
+        echo "Deployed to: https://$(cd infra && terraform output -raw cloudfront_url)"
+
+  deploy:dev:
+    desc: "Build, apply Terraform (dev workspace), sync web assets, invalidate CloudFront"
+    cmds:
+      - task: test
+      - task: build
+      - |
+        cd infra && terraform workspace select dev
+        terraform apply
+        BUCKET=$(terraform output -raw s3_bucket_name)
+        DISTRIBUTION_ID=$(terraform output -raw cloudfront_distribution_id)
+        URL=$(terraform output -raw cloudfront_url)
+        terraform workspace select default
+        cd ..
+        aws s3 sync web/dist/ s3://$BUCKET/ --delete --exclude "blog-images/*" --exclude "avatars/*" --exclude "exports/*"
+        aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
+        echo "Deployed dev to: https://$URL"
+
+  destroy:
+    desc: "Terraform destroy (auto-approve)"
+    cmds:
+      - cd infra && terraform destroy
+
+  users:
+    desc: "List all users: task users -- [--env dev]"
+    cmds:
+      - cd api && DB_BACKEND=dynamodb uv run python3 scripts/list-users.py {{.CLI_ARGS}}
+
+  users:dev:
+    desc: "List all users (dev table) — shortcut for: task users -- --env dev"
+    cmds:
+      - cd api && DB_BACKEND=dynamodb uv run python3 scripts/list-users.py --env dev
+
+  create-user:
+    desc: "Create a user: task create-user -- --username alice --display-name
+      'Alice' --role readonly --password secret [--env dev]"
+    cmds:
+      - cd api && DB_BACKEND=dynamodb uv run python3 scripts/create-user.py {{.CLI_ARGS}}
+
+  delete-user:
+    desc: "Delete a user: task delete-user -- --username alice [--env dev]"
+    cmds:
+      - cd api && DB_BACKEND=dynamodb uv run python3 scripts/delete-user.py {{.CLI_ARGS}}
+
+  update-user:
+    desc: "Update a user: task update-user -- --username alice --password newsecret [--env dev]"
+    cmds:
+      - cd api && DB_BACKEND=dynamodb uv run python3 scripts/update-user.py {{.CLI_ARGS}}
+
+  revoke-sessions:
+    desc: "Kill all active sessions for a user: task revoke-sessions -- --username alice [--env dev]"
+    cmds:
+      - cd api && DB_BACKEND=dynamodb uv run python3 scripts/revoke-sessions.py {{.CLI_ARGS}}
+
+  seed:
+    desc: "Seed game catalog (requires --username and --password args)"
+    cmds:
+      - cd api && uv run python3 ../scripts/seed-games.py {{.CLI_ARGS}}
