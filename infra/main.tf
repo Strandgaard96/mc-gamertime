@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.5"
+  required_version = ">= 1.11" # backend.tf uses use_lockfile
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -10,7 +10,6 @@ terraform {
       version = "~> 3.0"
     }
   }
-  # backend "s3" {}  # commented out — user adds when ready
 }
 
 provider "aws" {

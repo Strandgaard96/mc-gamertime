@@ -9,10 +9,39 @@ vars:
 
 tasks:
   init:
-    desc: "Initialize Terraform and install npm dependencies"
+    desc: "Initialize Terraform (S3 state; infra/backend.hcl overrides the bucket if present) and install npm dependencies"
     cmds:
-      - cd infra && terraform init
+      - cd infra && terraform init $([ -f backend.hcl ] && echo -backend-config=backend.hcl)
       - cd web && npm ci
+
+  state:bootstrap:
+    desc: "Create the Terraform state bucket from infra/backend.tf (or backend.hcl override); idempotent, once per AWS account"
+    dir: infra
+    cmds:
+      - |
+        set -e
+        # backend.hcl (optional, gitignored) overrides backend.tf — same `key = "value"` syntax.
+        BUCKET=$(awk -F'"' '/^ *bucket *=/ {v=$2} END {print v}' backend.tf $([ -f backend.hcl ] && echo backend.hcl))
+        REGION=$(awk -F'"' '/^ *region *=/ {v=$2} END {print v}' backend.tf $([ -f backend.hcl ] && echo backend.hcl))
+        echo "state bucket: $BUCKET ($REGION)"
+        if aws s3api head-bucket --bucket "$BUCKET" 2>/dev/null; then
+          echo "state bucket $BUCKET already exists"
+        else
+          aws s3api create-bucket --bucket "$BUCKET" --region "$REGION" \
+            --create-bucket-configuration LocationConstraint="$REGION"
+          echo "created $BUCKET"
+        fi
+        aws s3api put-bucket-versioning --bucket "$BUCKET" --versioning-configuration Status=Enabled
+        aws s3api put-bucket-encryption --bucket "$BUCKET" --server-side-encryption-configuration \
+          '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+        aws s3api put-public-access-block --bucket "$BUCKET" --public-access-block-configuration \
+          BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+
+  state:migrate:
+    desc: "One-time move of local terraform.tfstate (all workspaces) into the S3 backend"
+    dir: infra
+    cmds:
+      - terraform init -migrate-state -force-copy $([ -f backend.hcl ] && echo -backend-config=backend.hcl)
 
   build-api:
     desc: "Build API lambda.zip (skipped if api/ source unchanged)"

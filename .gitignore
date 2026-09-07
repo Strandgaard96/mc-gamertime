@@ -23,6 +23,8 @@ lambda.zip
 # Deployment-specific values (account ids, ARNs, domains) — never commit
 *.tfvars
 !*.tfvars.example
+# Remote-state bucket/region (per deployment) — see infra/backend.tf
+infra/backend.hcl
 
 # Environment
 .env
