@@ -43,6 +43,8 @@ import compose from '../../../../../docker-compose.yml?raw';
 
    Pulls the pre-built image from GHCR and creates the SQLite database and storage directory under `./config/app/` on first run. Wait a few seconds for the `app` container to become healthy.
 
+   Image tags: `latest` and `X.Y.Z` follow [releases](https://github.com/Strandgaard96/mc-gamertime/releases); `main` is the edge build from every commit. Pin `image: ghcr.io/strandgaard96/mc-gamertime:X.Y.Z` in `docker-compose.yml` if you want to control when you upgrade.
+
    <Aside type="tip">
    To create accounts by hand — the first one if you skipped step 2, or more later:
 
@@ -91,7 +93,7 @@ Then point `image:` in your `docker-compose.yml` at `mc-gamertime-local` before 
 | Container | Role | Port (internal) |
 |---|---|---|
 | `app` | FastAPI + React frontend, embedded SQLite, local filesystem storage | 4263 |
-| `boardsite-init` | One-shot, fixes ownership on `config/app` then exits | none |
+| `init` | One-shot, fixes ownership on `config/app` then exits | none |
 
 Only `app` is exposed to the host at `localhost:4263`.
 

@@ -1,6 +1,6 @@
 services:
-  boardsite-init:
-    container_name: boardsite-init
+  init:
+    container_name: mc-gamertime-init
     image: alpine:3
     user: root
     command: >-
@@ -22,7 +22,7 @@ services:
     cap_drop: [ALL]
 
   app:
-    container_name: app
+    container_name: mc-gamertime
     image: ghcr.io/strandgaard96/mc-gamertime:latest
     ports:
       - "${APP_PORT:-4263}:4263"
@@ -48,7 +48,7 @@ services:
       - ./config/app:/data
     restart: unless-stopped
     depends_on:
-      boardsite-init:
+      init:
         condition: service_completed_successfully
     deploy:
       resources:
