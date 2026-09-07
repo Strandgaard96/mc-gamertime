@@ -90,7 +90,14 @@ tasks:
       - |
         BUCKET=$(cd infra && terraform output -raw s3_bucket_name)
         DISTRIBUTION_ID=$(cd infra && terraform output -raw cloudfront_distribution_id)
-        aws s3 sync web/dist/ s3://$BUCKET/ --delete --exclude "blog-images/*" --exclude "avatars/*" --exclude "exports/*"
+        # The bucket also holds user uploads (avatars/, blog-images/, game-images/) and
+        # table dumps (exports/), so a bucket-wide `--delete` is never safe: it deleted
+        # game-images/ until 2026-09 because that prefix was missing from the excludes.
+        # Only assets/ (content-hashed Vite output) is fully owned by the build and gets
+        # pruned; the handful of root files (index.html, manifest, icons) are overwritten
+        # in place and never deleted.
+        aws s3 sync web/dist/assets/ s3://$BUCKET/assets/ --delete
+        aws s3 sync web/dist/ s3://$BUCKET/ --exclude "assets/*"
         aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
         echo "Deployed to: https://$(cd infra && terraform output -raw cloudfront_url)"
 
@@ -107,7 +114,14 @@ tasks:
         URL=$(terraform output -raw cloudfront_url)
         terraform workspace select default
         cd ..
-        aws s3 sync web/dist/ s3://$BUCKET/ --delete --exclude "blog-images/*" --exclude "avatars/*" --exclude "exports/*"
+        # The bucket also holds user uploads (avatars/, blog-images/, game-images/) and
+        # table dumps (exports/), so a bucket-wide `--delete` is never safe: it deleted
+        # game-images/ until 2026-09 because that prefix was missing from the excludes.
+        # Only assets/ (content-hashed Vite output) is fully owned by the build and gets
+        # pruned; the handful of root files (index.html, manifest, icons) are overwritten
+        # in place and never deleted.
+        aws s3 sync web/dist/assets/ s3://$BUCKET/assets/ --delete
+        aws s3 sync web/dist/ s3://$BUCKET/ --exclude "assets/*"
         aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
         echo "Deployed dev to: https://$URL"
 
