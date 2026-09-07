@@ -92,11 +92,9 @@ export default function PostViewPage() {
         <SafeHtml html={post.content} className="prose prose-sm prose-invert max-w-none" />
         {user?.role === "admin" && (
           <div className="flex gap-2 pt-4 border-t">
-            <Link to={`/posts/${id}/edit`}>
-              <Button variant="outline" size="sm">
-                Edit
-              </Button>
-            </Link>
+            <Button asChild variant="outline" size="sm">
+              <Link to={`/posts/${id}/edit`}>Edit</Link>
+            </Button>
             <Button
               variant="ghost"
               size="sm"
