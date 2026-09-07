@@ -36,7 +36,7 @@ jobs:
         working-directory: api
 
       - name: Run tests
-        run: uv run pytest tests/ -v --tb=short
+        run: uv run pytest tests/ -v --tb=short --cov --cov-report=term
         working-directory: api
 
   docker-build:

@@ -1,3 +1,5 @@
+import boto3
+
 import lib.storage as storage
 
 
@@ -12,7 +14,7 @@ def test_make_s3_client_uses_real_aws_on_s3_backend(monkeypatch):
         captured.update(kwargs)
         return "client"
 
-    monkeypatch.setattr(storage.boto3, "client", fake_client)
+    monkeypatch.setattr(boto3, "client", fake_client)
 
     result = storage.make_s3_client()
 
@@ -31,7 +33,7 @@ def test_make_s3_client_with_endpoint_url_uses_path_style(monkeypatch):
         captured.update(kwargs)
         return "client"
 
-    monkeypatch.setattr(storage.boto3, "client", fake_client)
+    monkeypatch.setattr(boto3, "client", fake_client)
 
     storage.make_s3_client()
 

@@ -1,5 +1,7 @@
 from unittest.mock import MagicMock
 
+import boto3
+
 from lib.db.base import paginated_scan
 
 
@@ -39,7 +41,7 @@ def test_make_tables_uses_dynamodb_endpoint_url(monkeypatch):
         captured.update(kwargs)
         return _FakeDynamoResource()
 
-    monkeypatch.setattr(db_base.boto3, "resource", fake_resource)
+    monkeypatch.setattr(boto3, "resource", fake_resource)
 
     db_base._make_tables()
 
@@ -56,7 +58,7 @@ def test_make_tables_without_endpoint_url_omits_local_creds(monkeypatch):
         captured.update(kwargs)
         return _FakeDynamoResource()
 
-    monkeypatch.setattr(db_base.boto3, "resource", fake_resource)
+    monkeypatch.setattr(boto3, "resource", fake_resource)
 
     db_base._make_tables()
 

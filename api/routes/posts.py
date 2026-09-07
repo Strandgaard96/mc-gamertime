@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -78,7 +78,7 @@ def create_post(body: CreatePostBody, user: Annotated[AuthUser, Depends(require_
     post_id = str(ULID())
     post = {
         "pk": post_id,
-        "createdAt": datetime.now(timezone.utc).isoformat(),
+        "createdAt": datetime.now(UTC).isoformat(),
         "authorName": user.displayName,
         **body.model_dump(exclude_none=True),
     }

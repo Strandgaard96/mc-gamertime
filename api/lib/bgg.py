@@ -1,3 +1,4 @@
+import contextlib
 from xml.etree.ElementTree import Element
 
 import defusedxml.ElementTree as ET
@@ -96,9 +97,7 @@ def bgg_detail(bgg_id: int) -> dict:
     if weight_el is not None:
         val = weight_el.get("value")
         if val:
-            try:
+            with contextlib.suppress(ValueError):
                 detail["weight"] = float(val)
-            except ValueError:
-                pass
 
     return detail

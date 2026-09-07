@@ -1,15 +1,13 @@
 import hmac
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import bcrypt
-import boto3
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
-from mangum import Mangum
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -49,7 +47,14 @@ app = FastAPI(
 # Empty means same-origin only, which is the normal deployment shape.
 DEV_ORIGINS = ["http://localhost:4263", "http://localhost:5173"]
 
+# Root logger at INFO so operator-facing messages (admin bootstrap, mailer)
+# reach `docker compose logs`. No-op where a handler already exists (Lambda).
+# httpx logs every outbound request at INFO — keep BGG calls out of the log.
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
 _log = logging.getLogger("cors")
+_boot_log = logging.getLogger("bootstrap")
 
 
 def parse_allowed_origins(raw: str, *, dev: bool) -> list[str]:
@@ -114,6 +119,8 @@ def _ssm():
     """Lazily build the SSM client so the selfhost path never constructs one."""
     global _ssm_client
     if _ssm_client is None:
+        import boto3  # lazy: the selfhost image ships without the AWS SDK
+
         _ssm_client = boto3.client("ssm", region_name=os.environ.get("AWS_REGION", "eu-west-1"))
     return _ssm_client
 
@@ -139,7 +146,7 @@ def _bootstrap_admin_user() -> None:
     users_lib.put_user(
         {
             "pk": admin_username,
-            "createdAt": datetime.now(timezone.utc).isoformat(),
+            "createdAt": datetime.now(UTC).isoformat(),
             "username": admin_username,
             "displayName": admin_username,
             "role": "admin",
@@ -148,7 +155,7 @@ def _bootstrap_admin_user() -> None:
             ).decode(),
         }
     )
-    print(f"Bootstrapped admin user '{admin_username}'")
+    _boot_log.info("Bootstrapped admin user '%s'", admin_username)
 
 
 def _initialize() -> None:
@@ -330,4 +337,16 @@ if STATIC_DIR:
         return FileResponse(f"{STATIC_DIR}/index.html")
 
 
-handler = Mangum(app, lifespan="off")
+# Lambda entry point (infra/lambda.tf → `main.handler`). Mangum is imported on
+# first invocation only: it is a Lambda-only dependency and absent from the
+# selfhost image (api/requirements-selfhost.txt).
+_mangum = None
+
+
+def handler(event, context):
+    global _mangum
+    if _mangum is None:
+        from mangum import Mangum
+
+        _mangum = Mangum(app, lifespan="off")
+    return _mangum(event, context)

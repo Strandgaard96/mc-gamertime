@@ -1,7 +1,7 @@
 import os
 import re
-from datetime import datetime, timezone
-from typing import Annotated, Optional
+from datetime import UTC, datetime
+from typing import Annotated
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException
 from pydantic import BaseModel, field_validator
@@ -58,7 +58,7 @@ class UpdateRecommendedBody(BaseModel):
 
 
 @router.get("")
-def list_recommended(token: Annotated[Optional[str], Cookie()] = None):
+def list_recommended(token: Annotated[str | None, Cookie()] = None):
     if not PUBLIC_RECOMMENDED_ENABLED:
         require_auth(token)
     items = list_recs()
@@ -73,7 +73,7 @@ def list_recommended(token: Annotated[Optional[str], Cookie()] = None):
 
 
 @router.get("/{rec_id}")
-def get_recommended(rec_id: str, token: Annotated[Optional[str], Cookie()] = None):
+def get_recommended(rec_id: str, token: Annotated[str | None, Cookie()] = None):
     if not PUBLIC_RECOMMENDED_ENABLED:
         require_auth(token)
     item = get_rec(rec_id)
@@ -105,7 +105,7 @@ def create_recommended(body: CreateRecommendedBody, _: Annotated[AuthUser, Depen
         "gameName": game_name,
         "slug": _slugify(game_name),
         "imageUrl": game.get("imageUrl", ""),
-        "createdAt": datetime.now(timezone.utc).isoformat(),
+        "createdAt": datetime.now(UTC).isoformat(),
         **{k: game[k] for k in _BGG_FIELDS if k in game},
         **body.model_dump(),
     }

@@ -1,6 +1,6 @@
 import os
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 import bcrypt
@@ -79,7 +79,7 @@ def _cookie_is_secure(request: Request) -> bool:
 @limiter.limit("5/minute")
 def login(request: Request, body: LoginBody, response: Response):
     user = get_user(body.username)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     if user is not None:
         wait = _seconds_until_next_attempt(user, now)
@@ -212,12 +212,12 @@ def forgot_password(request: Request, response: Response, body: ForgotPasswordBo
 @router.post("/reset-password", status_code=204)
 @limiter.limit("5/minute")
 def reset_password(request: Request, response: Response, body: ResetPasswordBody):
-    from jose import JWTError
+    import jwt
 
     try:
         username, token_version = decode_reset_token(body.token)
-    except JWTError:
-        raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link") from None
 
     user = get_user(username)
     if user is None or int(user.get("tokenVersion", 0)) != token_version:

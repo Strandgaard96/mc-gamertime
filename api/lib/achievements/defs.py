@@ -15,9 +15,8 @@ from .rules import (
 
 
 def _dominant(ctx, player_results):
-    wins = played = 0
-    for r in player_results:
-        played += 1
+    wins = 0
+    for played, r in enumerate(player_results, start=1):
         if is_win(ctx, r):
             wins += 1
         if played >= 10 and wins / played >= 0.7:

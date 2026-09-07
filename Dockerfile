@@ -28,12 +28,11 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY api/requirements.txt .
-# uvicorn is the selfhost runtime server (entrypoint runs `exec uvicorn ...`).
-# It is deliberately NOT in requirements.txt, which is the Lambda/Mangum
-# dependency set used by build.sh — pinned here to match the dev-extra
-# version in api/pyproject.toml.
-RUN pip install --no-cache-dir -r requirements.txt uvicorn==0.47.0
+# requirements-selfhost.txt is requirements.txt (the Lambda set used by
+# build.sh) minus boto3/mangum, plus uvicorn — the AWS SDK alone is ~100 MB
+# the container never imports. test_requirements_sync.py keeps the two in sync.
+COPY api/requirements-selfhost.txt .
+RUN pip install --no-cache-dir -r requirements-selfhost.txt
 
 COPY api/ .
 COPY --from=web-build /web/dist /app/static

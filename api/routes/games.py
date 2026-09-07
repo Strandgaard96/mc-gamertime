@@ -1,6 +1,6 @@
 import os
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -146,7 +146,7 @@ def create_game(body: AddGameBody, _: Annotated[AuthUser, Depends(require_admin)
     data["playerVariables"] = _assign_variable_ids(data["playerVariables"])
     game = {
         "pk": str(ULID()),
-        "createdAt": datetime.now(timezone.utc).isoformat(),
+        "createdAt": datetime.now(UTC).isoformat(),
         **data,
     }
     put_game(game)
@@ -196,7 +196,7 @@ def add_game_favorite(game_id: str, user: Annotated[AuthUser, Depends(require_au
     try:
         add_favourite(game_id, user.sub)
     except GameNotFoundError:
-        raise HTTPException(status_code=404, detail="Game not found")
+        raise HTTPException(status_code=404, detail="Game not found") from None
 
 
 @router.delete("/{game_id}/favorite", status_code=204)
@@ -204,4 +204,4 @@ def remove_game_favorite(game_id: str, user: Annotated[AuthUser, Depends(require
     try:
         remove_favourite(game_id, user.sub)
     except GameNotFoundError:
-        raise HTTPException(status_code=404, detail="Game not found")
+        raise HTTPException(status_code=404, detail="Game not found") from None

@@ -2,8 +2,6 @@ import json
 import os
 from pathlib import Path
 
-import boto3
-from botocore.config import Config
 from ulid import ULID
 
 
@@ -100,6 +98,10 @@ def make_s3_client():
     anyone still pointing at a custom S3-compatible store)."""
     if is_local_storage():
         return LocalFsClient(os.environ.get("LOCAL_STORAGE_DIR", "/data/storage"))
+
+    # Lazy: the selfhost image ships without the AWS SDK.
+    import boto3
+    from botocore.config import Config
 
     endpoint_url = os.environ.get("S3_ENDPOINT_URL")
     kwargs: dict = {"region_name": os.environ.get("AWS_REGION", "eu-west-1")}

@@ -28,11 +28,11 @@ def add_favourite(game_id: str, user_id: str) -> None:
     try:
         _db.tables["games"].add_to_set(game_id, "favorites", user_id)
     except ItemNotFoundError:
-        raise GameNotFoundError(game_id)
+        raise GameNotFoundError(game_id) from None
 
 
 def remove_favourite(game_id: str, user_id: str) -> None:
     try:
         _db.tables["games"].remove_from_set(game_id, "favorites", user_id)
     except ItemNotFoundError:
-        raise GameNotFoundError(game_id)
+        raise GameNotFoundError(game_id) from None
