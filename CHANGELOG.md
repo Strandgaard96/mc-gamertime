@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.0](https://github.com/Strandgaard96/mc-gamertime/compare/v0.1.3...v0.2.0) (2026-09-08)
+
+
+### Features
+
+* **infra:** keep Terraform state in S3 with native locking ([1c43c65](https://github.com/Strandgaard96/mc-gamertime/commit/1c43c65566f2a9a663b238009ecba731801e2d88))
+* **web:** react-router 7, convert the last nested Link/Button pairs ([4bffb4d](https://github.com/Strandgaard96/mc-gamertime/commit/4bffb4d794120bffe97ae6dd147f991093611533))
+
+
+### Bug Fixes
+
+* **deploy:** never run a bucket-wide `s3 sync --delete` ([b962e86](https://github.com/Strandgaard96/mc-gamertime/commit/b962e86d6c5a7e0677f05662b910028decffbc87))
+* **web:** remove author branding and make the privacy page instance-agnostic ([3631564](https://github.com/Strandgaard96/mc-gamertime/commit/36315642bc93483f18741cbdc0ca4f6c16de0cc0))
+
 ## [0.1.3](https://github.com/Strandgaard96/mc-gamertime/compare/v0.1.2...v0.1.3) (2026-09-03)
 
 
