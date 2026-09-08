@@ -42,6 +42,35 @@ docker compose exec mc-gamertime python3 scripts/create-user.py \
 The next request succeeds; no restart needed. Setting only one of `ADMIN_USERNAME` /
 `ADMIN_PASSWORD` produces the same 503 by a different route — it is a hard startup error.
 
+## `port is already allocated` on `docker compose up`
+
+```
+Error response from daemon: ... Bind for 127.0.0.1:4263 failed: port is already allocated
+```
+
+Something else on the host owns port 4263. Find it with `ss -ltnp | grep 4263` (or
+`lsof -i :4263` on macOS), then either stop it or set `APP_PORT=<other-port>` in `.env`.
+The container's own port never changes.
+
+## Works on the host, unreachable from another device
+
+By default the port is bound to `127.0.0.1`, so `http://<host-ip>:4263` from a phone or
+another machine is refused. Set `APP_BIND=0.0.0.0` in `.env` and `docker compose up -d`.
+Read [Configuration → Host port and bind address](/self-hosting/configuration/#host-port-and-bind-address)
+first: Docker port bindings bypass `ufw`/`firewalld`.
+
+## `docker-compose: command not found` or `unsupported Compose file version`
+
+The docs use the Compose v2 plugin (`docker compose`, with a space). The old standalone
+`docker-compose` v1 binary is not supported. Check with `docker compose version`; install
+the plugin from Docker's repositories if it is missing.
+
+## Game search returns nothing
+
+Board Game Geek search needs an API token. Set `BGG_TOKEN` in `.env` and `docker compose up -d`,
+or paste it under **Settings → Integrations** in the app (admin only, no restart). See
+[Configuration → BGG Token](/self-hosting/configuration/#bgg-token).
+
 ## Images / avatars 404 via /storage/...
 
 Only the `avatars/`, `blog-images/`, and `game-images/` prefixes are served by the proxy. Check that `config/app/storage/` exists and is writable inside the container:

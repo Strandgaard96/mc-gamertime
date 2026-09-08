@@ -1,14 +1,22 @@
 ---
-title: Backups
-description: Back up and restore MC GamerTime's data.
+title: Backups & upgrades
+description: Back up, restore, upgrade and remove the self-hosted stack.
 sidebar:
   order: 5
 ---
 
-Runtime data lives in `./config/` on the host — no Docker volume commands needed:
+Runtime data lives in `./config/` on the host — no Docker volume commands needed. Stop the
+app while you copy it: SQLite runs in WAL mode, so a copy taken mid-write can be
+inconsistent.
+
 ```bash
+docker compose stop
 tar czf app-data.tar.gz config/app
+docker compose start
 ```
+
+The archive contains the database (every password hash) and `.jwt_secret` (mints a valid
+session for any user). Treat it like a password: encrypt it or keep it off the box.
 
 To restore, stop the stack, extract the archive into the same path, then restart:
 
@@ -26,11 +34,43 @@ Run the bundled script on a schedule instead of backing up by hand:
 ./scripts/backup-selfhost.sh --dest /path/to/backups --keep 14
 ```
 
-Add a crontab entry to run it nightly, keeping 14 days of backups:
+The script tars `config/app` as-is and does not stop the app itself, so wrap it in a
+nightly crontab entry that does (a second or two of downtime at 03:00):
 
 ```
-0 3 * * * cd /path/to/mc-gamertime && ./scripts/backup-selfhost.sh --dest /path/to/backups --keep 14
+0 3 * * * cd /path/to/mc-gamertime && docker compose stop && ./scripts/backup-selfhost.sh --dest /path/to/backups --keep 14; docker compose start
 ```
+
+## Upgrading
+
+Image tags: `latest` and `X.Y.Z` follow releases; `main` is the edge build from every
+commit. Take a backup, then:
+
+```bash
+docker compose pull
+docker compose up -d
+docker compose logs -f mc-gamertime   # until "Application startup complete"
+```
+
+Schema migrations run automatically on boot (`scripts/migrate-sqlite.py` in the
+entrypoint) and are skipped once applied, so re-running is harmless. Before a major
+upgrade, read the [release notes](/self-hosting/release-notes/): anything that reshapes
+stored data is listed under a **BREAKING CHANGES** heading.
+
+To roll back, pin the previous tag in `docker-compose.yml`
+(`image: ghcr.io/strandgaard96/mc-gamertime:X.Y.Z`), restore the backup you took, and
+`docker compose up -d`. Migrations are one-way; don't run a newer image against a
+database and then downgrade without restoring.
+
+## Removing the stack
+
+```bash
+docker compose down
+docker image rm ghcr.io/strandgaard96/mc-gamertime
+rm -rf config/          # all data, including the JWT secret — take a backup first
+```
+
+`docker compose down -v` does not touch `config/`; bind mounts are never deleted by `-v`.
 
 ## Exporting and importing table data
 

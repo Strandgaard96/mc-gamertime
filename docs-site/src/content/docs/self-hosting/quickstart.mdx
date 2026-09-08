@@ -8,6 +8,11 @@ sidebar:
 import { Code, Steps, Aside } from '@astrojs/starlight/components';
 import compose from '../../../../../docker-compose.yml?raw';
 
+**You need:** Docker Engine with the Compose v2 plugin (`docker compose version` prints
+`2.x`; the older standalone `docker-compose` is not supported), `curl`, and a Linux or macOS
+host — the stack runs as your own user id (`id -u` / `id -g`), which Docker Desktop on
+Windows/WSL also provides.
+
 <Steps>
 
 1. **Get the compose file**
@@ -20,14 +25,18 @@ import compose from '../../../../../docker-compose.yml?raw';
 
 2. **Set your admin credentials**
 
+   Create a file named `.env` next to `docker-compose.yml` containing:
+
    ```bash
-   echo "ADMIN_USERNAME=admin" >> .env
-   echo "ADMIN_PASSWORD=<your-password>" >> .env
+   ADMIN_USERNAME=admin
+   ADMIN_PASSWORD=<your-password>
    ```
 
-   Compose auto-loads `.env` from the same directory. The first boot creates this admin
-   account; afterwards the variables are ignored, so an existing password is never
-   overwritten.
+   Use at least 12 characters — the first-boot bootstrap does not check, but every later
+   password change does. Compose auto-loads `.env` from the same directory. The first boot
+   creates this admin account; afterwards the variables are ignored, so an existing
+   password is never overwritten. Once you have logged in, delete both lines again so the
+   password isn't left on disk in plain text.
 
    <Aside type="caution">
    Don't skip this. Until an admin account exists, every request — the login page included —
@@ -61,6 +70,12 @@ import compose from '../../../../../docker-compose.yml?raw';
 4. **Open the app**
 
    Navigate to `http://localhost:4263` and log in.
+
+   That works on the host itself only: the port is bound to `127.0.0.1` by default. To open
+   it from a phone or another machine on your LAN, add `APP_BIND=0.0.0.0` to `.env` and run
+   `docker compose up -d` again — see
+   [Configuration → Host port and bind address](/self-hosting/configuration/#host-port-and-bind-address)
+   for what that exposes.
 
 </Steps>
 
@@ -101,7 +116,7 @@ Then point `image:` in your `docker-compose.yml` at `mc-gamertime-local` before 
 | `mc-gamertime` | FastAPI + React frontend, embedded SQLite, local filesystem storage | 4263 |
 | `mc-gamertime-init` | One-shot, fixes ownership on `config/app` then exits | none |
 
-Only `mc-gamertime` is exposed to the host at `localhost:4263`.
+Only `mc-gamertime` is exposed, at `127.0.0.1:4263` on the host (loopback only unless you set `APP_BIND`).
 
 ## docker-compose.yml
 
@@ -111,4 +126,4 @@ Only `mc-gamertime` is exposed to the host at `localhost:4263`.
 
 - [Configuration](/self-hosting/configuration/) — BGG token for game search, password reset email, metrics
 - [HTTPS / Reverse proxy](/self-hosting/https/) — before exposing it beyond your LAN
-- [Backups](/self-hosting/backups-upgrades/)
+- [Backups & upgrades](/self-hosting/backups-upgrades/)
