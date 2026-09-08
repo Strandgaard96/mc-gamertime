@@ -7,8 +7,13 @@
 [![Docs](https://img.shields.io/badge/docs-mcgamertime--docs.drmaggi.com-blue)](https://mcgamertime-docs.drmaggi.com)
 [![Built with Claude Code](https://img.shields.io/badge/built%20with-Claude%20Code-8A2BE2)](#built-with-claude-code)
 
-**Board game inventory tracker and game logger: Elo ratings, head-to-head records, achievements, per-player stats, a Board Game
-Geek integration for the catalog.**
+**Board game inventory tracker and game logger**
+- Elo ratings
+- Head-to-head records, 
+- Achievements
+- Player stats
+- Board Game Geek API support for the game catalog.**
+
 
 Self-host it, or use the built-in support for serverless hosting on AWS for ≈$0 a month.
 
@@ -48,7 +53,6 @@ The setup used to build it is in [CLAUDE.md](./CLAUDE.md), with these plugins:
 
 One container, embedded SQLite, local file storage.
 
-Claude wrote most of the code and one should therefore take care and treat it like any other open source project.
 
 **To install:**
 
@@ -60,16 +64,14 @@ docker compose up -d
 ```
 
 `ADMIN_USERNAME`/`ADMIN_PASSWORD` are the **only required setting** — they bootstrap your
-first admin account on first boot (skip them and the app 503s on every request until you
-create one by hand). Everything else — `BGG_TOKEN` for game search, `SMTP_*` for
+first admin account on first boot. Everything else — `BGG_TOKEN` for game search, `SMTP_*` for
 password-reset email, `APP_BASE_URL`, `CORS_ALLOWED_ORIGINS`, etc. — is optional with a
 working default; see [`.env.example`](./.env.example) or the [full config
 reference](https://mcgamertime-docs.drmaggi.com/self-hosting/configuration/).
 
 Open <http://localhost:4263> and log in.
 
-Going beyond your own machine? Put TLS in front of it — Tailscale is the least work, a
-reverse proxy is the alternative. See [HTTPS / Reverse
+For setup of remote access see [HTTPS / Reverse
 Proxy](https://mcgamertime-docs.drmaggi.com/self-hosting/https/) and the
 [security model](https://mcgamertime-docs.drmaggi.com/self-hosting/security/).
 
@@ -77,7 +79,7 @@ Proxy](https://mcgamertime-docs.drmaggi.com/self-hosting/https/) and the
 
 ### 2. Cloud-hosted on AWS
 
-Host the app on AWS serverless infrastructure and provisioned by Terraform. Everything
+Host the app on AWS serverless infrastructure, provisioned by Terraform. Everything
 is pay-per-request, which for regular personal use amounts to roughly **$0/month** — the free tier covers
 it. Worth choosing if you want easy remote access and experience with cloud hosting while gaining the security benefits of AWS hosted infrastructure.
 
@@ -91,16 +93,13 @@ cp infra/terraform.tfvars.example infra/terraform.tfvars
 # then set: domain = "example.com"
 ```
 
-`domain` in `infra/terraform.tfvars` is the **only required setting** — it's the sole
-variable with no default, and `terraform apply` refuses to run without it. Everything
+`domain` in `infra/terraform.tfvars` is the **only required setting** - `terraform apply` refuses to run without it. Everything
 else (`subdomain`, `bgg_token`, `alert_email`, `cloudfront_web_acl_arn`,
 `extra_cors_origins`, `aws_region`) has a working default; see
 [`infra/terraform.tfvars.example`](./infra/terraform.tfvars.example) or the [full AWS
-guide](https://mcgamertime-docs.drmaggi.com/cloud-deploy/aws/) for what each does. There's
-no separate Lambda env-var setup — `infra/lambda.tf` derives it all from these Terraform
-vars.
+guide](https://mcgamertime-docs.drmaggi.com/cloud-deploy/aws/) for what each does. 
 
-For full installation instructions see: [Full AWS guide →](https://mcgamertime-docs.drmaggi.com/cloud-deploy/aws/).
+For full AWS installation instructions see: [Full AWS guide →](https://mcgamertime-docs.drmaggi.com/cloud-deploy/aws/).
 
 The security considerations for the AWS hosted app are described here:
 [Security & privacy on AWS →](https://mcgamertime-docs.drmaggi.com/cloud-deploy/security/).
@@ -148,7 +147,6 @@ graph LR
 | **Blog** | Session recaps with rich text and images |
 
 [Screenshots and detail →](https://mcgamertime-docs.drmaggi.com/features/)
-
 
 ## Contributing
 
