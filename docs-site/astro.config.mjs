@@ -23,7 +23,11 @@ export default defineConfig({
       title: "MC GamerTime",
       description: "Track board game nights — catalog, results, leaderboard, achievements.",
       plugins: [
-        starlightCatppuccin(),
+        starlightCatppuccin({
+          // Peach is the closest Catppuccin accent to the app's amber primary.
+          dark: { flavor: "mocha", accent: "peach" },
+          light: { flavor: "latte", accent: "peach" },
+        }),
         starlightLinksValidator(),
         starlightLlmsTxt(),
       ],

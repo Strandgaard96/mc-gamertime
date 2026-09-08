@@ -4,8 +4,12 @@ description: Board game inventory and session tracker — catalog, results, lead
 template: splash
 hero:
   tagline: Track board game nights with friends — catalog, results, Elo leaderboard, achievements. Self-host it with one command, or run it on AWS for roughly $0/month.
+  # Raw HTML instead of `file:` — Starlight's Hero passes width/height 400 to
+  # Astro's image service, which centre-crops the 1440×900 screenshot into a
+  # blurry square. The PNG is served as-is from public/ (src/assets/ keeps a copy
+  # for features.md).
   image:
-    file: ../../assets/hero-leaderboard.png
+    html: '<img src="/hero-leaderboard.png" alt="The leaderboard: a podium for the top three players, then Elo rating, wins, games played and win rate for everyone" width="1440" height="900" loading="eager" decoding="async">'
   actions:
     - text: Self-host with Docker
       link: /self-hosting/quickstart/

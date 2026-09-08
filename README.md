@@ -41,7 +41,8 @@ Self-host it, or use the built-in support for serverless hosting on AWS for ≈$
 Claude Code wrote most of the code. My background is scientific computing with extensive
 AWS experience and I did this project to learn frontend coding and agent orchestration in a full-stack application.
 
-The project is vibe-coded and should be treated as such.
+> [!WARNING]
+> The project is vibe-coded and should be treated as such.
 
 The setup used to build it is in [CLAUDE.md](./CLAUDE.md), with these plugins:
 
