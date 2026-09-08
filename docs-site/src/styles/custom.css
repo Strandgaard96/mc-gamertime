@@ -35,6 +35,12 @@
 }
 
 @media (min-width: 50rem) {
+	/* Splash pages (no sidebar) get a wider column so the screenshot stays legible
+	   on desktop; Starlight's own value is 67.5rem in Page.astro. */
+	html:root:not([data-has-sidebar]) {
+		--sl-content-width: 82.5rem;
+	}
+
 	.hero {
 		grid-template-columns: 1fr 1fr;
 	}
