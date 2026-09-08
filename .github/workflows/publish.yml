@@ -12,6 +12,16 @@ name: Publish Docker image
 on:
   push:
     branches: [main]
+    # Only rebuild the `main` edge image when something that goes into it
+    # changed. Release images are unaffected: release-please calls this via
+    # workflow_call regardless of paths.
+    paths:
+      - "Dockerfile"
+      - ".dockerignore"
+      - "docker/**"
+      - "api/**"
+      - "web/**"
+      - ".github/workflows/publish.yml"
   workflow_call:
     inputs:
       tag:
