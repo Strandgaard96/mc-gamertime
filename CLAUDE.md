@@ -59,6 +59,12 @@ The project includes a **"Full Stack" VS Code Launch Configuration**:
 - **`build.sh` packages Lambda deps from `api/requirements.txt`, NOT `pyproject.toml`/`uv.lock`** — adding a package needs `uv add <pkg>` (tests) AND a pinned line in `requirements.txt` (Lambda) AND the same line in `requirements-selfhost.txt` (Docker image; = requirements.txt minus `boto3`/`mangum` plus `uvicorn`, enforced by `tests/test_requirements_sync.py`). Miss the second → `Runtime.ImportModuleError: No module named '<pkg>'` crashes EVERY route at cold start (tests stay green, since they run in the uv venv where the dep exists). Verify before deploying: `cd api && ./build.sh && ls dist/ | grep <pkg>`
 - **`boto3`/`botocore`/`mangum` are imported lazily** (inside the DynamoDB/S3/SSM branches and `main.handler`) because the selfhost image doesn't ship them. Never add a module-level `import boto3` to code that runs on the selfhost path — tests can't catch it (the uv venv has boto3); only the Docker build would.
 - Image tags on GHCR: `main` = every push to main (edge); `X.Y.Z`/`X.Y`/`latest` = releases only, published by the `publish-image` job in `release-please.yml` calling `publish.yml` via `workflow_call` (a tag pushed by release-please's `GITHUB_TOKEN` never triggers a `tags:` workflow on its own).
+- CI (`.github/workflows/ci.yml`) is path-scoped via a `Detect changes` job (`dorny/paths-filter`):
+  `API tests` need `api/**`, `TypeScript typecheck`/`Frontend tests` need `web/**`, `Docker build`
+  needs those or `Dockerfile`/`docker/**`; `Lint` and `Secrets scan` always run. Skipped jobs still
+  satisfy the required checks on `main` — never add a workflow-level `paths:` filter to `ci.yml`,
+  that leaves required checks stuck at "Expected". Editing `ci.yml` itself re-runs everything.
+  `publish.yml`'s `push` trigger has the same path list, so docs/README merges don't rebuild `:main`.
 - release-please: `docs:`/`ci:`/`chore:` are hidden changelog sections → they do NOT cut a release on their own; `feat:`/`fix:`/`perf:` do. `web/package.json` and `api/pyproject.toml` versions are bumped by `extra-files` in `release-please-config.json`.
 - Starlette 1.0.1 deprecated per-request cookies — use `client.cookies.set()` on TestClient instead
 - FastAPI `redirect_slashes=False` — all routes use `""` not `"/"` to avoid 307 leaking API Gateway URL
