@@ -11,7 +11,11 @@ you can decide what to change before exposing it more widely.
 
 ## What is exposed
 
-The stack publishes **one** port: `4263`, the same on the host and in the container.
+The stack publishes **one** port: `4263`, the same on the host and in the container,
+bound to `127.0.0.1` by default so only this host (and a reverse proxy running on it) can
+reach it. Set `APP_BIND=0.0.0.0` to expose it to the LAN directly — see
+[Configuration](/self-hosting/configuration/#host-port-and-bind-address); Docker port
+bindings bypass `ufw`/`firewalld`, so that setting is the only firewall the app has.
 Everything is behind it: the API, the React app, and the authenticated `/storage` proxy
 that serves avatars and uploaded images.
 
