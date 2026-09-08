@@ -123,7 +123,7 @@ The project includes a **"Full Stack" VS Code Launch Configuration**:
 
 ## Dev Environment
 
-- Compose container names are `mc-gamertime` / `mc-gamertime-init`; the compose *service* names (`app`, `init`) are what `docker compose exec|logs` take.
+- Compose service names equal container names: `mc-gamertime` / `mc-gamertime-init` — `docker compose exec|logs mc-gamertime`.
 - GitHub Discussions is deliberately OFF for this repo — questions go to Issues (`blank_issues_enabled: true`); don't add Discussions links.
 - Separate Terraform workspace `dev` (prod = `default`) — `terraform.workspace`-derived `env_suffix`/`fqdn`/`name_prefix` make every resource name/domain workspace-specific, zero-diff for prod
 - Commands: `task plan:dev`, `task apply:dev` (terraform only), `task deploy:dev` (test + build + apply + S3 sync + CF invalidation) — all auto-select `dev` workspace and switch back to `default` after
@@ -141,15 +141,15 @@ The project includes a **"Full Stack" VS Code Launch Configuration**:
 
 ## Self-Hosted Mode
 
-Docker Compose stack (single `app` container) for running this app outside AWS — fully
+Docker Compose stack (single `mc-gamertime` container) for running this app outside AWS — fully
 additive, does not affect `infra/`/`task build`/`task deploy`.
 
 - No setup script — copy `.env.example` to `.env` next to `docker-compose.yml` (compose
   auto-loads it) to set BGG token, PUID/PGID, etc. `.env` is fully optional; the stack runs
   fine without one.
 - `docker compose up -d --build` — builds the image (root `Dockerfile`, multi-stage: `web/` → Vite build → `api/` runtime) and starts the stack
-- `docker compose exec app python3 scripts/create-user.py --username admin --display-name "Admin" --role admin --password <pw>` — bootstrap first admin
-- One exposed port, same number both sides (`${APP_PORT:-4263}:4263` on `app`). The container
+- `docker compose exec mc-gamertime python3 scripts/create-user.py --username admin --display-name "Admin" --role admin --password <pw>` — bootstrap first admin
+- One exposed port, same number both sides (`${APP_PORT:-4263}:4263` on `mc-gamertime`). The container
   binds 4263 in `docker/entrypoint.sh` and `Dockerfile`'s HEALTHCHECK — change one and the
   healthcheck fails the container forever. `APP_PORT` is the one self-host env var that must
   NOT go in the compose `environment:` block: it is read by docker-compose, not the app.
@@ -193,7 +193,7 @@ additive, does not affect `infra/`/`task build`/`task deploy`.
   erroring on missing flags; any args, or no TTY (piped/`exec -T`), keeps the old argparse
   behavior unchanged.
 - New self-host env var/feature → update ALL 4 surfaces or docs silently diverge: `.env.example`,
-  `docker-compose.yml` (`app.environment:` passthrough — vars not listed there never reach the
+  `docker-compose.yml` (`mc-gamertime.environment:` passthrough — vars not listed there never reach the
   container), `docs-site/.../self-hosting/configuration.mdx`, and this section.
 - `create-user.py`'s interactive wizard uses `getpass.getpass()`, which opens `/dev/tty` directly
   and ignores redirected stdin — can't be driven by a heredoc/pipe in a non-interactive shell or

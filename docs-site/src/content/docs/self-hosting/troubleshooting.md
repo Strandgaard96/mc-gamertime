@@ -7,7 +7,7 @@ sidebar:
 
 ## App won't start / restarts in a loop
 
-Run `docker compose logs app`. If the container exits immediately, check that `config/app/` is owned by the `PUID`/`PGID` in `.env`.
+Run `docker compose logs mc-gamertime`. If the container exits immediately, check that `config/app/` is owned by the `PUID`/`PGID` in `.env`.
 
 ## Every request returns 503, but the container is "healthy"
 
@@ -25,8 +25,8 @@ never asks for a page.
 Confirm it in the logs, then create the first admin:
 
 ```bash
-docker compose logs app | grep "No users found"
-docker compose exec app python3 scripts/create-user.py \
+docker compose logs mc-gamertime | grep "No users found"
+docker compose exec mc-gamertime python3 scripts/create-user.py \
   --username admin --display-name "Admin" --role admin --password <your-password>
 ```
 
@@ -36,7 +36,7 @@ The next request succeeds; no restart needed. Setting only one of `ADMIN_USERNAM
 ## Login works but every other request returns 401
 
 ```bash
-docker compose exec app env | grep JWT_SECRET
+docker compose exec mc-gamertime env | grep JWT_SECRET
 ```
 
 
@@ -55,13 +55,13 @@ Fix by setting `PUID`/`PGID` in `.env` to match your host user (`id -u` / `id -g
 Only the `avatars/`, `blog-images/`, and `game-images/` prefixes are served by the proxy. Check that `config/app/storage/` exists and is writable inside the container:
 
 ```bash
-docker compose exec app ls -la /data/storage
+docker compose exec mc-gamertime ls -la /data/storage
 ```
 
 ## Logs
 
 ```bash
 docker compose logs -f            # all services, follow
-docker compose logs app           # app only
+docker compose logs mc-gamertime           # app only
 docker compose ps                 # health status of all services
 ```

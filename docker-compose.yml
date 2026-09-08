@@ -1,5 +1,5 @@
 services:
-  init:
+  mc-gamertime-init:
     container_name: mc-gamertime-init
     image: alpine:3
     user: root
@@ -21,9 +21,11 @@ services:
       - DAC_OVERRIDE
     cap_drop: [ALL]
 
-  app:
+  mc-gamertime:
     container_name: mc-gamertime
     image: ghcr.io/strandgaard96/mc-gamertime:latest
+    # Must match init's chown target above, or the app can't write /data.
+    user: "${PUID:-1000}:${PGID:-1000}"
     ports:
       - "${APP_PORT:-4263}:4263"
     environment:
@@ -48,7 +50,7 @@ services:
       - ./config/app:/data
     restart: unless-stopped
     depends_on:
-      init:
+      mc-gamertime-init:
         condition: service_completed_successfully
     deploy:
       resources:

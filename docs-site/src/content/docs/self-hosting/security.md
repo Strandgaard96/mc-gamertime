@@ -73,7 +73,7 @@ Each user has a `tokenVersion`. Bumping it invalidates every existing session fo
 user immediately:
 
 ```bash
-docker compose exec app python3 scripts/revoke-sessions.py --username alice
+docker compose exec mc-gamertime python3 scripts/revoke-sessions.py --username alice
 ```
 
 Changing a password bumps it too, so a password reset signs out every other device.

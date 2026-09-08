@@ -2,7 +2,7 @@
 
 SMTP_HOST unset (the default) -> send_email() logs the message instead of
 sending it, so selfhosters without a mail server can still see reset links
-via `docker compose logs app`.
+via `docker compose logs mc-gamertime`.
 """
 
 from __future__ import annotations
