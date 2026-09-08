@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
     branches: [main]
 
@@ -17,8 +17,51 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Path filter so a docs-only or README-only PR doesn't run the full matrix.
+  # The jobs below stay defined on every run and are *skipped* rather than
+  # missing, which still satisfies the required status checks on main (a
+  # workflow-level `paths:` filter would leave them stuck at "Expected").
+  # Editing this file re-runs everything.
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      web: ${{ steps.filter.outputs.web }}
+      docker: ${{ steps.filter.outputs.docker }}
+
+    steps:
+      # Needed for push events (compares against the previous commit on main);
+      # pull_request events use the API and don't need a checkout.
+      - uses: actions/checkout@v7
+
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            ci: &ci
+              - ".github/workflows/ci.yml"
+            api: &api
+              - "api/**"
+              - *ci
+            web: &web
+              - "web/**"
+              - *ci
+            docker:
+              - "Dockerfile"
+              - ".dockerignore"
+              - "docker/**"
+              - *api
+              - *web
+
   test:
     name: API tests
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -41,6 +84,8 @@ jobs:
 
   docker-build:
     name: Docker build
+    needs: changes
+    if: needs.changes.outputs.docker == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -70,6 +115,8 @@ jobs:
 
   typecheck:
     name: TypeScript typecheck
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -92,6 +139,8 @@ jobs:
 
   web-test:
     name: Frontend tests
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -114,6 +163,7 @@ jobs:
 
   lint:
     name: Lint
+    needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -121,38 +171,46 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Install uv
+        if: needs.changes.outputs.api == 'true'
         uses: astral-sh/setup-uv@v10.0.1
         with:
           version: "latest"
           enable-cache: true
 
       - name: Install Python dependencies
+        if: needs.changes.outputs.api == 'true'
         run: uv sync
         working-directory: api
 
       - name: Ruff lint
+        if: needs.changes.outputs.api == 'true'
         run: uv run ruff check .
         working-directory: api
 
       - name: Ruff format check
+        if: needs.changes.outputs.api == 'true'
         run: uv run ruff format --check .
         working-directory: api
 
       - uses: actions/setup-node@v7
+        if: needs.changes.outputs.web == 'true'
         with:
           node-version: "20"
           cache: "npm"
           cache-dependency-path: web/package-lock.json
 
       - name: Install Node dependencies
+        if: needs.changes.outputs.web == 'true'
         run: npm ci
         working-directory: web
 
       - name: oxlint
+        if: needs.changes.outputs.web == 'true'
         run: npx oxlint src/
         working-directory: web
 
       - name: oxfmt check
+        if: needs.changes.outputs.web == 'true'
         run: npx oxfmt --check src/
         working-directory: web
 
