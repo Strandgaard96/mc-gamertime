@@ -10,6 +10,8 @@ from lib.db.sqlite_backend import SqliteTable
 
 SCRIPT_PATH = Path(__file__).resolve().parents[2] / "scripts" / "sqlite_export.py"
 spec = importlib.util.spec_from_file_location("sqlite_export", SCRIPT_PATH)
+assert spec is not None
+assert spec.loader is not None
 sqlite_export = importlib.util.module_from_spec(spec)
 sys.modules["sqlite_export"] = sqlite_export
 spec.loader.exec_module(sqlite_export)

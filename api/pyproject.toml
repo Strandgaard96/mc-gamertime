@@ -28,6 +28,7 @@ dev = [
     "ruff>=0.15.17",
     "moto[dynamodb]>=5.2.3",
     "pytest-cov>=7.1.0",
+    "ty>=0.0.79",
 ]
 
 [tool.ruff]
@@ -35,13 +36,22 @@ target-version = "py311"
 line-length = 100
 
 [tool.ruff.lint]
-# B = bugbear, UP = pyupgrade, SIM = simplify (on top of pycodestyle/pyflakes/isort)
-select = ["E", "F", "I", "B", "UP", "SIM"]
-ignore = ["E501"]
+# B = bugbear, UP = pyupgrade, SIM = simplify, C4 = comprehensions, PERF = perflint,
+# RUF = ruff-specific, PT = pytest style, S = bandit (security), T20 = no stray print,
+# ASYNC = blocking calls in async code (on top of pycodestyle/pyflakes/isort)
+select = ["E", "F", "I", "B", "UP", "SIM", "C4", "PERF", "RUF", "PT", "S", "T20", "ASYNC"]
+# E501: formatter owns line length. RUF001: en dashes etc. in user-facing strings are content.
+ignore = ["E501", "RUF001"]
 
 [tool.ruff.lint.per-file-ignores]
-# assert False is the idiomatic "unreachable" in tests
-"tests/*" = ["B011"]
+# S101: pytest asserts. S105/S106: test fixtures hold dummy secrets. S603/S607: tests
+# invoke repo scripts by name on purpose.
+"tests/*" = ["S101", "S105", "S106", "S603", "S607"]
+# Admin CLIs talk to the operator via print.
+"scripts/*" = ["T201"]
+# Table names come from config (`self._name`), never from request data; every
+# value is a bound parameter.
+"lib/db/sqlite_backend.py" = ["S608"]
 
 [tool.coverage.run]
 source = ["."]
@@ -50,6 +60,8 @@ omit = ["tests/*", "scripts/*", "dist/*", ".venv/*", "handlers/*"]
 [tool.coverage.report]
 skip_covered = true
 show_missing = true
+# Floor, not a target: currently ~93%. Raise as coverage grows, never lower.
+fail_under = 90
 
 [tool.ruff.format]
 quote-style = "double"

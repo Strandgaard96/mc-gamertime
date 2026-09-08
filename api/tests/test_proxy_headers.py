@@ -27,12 +27,18 @@ def _whoami_app() -> FastAPI:
     return app
 
 
+def _client(peer_ip: str) -> TestClient:
+    # uvicorn types the wrapped app as an asgiref protocol that FastAPI doesn't
+    # structurally satisfy for ty; it is the standard, documented wrapping.
+    wrapped = ProxyHeadersMiddleware(_whoami_app(), trusted_hosts=TRUSTED_PROXY_RANGES)  # ty: ignore[invalid-argument-type]
+    return TestClient(wrapped, client=(peer_ip, 40000))  # ty: ignore[invalid-argument-type]
+
+
 def test_forwarded_for_honored_from_trusted_docker_bridge_gateway():
     """nginx-on-host reaches the container through Docker's published-port NAT, so
     the real TCP peer the app sees is the bridge gateway (172.17.0.1 is the default
     on a stock Docker install), not the real visitor or nginx's own address."""
-    wrapped = ProxyHeadersMiddleware(_whoami_app(), trusted_hosts=TRUSTED_PROXY_RANGES)
-    client = TestClient(wrapped, client=("172.17.0.1", 40000))
+    client = _client("172.17.0.1")
 
     resp = client.get("/whoami", headers={"X-Forwarded-For": "203.0.113.7"})
 
@@ -42,8 +48,7 @@ def test_forwarded_for_honored_from_trusted_docker_bridge_gateway():
 def test_forwarded_for_honored_from_trusted_lan_reverse_proxy():
     """A dedicated reverse-proxy box elsewhere on the self-hoster's LAN is also a
     documented topology; its IP falls in the 192.168.0.0/16 private range."""
-    wrapped = ProxyHeadersMiddleware(_whoami_app(), trusted_hosts=TRUSTED_PROXY_RANGES)
-    client = TestClient(wrapped, client=("192.168.1.50", 40000))
+    client = _client("192.168.1.50")
 
     resp = client.get("/whoami", headers={"X-Forwarded-For": "203.0.113.7"})
 
@@ -55,8 +60,7 @@ def test_forwarded_for_ignored_when_exposed_directly_to_internet():
     docs' warning, the real peer is the attacker's own public IP, which must NOT be
     in the trusted ranges -- otherwise the attacker could forge X-Forwarded-For to
     bypass per-IP rate limiting entirely."""
-    wrapped = ProxyHeadersMiddleware(_whoami_app(), trusted_hosts=TRUSTED_PROXY_RANGES)
-    client = TestClient(wrapped, client=("203.0.113.7", 40000))
+    client = _client("203.0.113.7")
 
     resp = client.get("/whoami", headers={"X-Forwarded-For": "9.9.9.9"})
 

@@ -137,7 +137,7 @@ def build_upload_url(
     The read URL is authenticated on every deployment — see
     get_object_base_url. Only the upload leg uses a presigned S3 URL."""
     ext = EXT_BY_CONTENT_TYPE[content_type]
-    key = f"{prefix}/{str(ULID())}.{ext}"
+    key = f"{prefix}/{ULID()!s}.{ext}"
     image_url = f"{object_base_url}/{key}"
     if os.environ.get("S3_ENDPOINT_URL") or is_local_storage():
         return image_url, image_url

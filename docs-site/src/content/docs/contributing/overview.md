@@ -16,13 +16,15 @@ Requires [uv](https://docs.astral.sh/uv/) installed (`curl -LsSf https://astral.
 
 ## First-time setup
 
-Install [pre-commit](https://pre-commit.com/) and activate the hooks:
+Install [prek](https://prek.j178.dev/) (a drop-in, single-binary replacement for
+pre-commit that reads the same `.pre-commit-config.yaml`; plain `pre-commit` works too) and
+activate the hooks:
 
 ```bash
-uv tool install pre-commit
+uv tool install prek
 cd web && npm install   # so the oxlint/oxfmt hooks find node_modules
 cd ..
-pre-commit install
+prek install
 ```
 
 Some hooks need tools on your `PATH`: [trivy](https://trivy.dev/latest/getting-started/installation/)
@@ -31,14 +33,16 @@ shellcheck hooks run in Docker.
 
 The hooks run automatically on `git commit`:
 - **gitleaks** — blocks commits containing secrets
-- **ruff** (Python) and **oxlint** / **oxfmt** (TypeScript) — lint + format, auto-fixing
+- **ruff** + **ty** (Python) and **oxlint** / **oxfmt** (TypeScript) — lint, type-check and
+  format, auto-fixing where possible
+- **zizmor** — audits the GitHub Actions workflows (unpinned actions, injection, permissions)
 - **trivy-fs** — blocks a HIGH/CRITICAL dependency CVE with a known fix; runs only when a
   dependency manifest or the `Dockerfile` changes
 - **actionlint**, **terraform_fmt** / **terraform_validate**, **hadolint**, **shellcheck** — lint
   workflows, Terraform, the Dockerfile, and shell scripts
 - file hygiene — large files (>500KB), merge-conflict markers, trailing whitespace, YAML/JSON/TOML syntax
 
-To run all hooks manually: `pre-commit run --all-files`
+To run all hooks manually: `prek run --all-files`
 
 ## Running locally
 

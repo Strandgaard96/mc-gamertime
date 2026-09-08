@@ -147,7 +147,9 @@ def _make_tables() -> dict:
         # set — supplying them here means selfhost's .env doesn't need fake
         # AWS creds.
         kwargs.update(
-            endpoint_url=endpoint_url, aws_access_key_id="local", aws_secret_access_key="local"
+            endpoint_url=endpoint_url,
+            aws_access_key_id="local",
+            aws_secret_access_key="local",  # noqa: S106
         )
     dynamo = boto3.resource("dynamodb", **kwargs)
     return {

@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 # real SqliteTable instances pointed at a per-test tmp file.
 os.environ.setdefault("DB_BACKEND", "dynamodb")
 
-from lib.db.sqlite_backend import _TABLE_NAMES, SqliteTable  # noqa: E402
+from lib.db.sqlite_backend import _TABLE_NAMES, SqliteTable
 
 TEST_ORIGIN_TOKEN = "test-origin-token"
 TEST_JWT_SECRET = "test-jwt-secret-that-is-long-enough"
@@ -67,7 +67,7 @@ def reset_rate_limiter():
     from lib.rate_limit import limiter
 
     limiter._limiter.storage.reset()
-    yield
+    return
 
 
 @pytest.fixture

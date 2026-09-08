@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import bcrypt  # noqa: E402
+import bcrypt
 
 
 def _prompt_for_args() -> argparse.Namespace:

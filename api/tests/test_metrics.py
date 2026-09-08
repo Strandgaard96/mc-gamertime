@@ -30,4 +30,5 @@ def test_record_request_observes_latency():
     bucket_value = _sample_value(
         "http_request_duration_seconds_count", {"method": "GET", "path": "/api/health"}
     )
-    assert bucket_value is not None and bucket_value >= 1
+    assert bucket_value is not None
+    assert bucket_value >= 1

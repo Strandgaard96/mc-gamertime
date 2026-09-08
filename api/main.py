@@ -102,7 +102,7 @@ app.add_middleware(
 )
 
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # ty: ignore[invalid-argument-type]
 app.add_middleware(SlowAPIMiddleware)
 
 _initialized = False
@@ -164,7 +164,7 @@ def _initialize() -> None:
         return
     if SECRETS_PROVIDER == "env":
         jwt_secret = os.environ.get("JWT_SECRET", "")
-        if not jwt_secret or jwt_secret == "CHANGE_ME":
+        if not jwt_secret or jwt_secret == "CHANGE_ME":  # noqa: S105
             raise RuntimeError("JWT_SECRET not configured")
         origin_token = os.environ.get("ORIGIN_TOKEN", "")
         guard_enabled = (
@@ -314,10 +314,11 @@ for _media_prefix in ("/avatars", "/blog-images", "/game-images"):
 
 STATIC_DIR = os.environ.get("STATIC_DIR")
 if STATIC_DIR:
-    app.mount("/assets", StaticFiles(directory=f"{STATIC_DIR}/assets"))
+    static_dir: str = STATIC_DIR
+    app.mount("/assets", StaticFiles(directory=f"{static_dir}/assets"))
 
     @app.get("/{path:path}")
-    async def spa_fallback(path: str):
+    def spa_fallback(path: str):
         # Serve real files at the dist root (favicon, manifest, service
         # worker, PWA icons) as-is; only fall back to index.html for
         # client-side routes that don't correspond to a file on disk.
@@ -331,7 +332,7 @@ if STATIC_DIR:
         if ".." in path.split("/") or path.startswith("/"):
             return FileResponse(f"{STATIC_DIR}/index.html")
 
-        file_path = os.path.join(STATIC_DIR, path)
+        file_path = os.path.join(static_dir, path)
         if path and os.path.isfile(file_path):
             return FileResponse(file_path)
         return FileResponse(f"{STATIC_DIR}/index.html")

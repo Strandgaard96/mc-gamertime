@@ -30,11 +30,26 @@ repos:
       - id: ruff-format
         files: "^api/"
 
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.30.0
+    hooks:
+      - id: zizmor
+        # Same bar as the CI step in ci.yml.
+        args: ["--no-progress", "--min-severity=medium"]
+
   - repo: local
     hooks:
+      - id: ty
+        name: ty (Python type check)
+        # Pinned through api/uv.lock, so hook and CI run the same version.
+        entry: bash -c 'cd api && uv run ty check'
+        language: system
+        files: "^api/.*\\.py$"
+        pass_filenames: false
       - id: oxlint
         name: oxlint
-        entry: bash -c 'cd web && npx oxlint --deny=correctness src/'
+        # Severities live in web/.oxlintrc.json; no CLI overrides so hook == CI.
+        entry: bash -c 'cd web && npx oxlint src/'
         language: system
         files: "^web/src/.*\\.(tsx?|jsx?|json)$"
         pass_filenames: false

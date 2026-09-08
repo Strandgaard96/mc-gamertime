@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from lib.db.migrations import MIGRATIONS, run_migrations  # noqa: E402
+from lib.db.migrations import MIGRATIONS, run_migrations
 
 if __name__ == "__main__":
     db_path = os.environ.get("SQLITE_DB_PATH", "/data/boardsite.db")

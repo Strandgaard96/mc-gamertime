@@ -50,11 +50,12 @@ def bgg_search(query: str) -> list[dict]:
             continue
         name_el = item.find("name")
         year_el = item.find("yearpublished")
+        year = year_el.get("value") if year_el is not None else None
         results.append(
             {
                 "bggId": int(bgg_id),
                 "name": name_el.get("value", "") if name_el is not None else "",
-                "yearPublished": int(year_el.get("value")) if year_el is not None else None,
+                "yearPublished": int(year) if year else None,
             }
         )
     return results

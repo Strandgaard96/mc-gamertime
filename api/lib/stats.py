@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from lib.elo import compute_elo
 
 
@@ -12,7 +14,9 @@ def _compute_variable_stats(game: dict, results: list[dict]) -> dict:
     stats: dict[str, dict] = {}
     for var in player_vars:
         vid, label, options = var["id"], var["label"], var["options"]
-        counts = {opt: {"picks": 0, "wins": 0, "scores": []} for opt in options}
+        counts: dict[str, dict[str, Any]] = {
+            opt: {"picks": 0, "wins": 0, "scores": []} for opt in options
+        }
         for r in results:
             winner_id = r.get("winnerId")
             for p in r["players"]:
@@ -87,7 +91,7 @@ def compute_stats(results: list[dict], games: list[dict] | None = None) -> dict:
 
     elo = compute_elo(results)
 
-    leaderboard = [
+    leaderboard: list[dict[str, Any]] = [
         {
             "playerId": pid,
             "name": data["name"],
@@ -206,7 +210,7 @@ def compute_stats(results: list[dict], games: list[dict] | None = None) -> dict:
         if winner_id and winner_id in game_stats_map[gid]["playerMap"]:
             game_stats_map[gid]["playerMap"][winner_id]["wins"] += 1
 
-    game_stats = []
+    game_stats: list[dict[str, Any]] = []
     for gid, gs in game_stats_map.items():
         breakdown = [
             {

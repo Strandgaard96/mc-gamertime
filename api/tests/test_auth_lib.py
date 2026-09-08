@@ -184,6 +184,6 @@ def test_decode_reset_token_rejects_expired_token():
         "tv": 0,
         "exp": int((datetime.now(UTC) - timedelta(minutes=1)).timestamp()),
     }
-    expired_token = jwt.encode(expired_payload, auth_lib._jwt_secret, algorithm="HS256")
+    expired_token = jwt.encode(expired_payload, auth_lib._get_secret(), algorithm="HS256")
     with pytest.raises(jwt.PyJWTError):
         decode_reset_token(expired_token)
