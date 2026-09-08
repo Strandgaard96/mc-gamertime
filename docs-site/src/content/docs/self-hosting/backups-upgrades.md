@@ -32,8 +32,6 @@ Add a crontab entry to run it nightly, keeping 14 days of backups:
 0 3 * * * cd /path/to/mc-gamertime && ./scripts/backup-selfhost.sh --dest /path/to/backups --keep 14
 ```
 
->>>END
-
 ## Exporting and importing table data
 
 For partial recovery or moving data between a selfhosted instance and the cloud

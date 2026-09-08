@@ -69,12 +69,18 @@ import compose from '../../../../../docker-compose.yml?raw';
 account — so a bare `docker run` works too:
 
 ```bash
-docker run -d -p 4263:4263 -v ./config/app:/data \
+mkdir -p config/app
+docker run -d -p 127.0.0.1:4263:4263 --user "$(id -u):$(id -g)" \
+  -v "$(pwd)/config/app:/data" \
   -e ADMIN_USERNAME=admin -e ADMIN_PASSWORD=<your-password> \
   ghcr.io/strandgaard96/mc-gamertime
 ```
 
-Mount `/data` as shown, or the database and generated JWT secret vanish with the container.
+Create the directory first and run as your own user: Docker creates a missing bind-mount
+directory owned by `root`, and the image runs unprivileged, so without those two lines the
+container exits with `cannot create /data/.jwt_secret: Permission denied`. Compose handles
+this with the `mc-gamertime-init` container. Mount `/data` as shown, or the database and
+generated JWT secret vanish with the container.
 </Aside>
 
 <Aside type="tip">

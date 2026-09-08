@@ -7,7 +7,16 @@ sidebar:
 
 ## App won't start / restarts in a loop
 
-Run `docker compose logs mc-gamertime`. If the container exits immediately, check that `config/app/` is owned by the `PUID`/`PGID` in `.env`.
+Run `docker compose logs mc-gamertime`. If the last line is
+
+```
+/entrypoint.sh: 11: cannot create /data/.jwt_secret: Permission denied
+```
+
+the bind-mounted `config/app/` is not writable by the user the container runs as. Check
+its owner with `ls -ld config/app` and set `PUID`/`PGID` in `.env` to match (`id -u` /
+`id -g`), then `docker compose up -d` — the init container re-applies the ownership on
+every start.
 
 ## Every request returns 503, but the container is "healthy"
 
@@ -32,23 +41,6 @@ docker compose exec mc-gamertime python3 scripts/create-user.py \
 
 The next request succeeds; no restart needed. Setting only one of `ADMIN_USERNAME` /
 `ADMIN_PASSWORD` produces the same 503 by a different route — it is a hard startup error.
-
-## Login works but every other request returns 401
-
-```bash
-docker compose exec mc-gamertime env | grep JWT_SECRET
-```
-
-
-If `JWT_SECRET` is empty, the `/data` bind mount isn't set up correctly. Check that
-`config/app/` exists on the host and is owned by the `PUID`/`PGID` in `.env`:
-
-
-```bash
-ls -la config/app/
-```
-
-Fix by setting `PUID`/`PGID` in `.env` to match your host user (`id -u` / `id -g`), then `docker compose up -d`.
 
 ## Images / avatars 404 via /storage/...
 

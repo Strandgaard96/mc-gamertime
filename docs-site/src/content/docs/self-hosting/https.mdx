@@ -26,13 +26,21 @@ Do not forward port 4263 directly to the internet (e.g. via a router port-forwar
         listen 80;
         server_name games.local;
 
+        client_max_body_size 10m;   # image uploads; the app allows up to 10 MB
+
         location / {
             proxy_pass http://127.0.0.1:4263;
             proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
         }
     }
     ```
+
+    The two `X-Forwarded-*` headers are not optional: the app reads them to see each
+    visitor's real IP (login rate limiting) and whether the request arrived over TLS (the
+    session cookie's `Secure` flag). Without them every visitor shares one rate-limit bucket
+    and the cookie is never marked `Secure`, even behind HTTPS.
 
     For a public domain with TLS, terminate TLS in nginx (e.g. via `certbot --nginx`) and proxy the same way:
 
@@ -45,10 +53,13 @@ Do not forward port 4263 directly to the internet (e.g. via a router port-forwar
         ssl_certificate     /etc/letsencrypt/live/games.yourdomain.com/fullchain.pem;
         ssl_certificate_key /etc/letsencrypt/live/games.yourdomain.com/privkey.pem;
 
+        client_max_body_size 10m;
+
         location / {
             proxy_pass http://127.0.0.1:4263;
             proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
         }
     }
 
@@ -94,7 +105,7 @@ Do not forward port 4263 directly to the internet (e.g. via a router port-forwar
     Run with both files:
 
     ```bash
-    docker compose -f docker-compose.yml -f docker-compose.traefik.yml up -d --build
+    docker compose -f docker-compose.yml -f docker-compose.traefik.yml up -d
     ```
 
     This assumes Traefik itself is already running (e.g. as its own Compose stack) and joined to the `traefik-net` external network. The `loadbalancer.server.port=4263` label targets the container's internal port — Traefik reaches `mc-gamertime` over the Docker network, so `!reset []` removes the host-published port the same way.
