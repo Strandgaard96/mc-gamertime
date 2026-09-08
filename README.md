@@ -7,7 +7,7 @@
 [![Docs](https://img.shields.io/badge/docs-mcgamertime--docs.drmaggi.com-blue)](https://mcgamertime-docs.drmaggi.com)
 [![Built with Claude Code](https://img.shields.io/badge/built%20with-Claude%20Code-8A2BE2)](#built-with-claude-code)
 
-![The leaderboard: podium, Elo ratings per player, win rates and streaks](docs-site/src/assets/hero-leaderboard.png)
+![Game catalog: Board Game Geek metadata, play counts and cover art](docs-site/src/assets/screenshot-catalog.webp)
 
 **Board game inventory tracker and game logger**
 - Elo ratings
@@ -21,7 +21,7 @@ Self-host it, or use the built-in support for serverless hosting on AWS for ≈$
 
 | | |
 |---|---|
-| ![Game catalog: Board Game Geek metadata, play counts and cover art](docs-site/src/assets/screenshot-catalog.webp) | ![Player profile: win rate, streaks, favourite game and nemesis](docs-site/src/assets/screenshot-player.png) |
+| ![The leaderboard: podium, Elo ratings per player, win rates and streaks](docs-site/src/assets/hero-leaderboard.png) | ![Player profile: win rate, streaks, favourite game and nemesis](docs-site/src/assets/screenshot-player.png) |
 
 
 
