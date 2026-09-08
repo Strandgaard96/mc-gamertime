@@ -7,6 +7,8 @@
 [![Docs](https://img.shields.io/badge/docs-mcgamertime--docs.drmaggi.com-blue)](https://mcgamertime-docs.drmaggi.com)
 [![Built with Claude Code](https://img.shields.io/badge/built%20with-Claude%20Code-8A2BE2)](#built-with-claude-code)
 
+![The leaderboard: podium, Elo ratings per player, win rates and streaks](docs-site/src/assets/hero-leaderboard.png)
+
 **Board game inventory tracker and game logger**
 - Elo ratings
 - Head-to-head records, 
@@ -16,8 +18,6 @@
 
 
 Self-host it, or use the built-in support for serverless hosting on AWS for ≈$0 a month.
-
-![The leaderboard: podium, Elo ratings per player, win rates and streaks](docs-site/src/assets/hero-leaderboard.png)
 
 | | |
 |---|---|
