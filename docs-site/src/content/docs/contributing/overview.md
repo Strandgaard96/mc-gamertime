@@ -19,7 +19,7 @@ Requires [uv](https://docs.astral.sh/uv/) installed (`curl -LsSf https://astral.
 Install [pre-commit](https://pre-commit.com/) and activate the hooks:
 
 ```bash
-pip install pre-commit
+uv tool install pre-commit
 cd web && npm install   # so the oxlint/oxfmt hooks find node_modules
 cd ..
 pre-commit install
@@ -44,11 +44,13 @@ To run all hooks manually: `pre-commit run --all-files`
 
 Open in VS Code and press **F5** → select **"Full Stack"**. Starts FastAPI on `localhost:8000` and Vite on `localhost:5173` with debuggers attached.
 
-Alternatively:
+Alternatively, after creating the repo-root `.env` described in
+[Local Development](/contributing/local-development/) (without it the API starts in
+self-hosted SQLite mode and fails on the missing `/data` directory):
 
 ```bash
-cd api && uv run uvicorn main:app --reload --port 8000  # backend
-cd web && npm run dev                                    # frontend
+cd api && set -a && . ../.env && set +a && uv run uvicorn main:app --reload --port 8000  # backend
+cd web && npm run dev                                                                    # frontend
 ```
 
 See [Local Development](/contributing/local-development/) for first-time setup and debugging tips.

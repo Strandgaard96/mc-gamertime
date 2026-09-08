@@ -32,7 +32,16 @@ know what you're doing.
 | `PUBLIC_RECOMMENDED_ENABLED` | `false` | Nothing is reachable without logging in |
 
 SQLite database file and uploaded images both live under `config/app/` on the host —
-`/data/boardsite.db` and `/data/storage/` inside the container.
+`/data/boardsite.db` and `/data/storage/` inside the container. The container also honours
+`SQLITE_DB_PATH` and `LOCAL_STORAGE_DIR` to move those, but see the next paragraph before
+trying.
+
+<Aside type="note">
+Compose passes only the variables listed in the `mc-gamertime` service's `environment:`
+block through to the container. Anything else you put in `.env` — including
+`SQLITE_DB_PATH`, `LOCAL_STORAGE_DIR` or a variable you found in the source — is silently
+ignored unless you add it to that block too.
+</Aside>
 
 ## Resource requirements
 

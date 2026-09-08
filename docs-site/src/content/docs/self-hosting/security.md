@@ -105,7 +105,10 @@ Every session everywhere is invalidated.
 
 ## Rate limiting
 
-Login and password-reset accept **5 requests per minute per IP**. Behind a reverse proxy
+Login and password-reset accept **5 requests per minute per IP**. On top of that, each
+account gets an exponential backoff after a failed login: 1 s, 2 s, 4 s … up to 5 minutes
+between attempts, reset on success, and every failure is written to the security log.
+Behind a reverse proxy
 this only works if the app can see the real client IP; `FORWARDED_ALLOW_IPS` already
 trusts private and Docker-internal ranges, which covers every proxy setup in the HTTPS
 guide. Get this wrong and every visitor shares one bucket — see
