@@ -1,0 +1,62 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Backend (FastAPI)",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "${workspaceFolder}/api/.venv/bin/python",
+      "module": "uvicorn",
+      "args": [
+        "main:app",
+        "--reload"
+      ],
+      "cwd": "${workspaceFolder}/api",
+      "env": {
+        "ENV": "dev",
+        "DEV_MODE": "true"
+      },
+      "envFile": "${workspaceFolder}/.env",
+      "subProcess": true,
+      "preLaunchTask": "api-sync"
+    },
+    {
+      "name": "Debug Frontend (Vite)",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "serverReadyAction": {
+        "pattern": "Local:\\s+(http://localhost:[0-9]+)/",
+        "action": "startDebugging",
+        "name": "Launch Chrome"
+      },
+      "preLaunchTask": "web-install"
+    },
+    {
+      "name": "Launch Chrome",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/web",
+      "sourceMapPathOverrides": {
+        "/@fs/*": "/*",
+        "/src/*": "${workspaceFolder}/web/src/*"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack",
+      "configurations": [
+        "Debug Backend (FastAPI)",
+        "Debug Frontend (Vite)"
+      ],
+      "stopAll": true
+    }
+  ]
+}

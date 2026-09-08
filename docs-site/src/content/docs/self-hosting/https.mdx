@@ -1,0 +1,119 @@
+---
+title: HTTPS / Reverse Proxy
+description: Put your own reverse proxy (nginx, Traefik) in front of the app for Tailscale, public domains, or LAN access.
+sidebar:
+  order: 3
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+The default stack binds directly to `localhost:4263` with plain HTTP. There is no built-in reverse proxy or TLS termination — bring your own (nginx, Traefik, Tailscale, etc.) for anything beyond your own LAN.
+
+<Aside type="caution">
+Do not forward port 4263 directly to the internet (e.g. via a router port-forward or cloud security group) without TLS in front of it. Plain HTTP sends your login password and session cookie unencrypted — anyone on the network path between you and the server can read them. Use one of the examples below for any access beyond your own LAN.
+</Aside>
+
+## Reverse proxy options
+
+<Tabs>
+  <TabItem label="nginx">
+
+    If you already run nginx for other services, point a `server` block at the `app` container. Run nginx on the host (not in the Compose network) and target the published port:
+
+    ```nginx
+    # /etc/nginx/sites-available/boardsite — LAN / no TLS
+    server {
+        listen 80;
+        server_name games.local;
+
+        location / {
+            proxy_pass http://127.0.0.1:4263;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+        }
+    }
+    ```
+
+    For a public domain with TLS, terminate TLS in nginx (e.g. via `certbot --nginx`) and proxy the same way:
+
+    ```nginx
+    # /etc/nginx/sites-available/boardsite — public domain, TLS via certbot
+    server {
+        listen 443 ssl;
+        server_name games.yourdomain.com;
+
+        ssl_certificate     /etc/letsencrypt/live/games.yourdomain.com/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/games.yourdomain.com/privkey.pem;
+
+        location / {
+            proxy_pass http://127.0.0.1:4263;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+        }
+    }
+
+    server {
+        listen 80;
+        server_name games.yourdomain.com;
+        return 301 https://$host$request_uri;
+    }
+    ```
+
+    Run `certbot --nginx -d games.yourdomain.com` once to obtain the certificate and wire up the `443` block automatically (it edits the file above in place).
+
+    Either way, nginx proxies to the host-published port, not the container's internal one — it runs outside the Compose network. Both are `4263` by default, so they look identical; if you set `APP_PORT` in `.env`, use that value here instead.
+
+  </TabItem>
+  <TabItem label="Traefik">
+
+    For a Traefik setup, add labels to the `app` service via a Compose override file instead of editing `docker-compose.yml` directly:
+
+    ```yaml
+    # docker-compose.traefik.yml
+    services:
+      app:
+        ports: !reset []  # Traefik handles ingress; direct port 4263 not needed
+        labels:
+          - "traefik.enable=true"
+          - "traefik.http.routers.boardsite.rule=Host(`games.yourdomain.com`)"
+          - "traefik.http.routers.boardsite.entrypoints=websecure"
+          - "traefik.http.routers.boardsite.tls.certresolver=letsencrypt"
+          - "traefik.http.services.boardsite.loadbalancer.server.port=4263"
+        networks:
+          - traefik-net
+
+    networks:
+      traefik-net:
+        external: true
+    ```
+
+    <Aside type="tip">
+    Docker Compose v2.23+ is required for the `!reset` tag used above. Check with `docker compose version`. Docker Desktop 4.26+ includes this.
+    </Aside>
+
+    Run with both files:
+
+    ```bash
+    docker compose -f docker-compose.yml -f docker-compose.traefik.yml up -d --build
+    ```
+
+    This assumes Traefik itself is already running (e.g. as its own Compose stack) and joined to the `traefik-net` external network. The `loadbalancer.server.port=4263` label targets the container's internal port — Traefik reaches `app` over the Docker network, so `!reset []` removes the host-published port the same way.
+
+  </TabItem>
+  <TabItem label="Tailscale">
+
+    Run `tailscale serve` (or a Tailscale sidecar container) pointed at `127.0.0.1:4263`. MagicDNS gives you a `https://your-machine.tail-scale.ts.net` URL with TLS handled automatically — no reverse-proxy config needed on your side.
+
+  </TabItem>
+</Tabs>
+
+## Behind the proxy
+
+All three setups above work with the defaults. The app trusts `X-Forwarded-For` and
+`X-Forwarded-Proto` from private and Docker-internal IP ranges (`FORWARDED_ALLOW_IPS`, see
+[Configuration](/self-hosting/configuration/#reverse-proxy-and-rate-limiting)), so:
+
+- login rate limiting sees each visitor's real IP rather than the proxy's
+- the session cookie gets its `Secure` flag when TLS terminates at the proxy, even though
+  the proxy talks plain HTTP to the container — see
+  [Security Model → Passwords and sessions](/self-hosting/security/#passwords-and-sessions)

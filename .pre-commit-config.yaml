@@ -1,0 +1,75 @@
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-yaml
+        args: ["--unsafe"]
+      - id: check-json
+        exclude: ".*\\.vscode/.*"
+      - id: check-toml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.17
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+        files: "^api/"
+      - id: ruff-format
+        files: "^api/"
+
+  - repo: local
+    hooks:
+      - id: oxlint
+        name: oxlint
+        entry: bash -c 'cd web && npx oxlint --deny=correctness src/'
+        language: system
+        files: "^web/src/.*\\.(tsx?|jsx?|json)$"
+        pass_filenames: false
+      - id: oxfmt
+        name: oxfmt
+        entry: bash -c 'cd web && npx oxfmt src/'
+        language: system
+        files: "^web/src/.*\\.(tsx?|jsx?|json)$"
+        pass_filenames: false
+      - id: trivy-fs
+        name: trivy (dependency vulnerabilities)
+        entry: trivy fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --skip-version-check --skip-dirs api/.venv --skip-dirs web/node_modules --skip-dirs docs-site/node_modules --skip-dirs .claude .
+        language: system
+        files: "^(api/(requirements\\.txt|pyproject\\.toml|uv\\.lock)|web/package(-lock)?\\.json|docs-site/package(-lock)?\\.json|Dockerfile)$"
+        pass_filenames: false
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.106.0
+    hooks:
+      - id: terraform_fmt
+      - id: terraform_validate
+        args: ["--args=-json"]
+        files: "^infra/"
+
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.14.0
+    hooks:
+      - id: hadolint-docker
+
+  - repo: https://github.com/koalaman/shellcheck-precommit
+    rev: v0.11.0
+    hooks:
+      - id: shellcheck
