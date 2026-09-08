@@ -18,7 +18,7 @@ Do not forward port 4263 directly to the internet (e.g. via a router port-forwar
 <Tabs>
   <TabItem label="nginx">
 
-    If you already run nginx for other services, point a `server` block at the `app` container. Run nginx on the host (not in the Compose network) and target the published port:
+    If you already run nginx for other services, point a `server` block at the `mc-gamertime` container. Run nginx on the host (not in the Compose network) and target the published port:
 
     ```nginx
     # /etc/nginx/sites-available/boardsite — LAN / no TLS
@@ -66,12 +66,12 @@ Do not forward port 4263 directly to the internet (e.g. via a router port-forwar
   </TabItem>
   <TabItem label="Traefik">
 
-    For a Traefik setup, add labels to the `app` service via a Compose override file instead of editing `docker-compose.yml` directly:
+    For a Traefik setup, add labels to the `mc-gamertime` service via a Compose override file instead of editing `docker-compose.yml` directly:
 
     ```yaml
     # docker-compose.traefik.yml
     services:
-      app:
+      mc-gamertime:
         ports: !reset []  # Traefik handles ingress; direct port 4263 not needed
         labels:
           - "traefik.enable=true"
@@ -97,7 +97,7 @@ Do not forward port 4263 directly to the internet (e.g. via a router port-forwar
     docker compose -f docker-compose.yml -f docker-compose.traefik.yml up -d --build
     ```
 
-    This assumes Traefik itself is already running (e.g. as its own Compose stack) and joined to the `traefik-net` external network. The `loadbalancer.server.port=4263` label targets the container's internal port — Traefik reaches `app` over the Docker network, so `!reset []` removes the host-published port the same way.
+    This assumes Traefik itself is already running (e.g. as its own Compose stack) and joined to the `traefik-net` external network. The `loadbalancer.server.port=4263` label targets the container's internal port — Traefik reaches `mc-gamertime` over the Docker network, so `!reset []` removes the host-published port the same way.
 
   </TabItem>
   <TabItem label="Tailscale">
