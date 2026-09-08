@@ -161,3 +161,5 @@ graph LR
 ## License
 
 [MIT](./LICENSE)
+
+<!-- ci path-filter smoke test, PR will be closed unmerged -->
