@@ -11,10 +11,10 @@
 
 **Board game inventory tracker and game logger**
 - Elo ratings
-- Head-to-head records, 
+- Head-to-head records
 - Achievements
 - Player stats
-- Board Game Geek API support for the game catalog.**
+- Board Game Geek API support for the game catalog.
 
 
 Self-host it, or use the built-in support for serverless hosting on AWS for ≈$0 a month.
