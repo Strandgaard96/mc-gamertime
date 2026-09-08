@@ -10,11 +10,17 @@
 ![Game catalog: Board Game Geek metadata, play counts and cover art](docs-site/src/assets/screenshot-catalog.webp)
 
 **Board game inventory tracker and game logger**
-- Elo ratings
-- Head-to-head records
-- Achievements
-- Player stats
-- Board Game Geek API support for the game catalog.
+
+## Features
+
+| | |
+|---|---|
+| **Game catalog** | Search Board Game Geek, keep player counts, weights and cover art |
+| **Leaderboard** | Elo rating per player, win rates, streaks, head-to-head records |
+| **Session log** | Who played, who won, scores, mood — plus per-game custom fields |
+| **Achievements** | Milestones detected automatically as results come in |
+| **Player profiles** | Favourite game, nemesis, best month, Elo history |
+| **Blog** | Session recaps with rich text and images |
 
 
 Self-host it, or use the built-in support for serverless hosting on AWS for ≈$0 a month.
@@ -38,11 +44,14 @@ Self-host it, or use the built-in support for serverless hosting on AWS for ≈$
 
 ## Built with Claude Code
 
+> [!WARNING]
+> The project is vibe-coded and should be treated as such.
+
 Claude Code wrote most of the code. My background is scientific computing with extensive
 AWS experience and I did this project to learn frontend coding and agent orchestration in a full-stack application.
 
-> [!WARNING]
-> The project is vibe-coded and should be treated as such.
+
+I wanted to ensure that no data is compromised when using the AWS cloud option as it has public facing endpoints. The security model is explained here: [security model](https://mcgamertime-docs.drmaggi.com/self-hosting/security/).
 
 The setup used to build it is in [CLAUDE.md](./CLAUDE.md), with these plugins:
 
@@ -53,9 +62,6 @@ The setup used to build it is in [CLAUDE.md](./CLAUDE.md), with these plugins:
 ## Quick start
 
 ### 1. Self-hosted with Docker
-
-One container, embedded SQLite, local file storage.
-
 
 **To install:**
 
@@ -137,17 +143,6 @@ graph LR
 ```
 
 </details>
-
-## Features
-
-| | |
-|---|---|
-| **Leaderboard** | Elo rating per player, win rates, streaks, head-to-head records |
-| **Game catalog** | Search Board Game Geek, keep player counts, weights and cover art |
-| **Session log** | Who played, who won, seats, scores, mood — plus per-game custom fields |
-| **Achievements** | Milestones detected automatically as results come in |
-| **Player profiles** | Favourite game, nemesis, best month, Elo history |
-| **Blog** | Session recaps with rich text and images |
 
 [Screenshots and detail →](https://mcgamertime-docs.drmaggi.com/features/)
 
