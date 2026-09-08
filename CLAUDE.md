@@ -292,6 +292,9 @@ aws s3api copy-object \
 
 ## Git Notes
 
+- PR descriptions MUST follow `.github/PULL_REQUEST_TEMPLATE.md` (Type / Summary / Test plan /
+  Breaking change? with the checkboxes ticked) — `gh pr create --body-file` bypasses the
+  template, so paste its structure into the body yourself.
 - Subagents CAN run `git commit`/`git push` here, and they do NOT inherit a worktree the controller switched into (one once committed straight to `main`). Tell dispatched subagents not to commit, or to verify `git rev-parse --show-toplevel` equals the worktree path first; for small fixes, apply them directly.
 - `git add <paths>` + `git commit` commits the WHOLE index — check `git diff --cached --name-status` is empty before staging a commit's files, or an earlier `git rm`/`git add` gets swept into the wrong commit.
 - `EnterWorktree`/`git worktree add` defaults to branching from `origin/<default-branch>` ("fresh"), not local HEAD — local-only commits on `main` that haven't been pushed are missing from a freshly created worktree. Cherry-pick them in if the new worktree needs them.
