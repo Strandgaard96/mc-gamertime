@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
 import { AnimatePresence, motion, type Variants } from "motion/react";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { useCountUp } from "../hooks/useCountUp";
 
 export interface WrappedSlide {
@@ -35,11 +35,11 @@ export function WrappedOverlay({ playerName, slides, onClose }: WrappedOverlayPr
   const [index, setIndex] = useState(0);
   const isLast = index === slides.length - 1;
 
-  const next = () => {
+  const next = useCallback(() => {
     if (isLast) onClose();
     else setIndex((i) => i + 1);
-  };
-  const prev = () => setIndex((i) => Math.max(0, i - 1));
+  }, [isLast, onClose]);
+  const prev = useCallback(() => setIndex((i) => Math.max(0, i - 1)), []);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

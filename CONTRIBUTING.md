@@ -72,12 +72,14 @@ cd web && npm run typecheck           # tsc --noEmit
 cd web && npx oxlint src/
 ```
 
-Optionally install the pre-commit hooks, which run the linters plus a secret scan and a
-dependency-CVE scan on every commit:
+Optionally install the git hooks, which run the linters and type checkers plus a secret
+scan and a dependency-CVE scan on every commit. They are managed by
+[prek](https://prek.j178.dev/), a drop-in replacement for pre-commit (same
+`.pre-commit-config.yaml`, single binary, faster); `pre-commit` itself works too:
 
 ```bash
-pip install pre-commit
-pre-commit install
+uv tool install prek
+prek install
 ```
 
 The CVE hook needs [trivy](https://trivy.dev/latest/getting-started/installation/) on your

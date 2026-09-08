@@ -1,5 +1,5 @@
 # --- stage 1: build frontend ---
-FROM node:20-alpine AS web-build
+FROM node:22-alpine AS web-build
 WORKDIR /web
 COPY web/package*.json ./
 RUN npm ci

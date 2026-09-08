@@ -41,23 +41,23 @@ def test_delete_missing_object_does_not_raise(client):
 
 
 def test_put_object_rejects_path_traversal_key(client, tmp_path):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="invalid key"):
         client.put_object(Bucket="x", Key="../../etc/passwd", Body=b"data", ContentType="image/png")
     assert not (tmp_path.parent.parent / "etc" / "passwd").exists()
 
 
 def test_get_object_rejects_path_traversal_key(client):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="invalid key"):
         client.get_object(Bucket="x", Key="../../etc/passwd")
 
 
 def test_delete_object_rejects_path_traversal_key(client):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="invalid key"):
         client.delete_object(Bucket="x", Key="../../etc/passwd")
 
 
 def test_put_object_rejects_absolute_path_key(client):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="invalid key"):
         client.put_object(Bucket="x", Key="/etc/passwd", Body=b"data", ContentType="image/png")
 
 

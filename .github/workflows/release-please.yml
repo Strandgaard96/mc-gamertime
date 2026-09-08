@@ -4,14 +4,18 @@ on:
   push:
     branches: [main]
 
+# Default token to read-only; only the release-please job itself needs to
+# push tags/releases and open the release PR.
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   release-please:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
@@ -20,7 +24,7 @@ jobs:
       # legacy non-manifest mode, which ignores release-please-config.json
       # (including its changelog-sections) and derives the current version
       # from the latest GitHub release tag instead of the manifest.
-      - uses: googleapis/release-please-action@v5
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5
         id: release
 
   # Tags created by release-please come from GITHUB_TOKEN, and GitHub does not

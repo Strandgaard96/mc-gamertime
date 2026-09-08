@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 
@@ -47,19 +47,17 @@ def get_player_stats(player_id: str, _: Annotated[AuthUser, Depends(require_auth
         if r.get("winnerId") == player_id:
             game_map[gid]["wins"] += 1
 
-    per_game_stats = sorted(
-        [
-            {
-                "gameId": gid,
-                "gameName": d["gameName"],
-                "wins": d["wins"],
-                "played": d["played"],
-                "winRate": d["wins"] / d["played"] if d["played"] > 0 else 0.0,
-            }
-            for gid, d in game_map.items()
-        ],
-        key=lambda g: -g["played"],
-    )
+    per_game_rows: list[dict[str, Any]] = [
+        {
+            "gameId": gid,
+            "gameName": d["gameName"],
+            "wins": d["wins"],
+            "played": d["played"],
+            "winRate": d["wins"] / d["played"] if d["played"] > 0 else 0.0,
+        }
+        for gid, d in game_map.items()
+    ]
+    per_game_stats = sorted(per_game_rows, key=lambda g: -g["played"])
 
     month_map: dict[str, dict] = {}
     for r in player_results:

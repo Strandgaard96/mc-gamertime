@@ -19,7 +19,9 @@ export function ReloadPrompt() {
       duration: Infinity,
       action: {
         label: "Update",
-        onClick: () => updateServiceWorker(true),
+        onClick: () => {
+          void updateServiceWorker(true);
+        },
       },
     });
   }, [needRefresh, updateServiceWorker]);

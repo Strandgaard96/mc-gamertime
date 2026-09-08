@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from decimal import Decimal
+from typing import Any
 
 from lib.db.base import ItemNotFoundError
 
@@ -181,7 +182,7 @@ class SqliteTable:
         try:
             conn.execute("BEGIN IMMEDIATE")
             row = conn.execute(f"SELECT data FROM {self._name} WHERE pk = ?", (pk,)).fetchone()
-            item = json.loads(row[0]) if row else {"pk": pk}
+            item: dict[str, Any] = json.loads(row[0]) if row else {"pk": pk}
             item[counter_field] = item.get(counter_field, 0) + 1
             item[timestamp_field] = timestamp_value
             conn.execute(

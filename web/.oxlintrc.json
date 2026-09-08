@@ -1,0 +1,27 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "options": {
+    "typeAware": true
+  },
+  "plugins": ["typescript", "unicorn", "oxc", "react"],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "typescript/await-thenable": "error",
+    "typescript/no-floating-promises": "off",
+    "typescript/no-misused-promises": [
+      "error",
+      {
+        "checksVoidReturn": {
+          "attributes": false
+        }
+      }
+    ],
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "error",
+    "react/set-state-in-effect": "off",
+    "react/immutability": "off",
+    "react/refs": "off"
+  }
+}

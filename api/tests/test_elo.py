@@ -34,7 +34,7 @@ def test_upset_win_gains_more_than_expected_win():
         _result("p1", ["p1", "p2"], date="2026-01-02"),
     ]
     before = compute_elo(history)
-    after = compute_elo(history + [_result("p2", ["p1", "p2"], date="2026-01-03")])
+    after = compute_elo([*history, _result("p2", ["p1", "p2"], date="2026-01-03")])
     upset_gain = after["p2"] - before["p2"]
     # Beating a higher-rated player must pay more than the even-match 16
     assert upset_gain > 16

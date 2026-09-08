@@ -86,6 +86,7 @@ def test_avatar_url_carries_cache_busting_stamp():
     assert avatar_url("alice", False) is None
     assert avatar_url("alice", True) == "/storage/avatars/alice.png"
     stamped = avatar_url("alice", True, "2026-08-20T12:34:56.789+00:00")
+    assert stamped is not None
     assert stamped.startswith("/storage/avatars/alice.png?v=")
     # A later upload must produce a different URL, or browsers holding the old
     # image for the full max-age would keep showing it.

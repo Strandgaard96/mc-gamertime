@@ -33,13 +33,16 @@ jobs:
       api: ${{ steps.filter.outputs.api }}
       web: ${{ steps.filter.outputs.web }}
       docker: ${{ steps.filter.outputs.docker }}
+      workflows: ${{ steps.filter.outputs.workflows }}
 
     steps:
       # Needed for push events (compares against the previous commit on main);
       # pull_request events use the API and don't need a checkout.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
-      - uses: dorny/paths-filter@v4
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
         id: filter
         with:
           filters: |
@@ -57,6 +60,8 @@ jobs:
               - "docker/**"
               - *api
               - *web
+            workflows:
+              - ".github/workflows/**"
 
   test:
     name: API tests
@@ -66,10 +71,12 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.0.1
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: "latest"
           enable-cache: true
@@ -90,13 +97,15 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
 
       - name: Build image
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: .
           push: false
@@ -106,7 +115,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Scan image for vulnerabilities
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: mc-gamertime:ci
           severity: CRITICAL,HIGH
@@ -121,11 +130,13 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          node-version: "20"
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "22"
           cache: "npm"
           cache-dependency-path: web/package-lock.json
 
@@ -145,11 +156,13 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          node-version: "20"
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "22"
           cache: "npm"
           cache-dependency-path: web/package-lock.json
 
@@ -168,11 +181,13 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Install uv
         if: needs.changes.outputs.api == 'true'
-        uses: astral-sh/setup-uv@v10.0.1
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: "latest"
           enable-cache: true
@@ -192,10 +207,24 @@ jobs:
         run: uv run ruff format --check .
         working-directory: api
 
-      - uses: actions/setup-node@v7
+      - name: ty type check
+        if: needs.changes.outputs.api == 'true'
+        run: uv run ty check
+        working-directory: api
+
+      # Audits the workflow files themselves (unpinned actions, template
+      # injection, over-broad permissions). Only when they change.
+      - name: zizmor
+        if: needs.changes.outputs.workflows == 'true'
+        uses: zizmorcore/zizmor-action@0dce2577a4760a2749d8cfb7a84b7d5585ebcb7d # v0.5.0
+        with:
+          advanced-security: false
+          min-severity: medium
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         if: needs.changes.outputs.web == 'true'
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
           cache-dependency-path: web/package-lock.json
 
@@ -223,10 +252,11 @@ jobs:
       pull-requests: read
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          persist-credentials: false
           fetch-depth: 0
 
-      - uses: gitleaks/gitleaks-action@v3
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

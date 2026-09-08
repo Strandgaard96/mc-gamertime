@@ -28,7 +28,7 @@ def send_email(*, to: str, subject: str, body: str) -> None:
             # Documented selfhost convenience: no mail server → print the message
             # (incl. the reset link) so the operator can read it from local
             # `docker compose logs`. Only safe because those logs are operator-only.
-            print(f"[mailer] SMTP_HOST not set — would send to {to}\nSubject: {subject}\n{body}")
+            print(f"[mailer] SMTP_HOST not set — would send to {to}\nSubject: {subject}\n{body}")  # noqa: T201
         else:
             # Cloud: NEVER write the body to CloudWatch — it may contain a live
             # password-reset token (CWE-532). Log a non-sensitive marker only.

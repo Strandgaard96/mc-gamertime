@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 
 import boto3
+import pytest
 
 from lib.db.base import paginated_scan
 
@@ -87,11 +88,8 @@ def test_dynamo_table_add_to_set_raises_item_not_found_on_conditional_check_fail
         {"Error": {"Code": "ConditionalCheckFailedException", "Message": "x"}}, "UpdateItem"
     )
     table = DynamoTable(inner)
-    try:
+    with pytest.raises(ItemNotFoundError, match=r"^missing$"):
         table.add_to_set("missing", "favorites", "alice")
-        assert False, "expected ItemNotFoundError"
-    except ItemNotFoundError as e:
-        assert str(e) == "missing"
 
 
 def test_dynamo_table_remove_from_set_calls_update_item():

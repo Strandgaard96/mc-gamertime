@@ -47,7 +47,9 @@ def _result(
 def test_my_entry_finds_player():
     ctx = AchievementContext("p1", {})
     r = _result()
-    assert ctx.my_entry(r)["playerId"] == "p1"
+    entry = ctx.my_entry(r)
+    assert entry is not None
+    assert entry["playerId"] == "p1"
 
 
 def test_my_entry_returns_none_when_absent():

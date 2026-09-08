@@ -12,7 +12,7 @@ def compute_elo(results: list[dict]) -> dict[str, int]:
     for r in ordered:
         player_ids = [p["playerId"] for p in r.get("players", []) if p.get("playerId")]
         winner_id = r.get("winnerId")
-        if len(player_ids) < 2 or winner_id not in player_ids:
+        if not winner_id or len(player_ids) < 2 or winner_id not in player_ids:
             continue
 
         for pid in player_ids:

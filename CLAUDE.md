@@ -7,7 +7,9 @@ Branch: `main` (pushed to `origin/main`)
 ## Commands
 
 `cd web && npx tsc --noEmit` — typecheck web (must run from web/ dir)
-`cd api && uv run pytest tests/ -v` — run API tests
+`cd api && uv run pytest tests/ -v` — run API tests (coverage floor `fail_under = 90` in `pyproject.toml`)
+`cd api && uv run ty check` — Python type check (ty, Astral); `uv run ruff check .` — lint
+`cd web && npx oxlint src/` — web lint (type-aware via `web/.oxlintrc.json`, needs TS 7 + `oxlint-tsgolint`)
 `task build` — `api/build.sh` (lambda.zip) + `vite build` web/
 `task init` — `terraform init` (S3 state; `infra/backend.hcl` override if present) + `npm ci`
 `task state:bootstrap` — create the S3 state bucket from `infra/backend.tf` (once per account); `task state:migrate` — move local state into it
@@ -61,10 +63,16 @@ The project includes a **"Full Stack" VS Code Launch Configuration**:
 - Image tags on GHCR: `main` = every push to main (edge); `X.Y.Z`/`X.Y`/`latest` = releases only, published by the `publish-image` job in `release-please.yml` calling `publish.yml` via `workflow_call` (a tag pushed by release-please's `GITHUB_TOKEN` never triggers a `tags:` workflow on its own).
 - CI (`.github/workflows/ci.yml`) is path-scoped via a `Detect changes` job (`dorny/paths-filter`):
   `API tests` need `api/**`, `TypeScript typecheck`/`Frontend tests` need `web/**`, `Docker build`
-  needs those or `Dockerfile`/`docker/**`; `Lint` and `Secrets scan` always run. Skipped jobs still
+  needs those or `Dockerfile`/`docker/**`, the `zizmor` step in `Lint` needs `.github/workflows/**`;
+  `Lint` and `Secrets scan` always run. Skipped jobs still
   satisfy the required checks on `main` — never add a workflow-level `paths:` filter to `ci.yml`,
   that leaves required checks stuck at "Expected". Editing `ci.yml` itself re-runs everything.
   `publish.yml`'s `push` trigger has the same path list, so docs/README merges don't rebuild `:main`.
+- Workflow `uses:` are SHA-pinned (`owner/action@<sha> # vN`); Renovate's `helpers:pinGitHubActionDigests`
+  keeps them current and its `pre-commit` manager bumps hook `rev:`s. New action → resolve the tag
+  SHA (`gh api repos/<owner>/<repo>/git/ref/tags/<tag>`), never paste a bare tag or zizmor fails CI.
+  Workflow-level `permissions:` stay `contents: read`; grant writes per job.
+- Git hooks: `prek` (drop-in pre-commit replacement, same config) — `prek run --all-files`.
 - release-please: `docs:`/`ci:`/`chore:` are hidden changelog sections → they do NOT cut a release on their own; `feat:`/`fix:`/`perf:` do. `web/package.json` and `api/pyproject.toml` versions are bumped by `extra-files` in `release-please-config.json`.
 - Starlette 1.0.1 deprecated per-request cookies — use `client.cookies.set()` on TestClient instead
 - FastAPI `redirect_slashes=False` — all routes use `""` not `"/"` to avoid 307 leaking API Gateway URL

@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, field_validator
@@ -67,8 +67,8 @@ def _validate_player_config(game: dict, players: list[dict]) -> None:
                 )
 
     if track_turn_order:
-        seats = [p.get("seat") for p in players]
-        if None in seats or sorted(seats) != list(range(1, len(players) + 1)):
+        seats = [p["seat"] for p in players if p.get("seat") is not None]
+        if len(seats) != len(players) or sorted(seats) != list(range(1, len(players) + 1)):
             raise HTTPException(
                 status_code=422,
                 detail="seat must be a 1..N permutation of all players",
@@ -281,7 +281,7 @@ def create_result(body: AddResultBody, _: Annotated[AuthUser, Depends(require_ad
     # (we know it) so before_results always reflects pre-write state, then append
     # it locally so milestone/achievement math sees the new result exactly once.
     before_results = [r for r in list_results() if r.get("pk") != result["pk"]]
-    all_results = before_results + [result]
+    all_results = [*before_results, result]
     milestone = detect_milestone(body.winnerId, body.winnerName, all_results)
     new_achievements = _detect_new_achievements(body.players, before_results, all_results, result)
     return {**result, "milestone": milestone, "newAchievements": new_achievements}
@@ -295,7 +295,7 @@ def update_result(
     if not existing:
         raise HTTPException(status_code=404, detail="Result not found")
 
-    updated = {**existing}
+    updated: dict[str, Any] = {**existing}
     for key, value in body.model_dump(exclude_unset=True).items():
         if value is None:
             if key != "mood":
@@ -323,6 +323,8 @@ def update_result(
     if body.players is not None or body.gameId is not None:
         if game is None:
             game = get_game(updated["gameId"])
+        if not game:
+            raise HTTPException(status_code=422, detail=f"Unknown game: {updated['gameId']}")
         _validate_player_config(game, updated["players"])
 
     # pk/createdAt come from `existing` and are never in the body — preserved.

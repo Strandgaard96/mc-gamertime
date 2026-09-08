@@ -37,6 +37,12 @@ def set_jwt_secret(secret: str) -> None:
     _jwt_secret = secret
 
 
+def _get_secret() -> str:
+    if _jwt_secret is None:
+        raise RuntimeError("JWT secret not initialised (set_jwt_secret was never called)")
+    return _jwt_secret
+
+
 @dataclass
 class AuthUser:
     sub: str
@@ -53,11 +59,11 @@ def sign_token(user: AuthUser) -> str:
         "tv": user.tokenVersion,
         "exp": int((datetime.now(UTC) + timedelta(days=7)).timestamp()),
     }
-    return jwt.encode(payload, _jwt_secret, algorithm="HS256")
+    return jwt.encode(payload, _get_secret(), algorithm="HS256")
 
 
 def decode_token(token: str) -> AuthUser:
-    payload = jwt.decode(token, _jwt_secret, algorithms=["HS256"])
+    payload = jwt.decode(token, _get_secret(), algorithms=["HS256"])
     # Auth tokens carry no `purpose` claim. Reject anything that does (e.g. a
     # password-reset token signed with the same secret) so it can't be replayed
     # as a session cookie — mirrors decode_reset_token's purpose check.
@@ -107,11 +113,11 @@ def sign_reset_token(username: str, token_version: int) -> str:
         "tv": token_version,
         "exp": int((datetime.now(UTC) + timedelta(minutes=_RESET_TTL_MINUTES)).timestamp()),
     }
-    return jwt.encode(payload, _jwt_secret, algorithm="HS256")
+    return jwt.encode(payload, _get_secret(), algorithm="HS256")
 
 
 def decode_reset_token(token: str) -> tuple[str, int]:
-    payload = jwt.decode(token, _jwt_secret, algorithms=["HS256"])
+    payload = jwt.decode(token, _get_secret(), algorithms=["HS256"])
     if payload.get("purpose") != _RESET_PURPOSE:
         raise jwt.InvalidTokenError("Not a password-reset token")
     return payload["sub"], payload.get("tv", 0)

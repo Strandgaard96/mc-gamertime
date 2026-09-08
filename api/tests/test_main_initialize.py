@@ -149,6 +149,7 @@ def test_bootstrap_admin_does_not_overwrite_existing_user(monkeypatch):
     from lib.db.users import get_user
 
     user = get_user("admin")
+    assert user is not None
     assert user["role"] == "readonly"
     assert user["displayName"] == "Custom Name"
     assert user["passwordHash"] == "untouched-hash"
