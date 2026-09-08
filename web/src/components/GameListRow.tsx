@@ -1,0 +1,152 @@
+import { CalendarDays, Clock, Gauge, PenLine, Trash2, Users2 } from "lucide-react";
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "../lib/AuthContext";
+import type { Game } from "../lib/types";
+import { cn, idFromPk, pressable } from "../lib/utils";
+import { LogResultDialog } from "./LogResultDialog";
+import { Button } from "./ui/button";
+import { Tooltip } from "./ui/tooltip";
+
+interface Props {
+  game: Game;
+  onSelect?: (game: Game) => void;
+  onDelete?: (id: string) => void;
+}
+
+export function GameListRow({ game, onSelect, onDelete }: Props) {
+  const gameId = idFromPk(game.pk);
+  const bggUrl = game.bggId ? `https://boardgamegeek.com/boardgame/${game.bggId}` : undefined;
+  const { user } = useAuth();
+  const [showLogDialog, setShowLogDialog] = useState(false);
+
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-3 p-3 rounded-lg border bg-card hover:border-primary/30 hover:shadow-sm transition-all duration-200",
+        onSelect && "cursor-pointer",
+        pressable,
+      )}
+      onClick={onSelect ? () => onSelect(game) : undefined}
+    >
+      {bggUrl ? (
+        <a
+          href={bggUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="shrink-0"
+        >
+          {game.imageUrl ? (
+            <img
+              src={game.imageUrl}
+              alt={game.name}
+              className="w-14 h-14 object-cover rounded-md"
+            />
+          ) : (
+            <div className="w-14 h-14 bg-muted rounded-md flex items-center justify-center text-xl opacity-30">
+              🎲
+            </div>
+          )}
+        </a>
+      ) : (
+        <div className="shrink-0">
+          {game.imageUrl ? (
+            <img
+              src={game.imageUrl}
+              alt={game.name}
+              className="w-14 h-14 object-cover rounded-md"
+            />
+          ) : (
+            <div className="w-14 h-14 bg-muted rounded-md flex items-center justify-center text-xl opacity-30">
+              🎲
+            </div>
+          )}
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        {onSelect ? (
+          <span className="font-display font-semibold text-sm">{game.name}</span>
+        ) : (
+          <Link
+            to={`/games/${gameId}`}
+            className="font-display font-semibold text-sm hover:text-primary transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {game.name}
+          </Link>
+        )}
+        <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-xs text-muted-foreground">
+          {game.minPlayers != null && game.maxPlayers != null && (
+            <span className="flex items-center gap-1">
+              <Users2 size={11} />
+              {game.minPlayers}–{game.maxPlayers}p
+            </span>
+          )}
+          {game.playTime != null && (
+            <span className="flex items-center gap-1">
+              <Clock size={11} />
+              {game.playTime}m
+            </span>
+          )}
+          {game.weight != null && (
+            <span className="flex items-center gap-1">
+              <Gauge size={11} />
+              {game.weight.toFixed(1)}
+            </span>
+          )}
+          {game.yearPublished != null && (
+            <span className="flex items-center gap-1">
+              <CalendarDays size={11} />
+              {game.yearPublished}
+            </span>
+          )}
+        </div>
+      </div>
+      {!onSelect &&
+        (user?.role === "admin" ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="shrink-0 text-muted-foreground hover:text-foreground"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowLogDialog(true);
+            }}
+          >
+            <PenLine size={14} />
+          </Button>
+        ) : (
+          <Tooltip text="Only admins can log results">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="shrink-0 opacity-40"
+              disabled
+              onClick={(e) => e.stopPropagation()}
+            >
+              <PenLine size={14} />
+            </Button>
+          </Tooltip>
+        ))}
+      {onDelete && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-destructive hover:text-destructive shrink-0"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(gameId);
+          }}
+        >
+          <Trash2 size={14} />
+        </Button>
+      )}
+      <LogResultDialog
+        open={showLogDialog}
+        onClose={() => setShowLogDialog(false)}
+        defaultGameId={gameId}
+      />
+    </div>
+  );
+}

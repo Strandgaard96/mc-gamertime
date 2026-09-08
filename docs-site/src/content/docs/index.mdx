@@ -1,0 +1,80 @@
+---
+title: MC GamerTime
+description: Board game inventory and session tracker — catalog, results, leaderboard, achievements. Self-host with Docker or deploy on AWS.
+template: splash
+hero:
+  tagline: Track board game nights with friends — catalog, results, Elo leaderboard, achievements. Self-host it with one command, or run it on AWS for roughly $0/month.
+  image:
+    file: ../../assets/hero-leaderboard.png
+  actions:
+    - text: Self-host with Docker
+      link: /self-hosting/quickstart/
+      icon: right-arrow
+      variant: primary
+    - text: Deploy on AWS
+      link: /cloud-deploy/aws/
+      icon: cloud-download
+      variant: minimal
+    - text: GitHub
+      link: https://github.com/Strandgaard96/mc-gamertime
+      icon: github
+      variant: minimal
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+import version from '../../version.json';
+
+## Start here
+
+<CardGrid>
+  <LinkCard
+    title="Features"
+    description="Leaderboard, catalog, achievements, blog — with screenshots."
+    href="/features/"
+  />
+  <LinkCard
+    title="Quickstart"
+    description="Compose file, admin account, running app — a few minutes."
+    href="/self-hosting/quickstart/"
+  />
+  <LinkCard
+    title="Configuration"
+    description="Every environment variable, and which ones you actually need."
+    href="/self-hosting/configuration/"
+  />
+  <LinkCard
+    title="HTTPS / Reverse proxy"
+    description="nginx, Traefik, or Tailscale in front of the app."
+    href="/self-hosting/https/"
+  />
+  <LinkCard
+    title="Security model"
+    description="What is exposed, what is not, and what to lock down before opening it up."
+    href="/self-hosting/security/"
+  />
+  <LinkCard
+    title="Backups"
+    description="Back up config/, export and import tables."
+    href="/self-hosting/backups-upgrades/"
+  />
+  <LinkCard
+    title="Deploy on AWS"
+    description="Terraform, CloudFront, Lambda — and what stays private."
+    href="/cloud-deploy/aws/"
+  />
+  <LinkCard
+    title="Contributing"
+    description="Run the tests, set up pre-commit, learn the codebase."
+    href="/contributing/overview/"
+  />
+</CardGrid>
+
+## Stack
+
+- **Frontend:** React 18, Vite, Tailwind CSS, TanStack Query, Recharts
+- **Backend:** Python / FastAPI — uvicorn when self-hosted, Lambda + Mangum on AWS
+- **Data:** embedded SQLite (self-hosted) or DynamoDB (AWS)
+- **Storage:** local filesystem (self-hosted) or S3 + CloudFront (AWS)
+
+These docs describe **v{version.version}** — see the [release notes](/self-hosting/release-notes/)
+for what changed, and pin the matching image tag if you upgrade deliberately.

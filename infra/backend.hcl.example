@@ -1,0 +1,4 @@
+# Optional. Copy to infra/backend.hcl (gitignored) to override the state bucket in
+# backend.tf without editing source. `task init` and `task state:bootstrap` pick it up.
+bucket = "my-own-mc-gamertime-tfstate"
+region = "eu-west-1"

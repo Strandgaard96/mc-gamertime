@@ -1,0 +1,36 @@
+# Copy to terraform.tfvars (gitignored) and fill in your own values.
+# Everything deployment-specific lives here, so nothing personal ends up in
+# version control.
+
+# ── Required ──────────────────────────────────────────────────────────────────
+
+# Root domain you own. DNS records are added by hand, so any provider works.
+domain = "example.com"
+
+# ── Optional ──────────────────────────────────────────────────────────────────
+
+# Host to serve the app from: <subdomain>.<domain>. Defaults to "mcgamertime".
+# subdomain = "games"
+
+# Address subscribed to the CloudWatch alarm topic (Lambda errors, throttles,
+# API Gateway 5xx). AWS emails a confirmation link once — until you click it the
+# alarms fire into a topic with no subscriber. Empty means no email at all.
+alert_email = ""
+
+# Board Game Geek API token. Without it the game catalog still works, but
+# searching BGG to add new games is disabled. Stored in SSM Parameter Store and
+# only read on the first apply.
+bgg_token = ""
+
+# ARN of a CloudFront-managed WAF Web ACL to associate with the distribution.
+# Empty deploys without a WAF (warned about, not blocked, on the prod/default
+# workspace). Free to add: CloudFront console -> your distribution -> Security
+# tab -> Enable protections -> Core protections (NOT Additional protections,
+# which bills separately) -> paste the created Web ACL's ARN here. The ARN
+# embeds your AWS account id, which is one reason this file is gitignored.
+cloudfront_web_acl_arn = ""
+
+# Extra credentialed CORS origins beyond the deployed FQDN — for example a
+# legacy domain still pointing at this app. The deployed FQDN and the
+# distribution's own *.cloudfront.net domain are always included.
+extra_cors_origins = []
