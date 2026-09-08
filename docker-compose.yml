@@ -1,0 +1,63 @@
+services:
+  init:
+    container_name: mc-gamertime-init
+    image: alpine:3
+    user: root
+    command: >-
+      sh -c "mkdir -p /config/app &&
+      chown -R ${PUID:-1000}:${PGID:-1000} /config/app"
+    volumes:
+      - ./config:/config
+    restart: "no"
+    deploy:
+      resources:
+        limits:
+          memory: 32m
+          cpus: "0.1"
+    security_opt:
+      - no-new-privileges:true
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+    cap_drop: [ALL]
+
+  app:
+    container_name: mc-gamertime
+    image: ghcr.io/strandgaard96/mc-gamertime:latest
+    ports:
+      - "${APP_PORT:-4263}:4263"
+    environment:
+      DB_BACKEND: sqlite
+      STORAGE_BACKEND: local
+      SECRETS_PROVIDER: env
+      ORIGIN_GUARD_ENABLED: "false"
+      PUBLIC_RECOMMENDED_ENABLED: "false"
+      BGG_TOKEN: ${BGG_TOKEN:-}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      APP_BASE_URL: ${APP_BASE_URL:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM_ADDRESS: ${SMTP_FROM_ADDRESS:-}
+      METRICS_ENABLED: ${METRICS_ENABLED:-false}
+      FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+    volumes:
+      - ./config/app:/data
+    restart: unless-stopped
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
+        reservations:
+          memory: 128m
+          cpus: "0.25"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
