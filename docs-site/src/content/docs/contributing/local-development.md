@@ -183,7 +183,7 @@ uv add some-package       # adds to pyproject.toml and syncs .venv
 
 Then commit both `pyproject.toml` and `uv.lock`.
 
-> **Note:** Also add the package to `requirements.txt` if it's needed in the Lambda (production). `requirements.txt` is used by `build.sh` for the Lambda zip — `pyproject.toml` is local dev only.
+> **Note:** Also add the package to `requirements.txt` (used by `build.sh` for the Lambda zip) and to `requirements-selfhost.txt` (used by the `Dockerfile`; it is `requirements.txt` minus `boto3`/`mangum` plus `uvicorn`, and `tests/test_requirements_sync.py` fails if the two drift). `pyproject.toml` is local dev only.
 
 ---
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import lib.db.base as _db
 
@@ -31,7 +31,7 @@ def update_avatar(username: str, has_avatar: bool) -> None:
         # Stamps the change so avatar URLs can be cache-busted; without it a
         # replaced avatar keeps the same URL and browsers show the old one for
         # as long as the Cache-Control max-age allows.
-        item["avatarUpdatedAt"] = datetime.now(timezone.utc).isoformat()
+        item["avatarUpdatedAt"] = datetime.now(UTC).isoformat()
         _db.tables["users"].put_item(Item=_db._floats_to_decimal(item))
 
 

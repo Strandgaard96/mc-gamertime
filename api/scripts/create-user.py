@@ -8,7 +8,7 @@ import argparse
 import getpass
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -84,7 +84,7 @@ def main():
         sys.exit(1)
 
     hashed = bcrypt.hashpw(args.password.encode(), bcrypt.gensalt()).decode()
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     item = {
         "pk": args.username,
         "createdAt": now,

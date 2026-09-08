@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from typing import Annotated, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Annotated
 
+import jwt
 from fastapi import Cookie, Depends, HTTPException
-from jose import JWTError, jwt
 
 from lib.db.users import get_user
 
-_jwt_secret: Optional[str] = None
+_jwt_secret: str | None = None
 
 # bcrypt refuses passwords longer than 72 *bytes* — it raises ValueError rather
 # than truncating, so anything that reaches hashpw/checkpw with a longer value
@@ -51,7 +51,7 @@ def sign_token(user: AuthUser) -> str:
         "role": user.role,
         "displayName": user.displayName,
         "tv": user.tokenVersion,
-        "exp": int((datetime.now(timezone.utc) + timedelta(days=7)).timestamp()),
+        "exp": int((datetime.now(UTC) + timedelta(days=7)).timestamp()),
     }
     return jwt.encode(payload, _jwt_secret, algorithm="HS256")
 
@@ -62,7 +62,7 @@ def decode_token(token: str) -> AuthUser:
     # password-reset token signed with the same secret) so it can't be replayed
     # as a session cookie — mirrors decode_reset_token's purpose check.
     if payload.get("purpose") is not None:
-        raise JWTError("Not an auth token")
+        raise jwt.InvalidTokenError("Not an auth token")
     return AuthUser(
         sub=payload["sub"],
         role=payload["role"],
@@ -71,13 +71,13 @@ def decode_token(token: str) -> AuthUser:
     )
 
 
-def require_auth(token: Annotated[Optional[str], Cookie()] = None) -> AuthUser:
+def require_auth(token: Annotated[str | None, Cookie()] = None) -> AuthUser:
     if not token:
         raise HTTPException(status_code=401, detail="Unauthorized")
     try:
         auth_user = decode_token(token)
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Unauthorized") from None
 
     user = get_user(auth_user.sub)
     if user is None or user.get("tokenVersion", 0) != auth_user.tokenVersion:
@@ -105,9 +105,7 @@ def sign_reset_token(username: str, token_version: int) -> str:
         "sub": username,
         "purpose": _RESET_PURPOSE,
         "tv": token_version,
-        "exp": int(
-            (datetime.now(timezone.utc) + timedelta(minutes=_RESET_TTL_MINUTES)).timestamp()
-        ),
+        "exp": int((datetime.now(UTC) + timedelta(minutes=_RESET_TTL_MINUTES)).timestamp()),
     }
     return jwt.encode(payload, _jwt_secret, algorithm="HS256")
 
@@ -115,5 +113,5 @@ def sign_reset_token(username: str, token_version: int) -> str:
 def decode_reset_token(token: str) -> tuple[str, int]:
     payload = jwt.decode(token, _jwt_secret, algorithms=["HS256"])
     if payload.get("purpose") != _RESET_PURPOSE:
-        raise JWTError("Not a password-reset token")
+        raise jwt.InvalidTokenError("Not a password-reset token")
     return payload["sub"], payload.get("tv", 0)

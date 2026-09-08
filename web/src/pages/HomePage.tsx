@@ -248,13 +248,15 @@ export default function HomePage() {
 
         <div className="pt-4 pb-2 flex justify-center items-center gap-3">
           <a
-            href="https://links.strandgaard.dev"
+            href="https://github.com/Strandgaard96/mc-gamertime"
+            target="_blank"
+            rel="noopener noreferrer"
             className="text-base text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors"
           >
-            created by Magnus Strandgaard
+            MC GamerTime
           </a>
           <a
-            href="https://github.com/strandgaard96"
+            href="https://github.com/Strandgaard96/mc-gamertime"
             target="_blank"
             rel="noopener noreferrer"
             className="opacity-30 hover:opacity-70 transition-opacity"

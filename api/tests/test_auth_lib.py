@@ -1,3 +1,5 @@
+from datetime import UTC
+
 import pytest
 from fastapi import HTTPException
 
@@ -27,9 +29,9 @@ def test_sign_and_decode_roundtrip():
 
 
 def test_decode_invalid_token_raises():
-    from jose import JWTError
+    import jwt
 
-    with pytest.raises(JWTError):
+    with pytest.raises(jwt.PyJWTError):
         decode_token("not.a.valid.token")
 
 
@@ -99,12 +101,12 @@ def test_sign_and_decode_roundtrip_includes_token_version():
 def test_decode_token_rejects_reset_token():
     # A4: a password-reset token (carries purpose=pwreset) must not be usable as
     # an auth cookie, even though it's signed with the same secret.
-    from jose import JWTError
+    import jwt
 
     from lib.auth import sign_reset_token
 
     reset = sign_reset_token("alice", 0)
-    with pytest.raises(JWTError):
+    with pytest.raises(jwt.PyJWTError):
         decode_token(reset)
 
 
@@ -162,17 +164,17 @@ def test_sign_and_decode_reset_token_roundtrip():
 
 
 def test_decode_reset_token_rejects_login_token():
-    from jose import JWTError
+    import jwt
 
     login_token = sign_token(AuthUser(sub="alice", role="admin", displayName="Alice"))
-    with pytest.raises(JWTError):
+    with pytest.raises(jwt.PyJWTError):
         decode_reset_token(login_token)
 
 
 def test_decode_reset_token_rejects_expired_token():
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
 
-    from jose import JWTError, jwt
+    import jwt
 
     import lib.auth as auth_lib
 
@@ -180,8 +182,8 @@ def test_decode_reset_token_rejects_expired_token():
         "sub": "alice",
         "purpose": "pwreset",
         "tv": 0,
-        "exp": int((datetime.now(timezone.utc) - timedelta(minutes=1)).timestamp()),
+        "exp": int((datetime.now(UTC) - timedelta(minutes=1)).timestamp()),
     }
     expired_token = jwt.encode(expired_payload, auth_lib._jwt_secret, algorithm="HS256")
-    with pytest.raises(JWTError):
+    with pytest.raises(jwt.PyJWTError):
         decode_reset_token(expired_token)

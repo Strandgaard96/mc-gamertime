@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
@@ -20,4 +20,4 @@ def list_notifications(user: Annotated[AuthUser, Depends(require_auth)]):
 
 @router.post("/read", status_code=204)
 def mark_notifications_read(user: Annotated[AuthUser, Depends(require_auth)]):
-    set_last_read_at(user.sub, datetime.now(timezone.utc).isoformat())
+    set_last_read_at(user.sub, datetime.now(UTC).isoformat())

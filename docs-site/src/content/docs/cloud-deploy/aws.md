@@ -77,10 +77,25 @@ outside the repo; losing it breaks your next apply.
 
 ## Deploy
 
-### 1. Provision the infrastructure
+### 1. Create the Terraform state bucket (one-time)
+
+Terraform state is kept in S3 (`infra/backend.tf`), never on your laptop: it contains
+every secret Terraform has read, and a lost local file means Terraform no longer knows
+what it created. The bucket is separate from the site bucket and is created once by hand,
+because Terraform cannot store its own state in a bucket it is about to create.
+
+S3 bucket names are global, so the name in `backend.tf` is taken. Either edit it there, or
+copy `infra/backend.hcl.example` to `infra/backend.hcl` (gitignored, like `terraform.tfvars`)
+and set yours — every `task` target picks the override up. Then:
 
 ```sh
-task init    # terraform init + npm ci
+task state:bootstrap    # creates the bucket: versioned, encrypted, private
+```
+
+### 2. Provision the infrastructure
+
+```sh
+task init    # terraform init (S3 state) + npm ci
 task build   # bundle Lambda + build Vite SPA
 task plan    # review what Terraform will create
 task apply   # provision infrastructure
@@ -89,7 +104,7 @@ task apply   # provision infrastructure
 The first apply stops at the ACM certificate, which stays `PENDING_VALIDATION` until you
 prove you own the domain — the next step.
 
-### 2. Validate the certificate (one-time)
+### 3. Validate the certificate (one-time)
 
 Get the records ACM wants:
 
@@ -101,7 +116,7 @@ Add each one as a **CNAME** at whatever DNS provider hosts your domain, using th
 `name` field as the record name and `value` as the target. Wait ~2 minutes for it to
 propagate, then run `task apply` again — this time it completes.
 
-### 3. Point your subdomain at CloudFront
+### 4. Point your subdomain at CloudFront
 
 ```sh
 terraform -chdir=infra output cloudfront_url
@@ -116,7 +131,7 @@ carrying Cloudflare's proxy headers, so an orange-cloud record breaks the site r
 protecting it. Security is handled at the AWS level.
 :::
 
-### 4. Ship the frontend
+### 5. Ship the frontend
 
 Once the subdomain resolves to CloudFront:
 
@@ -124,7 +139,7 @@ Once the subdomain resolves to CloudFront:
 task deploy   # run this every time you want to update your live application
 ```
 
-### 5. Create the first admin user
+### 6. Create the first admin user
 
 Nothing on the cloud path creates an account for you — `ADMIN_USERNAME`/`ADMIN_PASSWORD`
 bootstrap only applies to the self-hosted container. Until you run this, the login page

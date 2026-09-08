@@ -186,18 +186,18 @@ export default function AdminRecommendedPage() {
                   <Button variant="outline" size="sm" onClick={() => openEdit(rec)}>
                     Edit
                   </Button>
-                  <Link to={`/admin/recommended/${idFromPk(rec.pk)}/edit`}>
-                    <Button variant="outline" size="sm" className="gap-1">
+                  <Button asChild variant="outline" size="sm" className="gap-1">
+                    <Link to={`/admin/recommended/${idFromPk(rec.pk)}/edit`}>
                       <PenLine size={12} />
                       {rec.hasPost ? "Edit Post" : "Write Post"}
-                    </Button>
-                  </Link>
-                  {rec.hasPost && (
-                    <Link to={`/recommended/${rec.slug ?? rec.pk}`} target="_blank">
-                      <Button variant="ghost" size="sm">
-                        View →
-                      </Button>
                     </Link>
+                  </Button>
+                  {rec.hasPost && (
+                    <Button asChild variant="ghost" size="sm">
+                      <Link to={`/recommended/${rec.slug ?? rec.pk}`} target="_blank">
+                        View →
+                      </Link>
+                    </Button>
                   )}
                   <Button
                     variant="ghost"

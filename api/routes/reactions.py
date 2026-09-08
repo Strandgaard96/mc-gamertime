@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
@@ -80,7 +80,7 @@ def toggle_reaction(
         "emoji": body.emoji,
         "userId": user.sub,
         "userName": user.displayName,
-        "createdAt": datetime.now(timezone.utc).isoformat(),
+        "createdAt": datetime.now(UTC).isoformat(),
     }
     put_reaction(item)
     return {"action": "added", "item": item}
@@ -104,7 +104,7 @@ def create_comment(
         "authorId": user.sub,
         "authorName": user.displayName,
         "text": body.text,
-        "createdAt": datetime.now(timezone.utc).isoformat(),
+        "createdAt": datetime.now(UTC).isoformat(),
     }
     put_reaction(item)
     return item

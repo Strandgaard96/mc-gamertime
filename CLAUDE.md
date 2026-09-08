@@ -9,6 +9,8 @@ Branch: `main` (pushed to `origin/main`)
 `cd web && npx tsc --noEmit` — typecheck web (must run from web/ dir)
 `cd api && uv run pytest tests/ -v` — run API tests
 `task build` — `api/build.sh` (lambda.zip) + `vite build` web/
+`task init` — `terraform init` (S3 state; `infra/backend.hcl` override if present) + `npm ci`
+`task state:bootstrap` — create the S3 state bucket from `infra/backend.tf` (once per account); `task state:migrate` — move local state into it
 `task plan` — terraform plan (check infra diff before deploy)
 `task deploy` — build + terraform apply + S3 sync + CF invalidation
 `task users` / `task users:dev` — list all users (prod / dev table)
@@ -54,7 +56,10 @@ The project includes a **"Full Stack" VS Code Launch Configuration**:
 - `formatDate` uses `en-US` locale → "May 21, 2026" format
 - `pluralize(count, singular, plural?)` in `web/src/lib/utils.ts` returns `"${count} ${word}"` (count already included) — call as `{pluralize(n, "session")}`, never `` `${n} ${pluralize(n, "session")}` `` (double-counts)
 - Python deps managed via uv + `pyproject.toml` in `api/` — run pytest as `cd api && uv run pytest`; never activate venv manually
-- **`build.sh` packages Lambda deps from `api/requirements.txt`, NOT `pyproject.toml`/`uv.lock`** — adding a package needs BOTH `uv add <pkg>` (tests) AND a pinned line in `requirements.txt` (deploy). Miss the second → `Runtime.ImportModuleError: No module named '<pkg>'` crashes EVERY route at cold start (tests stay green, since they run in the uv venv where the dep exists). Verify before deploying: `cd api && ./build.sh && ls dist/ | grep <pkg>`
+- **`build.sh` packages Lambda deps from `api/requirements.txt`, NOT `pyproject.toml`/`uv.lock`** — adding a package needs `uv add <pkg>` (tests) AND a pinned line in `requirements.txt` (Lambda) AND the same line in `requirements-selfhost.txt` (Docker image; = requirements.txt minus `boto3`/`mangum` plus `uvicorn`, enforced by `tests/test_requirements_sync.py`). Miss the second → `Runtime.ImportModuleError: No module named '<pkg>'` crashes EVERY route at cold start (tests stay green, since they run in the uv venv where the dep exists). Verify before deploying: `cd api && ./build.sh && ls dist/ | grep <pkg>`
+- **`boto3`/`botocore`/`mangum` are imported lazily** (inside the DynamoDB/S3/SSM branches and `main.handler`) because the selfhost image doesn't ship them. Never add a module-level `import boto3` to code that runs on the selfhost path — tests can't catch it (the uv venv has boto3); only the Docker build would.
+- Image tags on GHCR: `main` = every push to main (edge); `X.Y.Z`/`X.Y`/`latest` = releases only, published by the `publish-image` job in `release-please.yml` calling `publish.yml` via `workflow_call` (a tag pushed by release-please's `GITHUB_TOKEN` never triggers a `tags:` workflow on its own).
+- release-please: `docs:`/`ci:`/`chore:` are hidden changelog sections → they do NOT cut a release on their own; `feat:`/`fix:`/`perf:` do. `web/package.json` and `api/pyproject.toml` versions are bumped by `extra-files` in `release-please-config.json`.
 - Starlette 1.0.1 deprecated per-request cookies — use `client.cookies.set()` on TestClient instead
 - FastAPI `redirect_slashes=False` — all routes use `""` not `"/"` to avoid 307 leaking API Gateway URL
 - `task build && task apply` deploys Lambda via `source_code_hash` — no manual AWS CLI needed
@@ -67,7 +72,7 @@ The project includes a **"Full Stack" VS Code Launch Configuration**:
 - DynamoDB table names: `boardsite-users`, `boardsite-games`, `boardsite-results`, `boardsite-posts`, `boardsite-recs`, `boardsite-notifications`, `boardsite-settings`, `boardsite-reactions` — override via env vars `USERS_TABLE`, `GAMES_TABLE`, `RESULTS_TABLE`, `POSTS_TABLE`, `RECS_TABLE`, `NOTIFICATIONS_TABLE`, `SETTINGS_TABLE`, `REACTIONS_TABLE`
 - pk format: bare ULID for games/results/posts, username string for users/players — `idFromPk(pk)` in `web/src/lib/utils.ts` strips any `PREFIX#value` prefix (use for URL routing)
 - `cn(...classes)` in `web/src/lib/utils.ts` — clsx + tailwind-merge; use for conditional className merging
-- `Button` (`web/src/components/ui/button.tsx`) supports `asChild` (via `cloneElement`, no Radix dep) — use `<Button asChild><Link to="...">label</Link></Button>` instead of `<Link><Button>...</Button></Link>` (invalid nested `<a><button>`). Known remaining instances not yet converted: `PostViewPage.tsx:76`, `AdminRecommendedPage.tsx:139,146`.
+- `Button` (`web/src/components/ui/button.tsx`) supports `asChild` (via `cloneElement`, no Radix dep) — use `<Button asChild><Link to="...">label</Link></Button>` instead of `<Link><Button>...</Button></Link>` (invalid nested `<a><button>`).
 - DynamoDB list queries: use `paginated_scan(_db.tables["x"])` from `api/lib/db/base.py` — never `table.scan()["Items"]` directly (truncates at 1MB)
 - `api/lib/rate_limit.py`'s `Limiter(..., headers_enabled=True)` requires every
   `@limiter.limit(...)`-decorated route to declare a `response: Response` parameter (even if
@@ -98,6 +103,14 @@ The project includes a **"Full Stack" VS Code Launch Configuration**:
   WAF ACL** — never apply prod without it set), `extra_cors_origins`. Copy
   `infra/terraform.tfvars.example` to start. Losing this file = broken prod apply, so keep it
   backed up outside the repo.
+- **Terraform state lives in S3** (`infra/backend.tf`: bucket `games-boardgame-night-tfstate`,
+  Terraform's native `use_lockfile` — no DynamoDB lock table; optional gitignored
+  `infra/backend.hcl` overrides the bucket for other deployers — `terraform validate` rejects a
+  backend block with no `bucket`, so it can't be left partial). The state bucket is created by
+  `task state:bootstrap`, NOT by this config (chicken-and-egg), and is separate from the web
+  bucket on purpose: the web bucket is a CloudFront origin, so a state file there would be
+  served at `https://<fqdn>/terraform.tfstate` with every SSM secret inside. `dev` workspace
+  state is at `env:/dev/terraform.tfstate` in the same bucket.
 - ACM cert created in us-east-1 (provider alias) — CloudFront requirement
 - No Route53 — DNS managed manually in Cloudflare (CNAME `games → <distro>.cloudfront.net`, proxied=off)
 - After first `task apply`: output ACM validation CNAMEs → add in Cloudflare → wait ~2 min → `task apply` again
@@ -105,11 +118,13 @@ The project includes a **"Full Stack" VS Code Launch Configuration**:
 - Lambda Function URL NOT used — API Gateway is the invoke path
 - CloudFront custom error pages intercept 403+404 from ALL origins — Lambda errors served as `index.html` (200); detect with `x-cache: Error from cloudfront` header
 - `bgg_token` Terraform var only needed on first apply — SSM param uses `lifecycle.ignore_changes`, subsequent applies don't require it
-- Stale TF lock after crash: `ps aux | grep terraform` → kill PID, then retry; `terraform force-unlock` doesn't work on local state
+- Stale TF lock after crash: `ps aux | grep terraform` → kill PID, then `terraform force-unlock <LOCK_ID>` (the ID is in the error; it's the S3 `.tflock` object)
 - CloudFront free pricing plan doesn't support custom response headers policies — don't add `aws_cloudfront_response_headers_policy` without upgrading plan first
 
 ## Dev Environment
 
+- Compose container names are `mc-gamertime` / `mc-gamertime-init`; the compose *service* names (`app`, `init`) are what `docker compose exec|logs` take.
+- GitHub Discussions is deliberately OFF for this repo — questions go to Issues (`blank_issues_enabled: true`); don't add Discussions links.
 - Separate Terraform workspace `dev` (prod = `default`) — `terraform.workspace`-derived `env_suffix`/`fqdn`/`name_prefix` make every resource name/domain workspace-specific, zero-diff for prod
 - Commands: `task plan:dev`, `task apply:dev` (terraform only), `task deploy:dev` (test + build + apply + S3 sync + CF invalidation) — all auto-select `dev` workspace and switch back to `default` after
 - URL: `https://games-dev.<domain>` (from `local.fqdn` in the `dev` workspace) — Cloudflare CNAME → dev CloudFront `cloudfront_url` output (proxied=off)
@@ -179,20 +194,17 @@ additive, does not affect `infra/`/`task build`/`task deploy`.
   behavior unchanged.
 - New self-host env var/feature → update ALL 4 surfaces or docs silently diverge: `.env.example`,
   `docker-compose.yml` (`app.environment:` passthrough — vars not listed there never reach the
-  container), `docs-site/.../self-hosting/configuration.mdx`, and this section. (`docs/selfhost.md`
-  was a 5th surface until it was deleted as a pre-docs-site duplicate — don't recreate it.)
+  container), `docs-site/.../self-hosting/configuration.mdx`, and this section.
 - `create-user.py`'s interactive wizard uses `getpass.getpass()`, which opens `/dev/tty` directly
   and ignores redirected stdin — can't be driven by a heredoc/pipe in a non-interactive shell or
   by a subagent; only testable by a human at a real terminal.
 - Security audits of the live deployment live in top-level `audits/`, which is **gitignored** —
   they map the prod attack surface and must never be published. Plans/specs describing shipped
   fixes stay tracked in `superpowers/`.
-- Planning artifacts (specs/plans from past sessions) live in top-level `superpowers/{plans,specs}/`,
-  not under `docs/` — `docs/` was deleted (it only ever held stale pre-docs-site duplicates); the
-  `writing-plans`/`subagent-driven-development` skills default to `docs/superpowers/plans/...`,
-  override that and save new plans/specs under `superpowers/` instead.
-- All user-facing docs live in `docs-site/` (Starlight, published to mcgamertime-docs.drmaggi.com) —
-  there is no root-level `docs/` anymore. Don't recreate root `.md` doc files; add a docs-site page.
+- Planning artifacts (specs/plans) live in gitignored top-level `superpowers/{plans,specs}/`; the
+  `writing-plans`/`subagent-driven-development` skills default to `docs/superpowers/plans/...` —
+  override that. All user-facing docs live in `docs-site/` (Starlight, published to
+  mcgamertime-docs.drmaggi.com); there is no root `docs/`, don't create root `.md` doc files.
 
 - `/storage/*` proxy (`api/routes/storage.py`, registered only when `STORAGE_BACKEND=local` or
   `S3_ENDPOINT_URL` set): `require_auth`-gated; GET/HEAD restricted to `avatars/`/`blog-images/`/
@@ -205,7 +217,7 @@ additive, does not affect `infra/`/`task build`/`task deploy`.
   --port 8000` (must be port 8000 — `web/vite.config.ts`'s dev proxy target is hardcoded there),
   then bootstrap an admin via `scripts/create-user.py` with the same env vars.
 
-- See `docs-site/src/content/docs/self-hosting/` for env var reference, backups, upgrades, troubleshooting (live at mcgamertime-docs.drmaggi.com/self-hosting/) — the old `docs/selfhost.md` was a pre-docs-site duplicate, deleted once docs-site covered everything in it
+- See `docs-site/src/content/docs/self-hosting/` for env var reference, backups, upgrades, troubleshooting (live at mcgamertime-docs.drmaggi.com/self-hosting/)
 
 ## Debugging Prod
 
@@ -253,7 +265,7 @@ aws dynamodb describe-table \
 ```
 
 **S3 image restore (deleted or overwritten blog image):**
-*Note: Deployments via `task deploy` preserve images by excluding the `blog-images/` prefix from the S3 sync. These procedures are for manual deletions or overwrites.*
+*Note: `task deploy` only ever `--delete`s inside `assets/` (content-hashed Vite output); root files are overwritten in place and the upload prefixes (`avatars/`, `blog-images/`, `game-images/`, `exports/`) are never touched. Don't reintroduce a bucket-wide `--delete` — the old exclude list silently missed `game-images/` and wiped covers on every deploy. These procedures are for manual deletions or overwrites.*
 
 ```bash
 # List all versions of an object
@@ -271,8 +283,8 @@ aws s3api copy-object \
 
 ## Git Notes
 
-- Subagents CAN run `git commit` and `git push` in this environment — no permission block observed in practice (despite earlier assumption otherwise)
-- Subagents dispatched via the Agent tool do NOT automatically inherit a worktree the controller switched into — their shell can default to the original repo checkout even with explicit "work from `<path>`" prompt instructions. Seen once: a one-line fix subagent committed straight to `main`. Mitigation: tell every dispatched subagent to verify `git rev-parse --show-toplevel` equals the worktree path immediately before its final commit and abort if not; for small/well-understood fixes, just apply them directly instead of redispatching.
+- Subagents CAN run `git commit`/`git push` here, and they do NOT inherit a worktree the controller switched into (one once committed straight to `main`). Tell dispatched subagents not to commit, or to verify `git rev-parse --show-toplevel` equals the worktree path first; for small fixes, apply them directly.
+- `git add <paths>` + `git commit` commits the WHOLE index — check `git diff --cached --name-status` is empty before staging a commit's files, or an earlier `git rm`/`git add` gets swept into the wrong commit.
 - `EnterWorktree`/`git worktree add` defaults to branching from `origin/<default-branch>` ("fresh"), not local HEAD — local-only commits on `main` that haven't been pushed are missing from a freshly created worktree. Cherry-pick them in if the new worktree needs them.
 
 ## Behavioral Guidelines

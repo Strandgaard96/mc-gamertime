@@ -4,9 +4,9 @@ import os
 import sqlite3
 from decimal import Decimal
 
-import boto3
-from boto3.dynamodb.conditions import Attr
-from botocore.exceptions import ClientError
+# boto3/botocore are imported lazily below: the selfhost image ships without the
+# AWS SDK (api/requirements-selfhost.txt), and this module is imported on every
+# deployment.
 
 
 class ItemNotFoundError(Exception):
@@ -38,6 +38,8 @@ class DynamoTable:
             # server-side filter, not an index: DynamoDB still reads the whole
             # table and charges for it, so this cuts payload, not RCU. A GSI is
             # the fix for that, and it lives in Terraform.
+            from boto3.dynamodb.conditions import Attr
+
             expr = None
             for key, value in filters.items():
                 cond = Attr(key).eq(_floats_to_decimal(value))
@@ -46,6 +48,9 @@ class DynamoTable:
         return self._table.scan(**kwargs)
 
     def add_to_set(self, pk: str, field: str, value) -> None:
+        from boto3.dynamodb.conditions import Attr
+        from botocore.exceptions import ClientError
+
         try:
             self._table.update_item(
                 Key={"pk": pk},
@@ -59,6 +64,9 @@ class DynamoTable:
             raise
 
     def remove_from_set(self, pk: str, field: str, value) -> None:
+        from boto3.dynamodb.conditions import Attr
+        from botocore.exceptions import ClientError
+
         try:
             self._table.update_item(
                 Key={"pk": pk},
@@ -128,6 +136,8 @@ def _make_tables() -> dict:
                 "Set SQLITE_DB_PATH to a writable location, or DB_BACKEND=dynamodb "
                 "to use AWS."
             ) from exc
+
+    import boto3
 
     region = os.environ.get("AWS_REGION", "eu-west-1")
     endpoint_url = os.environ.get("DYNAMODB_ENDPOINT_URL")

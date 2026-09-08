@@ -1,6 +1,7 @@
+import contextlib
 import os
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from io import BytesIO
 from typing import Annotated, Literal
 
@@ -86,7 +87,7 @@ def create_user(body: CreateUserBody, _: Annotated[AuthUser, Depends(require_adm
         "displayName": body.displayName,
         "passwordHash": password_hash,
         "role": body.role,
-        "createdAt": datetime.now(timezone.utc).isoformat(),
+        "createdAt": datetime.now(UTC).isoformat(),
     }
     put_user(user)
     return {
@@ -197,7 +198,7 @@ async def upload_avatar_route(
         buf.seek(0)
         png_bytes = buf.read()
     except Exception:
-        raise HTTPException(status_code=422, detail="Invalid image")
+        raise HTTPException(status_code=422, detail="Invalid image") from None
 
     _s3.put_object(
         Bucket=_BUCKET,
@@ -255,7 +256,5 @@ def delete_user_route(
 
     delete_user(username)
 
-    try:
+    with contextlib.suppress(Exception):
         _s3.delete_object(Bucket=_BUCKET, Key=f"avatars/{username}.png")
-    except Exception:
-        pass

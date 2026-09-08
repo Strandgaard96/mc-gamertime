@@ -258,13 +258,15 @@ export default function LandingPage() {
               Privacy
             </Link>
             <a
-              href="https://links.strandgaard.dev"
+              href="https://github.com/Strandgaard96/mc-gamertime"
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-base text-muted-foreground/50 hover:text-muted-foreground/80 transition-colors"
             >
-              created by Magnus Strandgaard
+              MC GamerTime
             </a>
             <a
-              href="https://github.com/strandgaard96"
+              href="https://github.com/Strandgaard96/mc-gamertime"
               target="_blank"
               rel="noopener noreferrer"
               className="opacity-40 hover:opacity-80 transition-opacity"

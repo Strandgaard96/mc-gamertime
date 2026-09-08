@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -113,7 +113,7 @@ class AddResultBody(BaseModel):
         try:
             parsed = date.fromisoformat(v)
         except ValueError:
-            raise ValueError("must be YYYY-MM-DD format")
+            raise ValueError("must be YYYY-MM-DD format") from None
         # Server clock is UTC; users ahead of UTC (CET evenings) submit "their today"
         # which is UTC tomorrow — allow one day of slack.
         if parsed > date.today() + timedelta(days=1):
@@ -146,7 +146,7 @@ class UpdateResultBody(BaseModel):
         try:
             parsed = date.fromisoformat(v)
         except ValueError:
-            raise ValueError("must be YYYY-MM-DD format")
+            raise ValueError("must be YYYY-MM-DD format") from None
         if parsed > date.today() + timedelta(days=1):
             raise ValueError("Cannot select a future date")
         return v
@@ -270,7 +270,7 @@ def create_result(body: AddResultBody, _: Annotated[AuthUser, Depends(require_ad
         body_dump.pop("mood", None)
     result = {
         "pk": str(ULID()),
-        "createdAt": datetime.now(timezone.utc).isoformat(),
+        "createdAt": datetime.now(UTC).isoformat(),
         **body_dump,
     }
     put_result(result)

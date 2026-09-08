@@ -12,9 +12,27 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
       # No `release-type` input on purpose: passing one puts the action in
       # legacy non-manifest mode, which ignores release-please-config.json
       # (including its changelog-sections) and derives the current version
       # from the latest GitHub release tag instead of the manifest.
       - uses: googleapis/release-please-action@v5
+        id: release
+
+  # Tags created by release-please come from GITHUB_TOKEN, and GitHub does not
+  # start workflows for events that token produced — so publish.yml's tag
+  # trigger would never fire. Call it directly instead, with the new tag.
+  publish-image:
+    name: Publish release image
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/publish.yml
+    with:
+      tag: ${{ needs.release-please.outputs.tag_name }}

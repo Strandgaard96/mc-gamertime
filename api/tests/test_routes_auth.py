@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import bcrypt
 from fastapi.testclient import TestClient
@@ -658,7 +658,7 @@ def test_login_with_decimal_failed_attempts_from_dynamodb(fake_db):
             "passwordHash": _hashed("TestPass123!"),
             "role": "admin",
             "failedAttempts": Decimal("1"),
-            "lastFailureAt": datetime.now(timezone.utc).isoformat(),
+            "lastFailureAt": datetime.now(UTC).isoformat(),
             "createdAt": "2026-01-01T00:00:00Z",
         }
     )

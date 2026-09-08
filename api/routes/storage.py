@@ -1,7 +1,6 @@
 import os
 from typing import Annotated
 
-from botocore.exceptions import ClientError
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
@@ -11,6 +10,15 @@ from lib.storage import EXT_BY_CONTENT_TYPE, make_s3_client
 router = APIRouter()
 
 _BUCKET = os.environ.get("S3_BUCKET", "")
+
+# botocore is absent from the selfhost image (api/requirements-selfhost.txt);
+# LocalFsClient raises FileNotFoundError for a missing key instead.
+try:
+    from botocore.exceptions import ClientError
+
+    _NOT_FOUND_ERRORS: tuple[type[Exception], ...] = (ClientError, FileNotFoundError)
+except ImportError:  # pragma: no cover - only true inside the selfhost image
+    _NOT_FOUND_ERRORS = (FileNotFoundError,)
 
 # GET/PUT are scoped to "content all logged-in users may read/write here". This
 # must NOT include "exports/" - scripts/export-tables.py writes full table dumps
@@ -48,8 +56,8 @@ def _stream_object(path: str) -> StreamingResponse:
     s3 = make_s3_client()
     try:
         obj = s3.get_object(Bucket=_BUCKET, Key=path)
-    except (ClientError, FileNotFoundError):
-        raise HTTPException(status_code=404, detail="Not found")
+    except _NOT_FOUND_ERRORS:
+        raise HTTPException(status_code=404, detail="Not found") from None
 
     return StreamingResponse(
         obj["Body"].iter_chunks(),

@@ -1,12 +1,11 @@
 [project]
-name = "boardsite-api"
-version = "0.1.0"
+name = "mc-gamertime-api"
+version = "0.1.3"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi==0.136.1",
     "mangum==0.21.0",
     "boto3==1.43.13",
-    "python-jose[cryptography]==3.5.0",
     "bcrypt==5.0.0",
     "httpx==0.28.1",
     "python-ulid==3.1.0",
@@ -18,6 +17,7 @@ dependencies = [
     "defusedxml==0.7.1",
     "slowapi==0.1.9",
     "prometheus-client==0.21.1",
+    "pyjwt==2.13.0",
 ]
 
 [dependency-groups]
@@ -27,6 +27,7 @@ dev = [
     "pytest-mock",
     "ruff>=0.15.17",
     "moto[dynamodb]>=5.2.3",
+    "pytest-cov>=7.1.0",
 ]
 
 [tool.ruff]
@@ -34,8 +35,21 @@ target-version = "py311"
 line-length = 100
 
 [tool.ruff.lint]
-select = ["E", "F", "I"]
+# B = bugbear, UP = pyupgrade, SIM = simplify (on top of pycodestyle/pyflakes/isort)
+select = ["E", "F", "I", "B", "UP", "SIM"]
 ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# assert False is the idiomatic "unreachable" in tests
+"tests/*" = ["B011"]
+
+[tool.coverage.run]
+source = ["."]
+omit = ["tests/*", "scripts/*", "dist/*", ".venv/*", "handlers/*"]
+
+[tool.coverage.report]
+skip_covered = true
+show_missing = true
 
 [tool.ruff.format]
 quote-style = "double"

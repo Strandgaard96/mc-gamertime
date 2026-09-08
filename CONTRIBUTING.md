@@ -101,8 +101,8 @@ If you change the SQLite schema, add a migration to `api/lib/db/migrations.py` a
 
 ## Questions
 
-[GitHub Discussions](https://github.com/Strandgaard96/mc-gamertime/discussions) for setup
-help and general questions; Issues for bugs and feature requests.
+Open an issue — the bug and feature templates cover the usual cases, and setup questions
+are welcome there too.
 
 More detail — architecture walkthrough, common recipes, debugging tips — lives in the
 [contributor docs](https://mcgamertime-docs.drmaggi.com/contributing/overview/).

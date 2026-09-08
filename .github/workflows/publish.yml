@@ -1,15 +1,23 @@
 name: Publish Docker image
 
+# Two ways in:
+#   - push to main   → tags the image `main` (edge build, every commit)
+#   - workflow_call  → from release-please.yml with the new release tag; tags
+#                      the image `X.Y.Z`, `X.Y` and `latest`
+#
+# The `tags: ["v*"]` trigger this workflow used to have never fired: release-
+# please creates its tags with GITHUB_TOKEN, and GitHub never starts a workflow
+# for an event that token produced. Calling this workflow from the release job
+# is the supported way around that.
 on:
   push:
     branches: [main]
-    tags: ["v*"]
-
-# Queue rather than cancel: a push already mid-flight to GHCR must finish
-# rather than be killed and leave a half-written tag.
-concurrency:
-  group: publish-${{ github.ref }}
-  cancel-in-progress: false
+  workflow_call:
+    inputs:
+      tag:
+        description: "Release tag to build and publish (e.g. v0.1.4)"
+        required: true
+        type: string
 
 jobs:
   push:
@@ -19,9 +27,17 @@ jobs:
     permissions:
       contents: read
       packages: write
+    # Queue rather than cancel: a push already mid-flight to GHCR must finish
+    # rather than be killed and leave a half-written tag. Job-level so it also
+    # applies when this workflow is called from release-please.yml.
+    concurrency:
+      group: publish-${{ github.ref }}-${{ inputs.tag }}
+      cancel-in-progress: false
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -38,12 +54,12 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: ghcr.io/strandgaard96/mc-gamertime
+          # `inputs.tag` is empty on a plain push to main and set on a release.
           tags: |
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=main,enable=${{ inputs.tag == '' }}
+            type=semver,pattern={{version}},value=${{ inputs.tag }},enable=${{ inputs.tag != '' }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ inputs.tag }},enable=${{ inputs.tag != '' }}
+            type=raw,value=latest,enable=${{ inputs.tag != '' }}
 
       - name: Build (unpushed, for scanning)
         uses: docker/build-push-action@v7
