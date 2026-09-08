@@ -149,11 +149,14 @@ additive, does not affect `infra/`/`task build`/`task deploy`.
   fine without one.
 - `docker compose up -d --build` — builds the image (root `Dockerfile`, multi-stage: `web/` → Vite build → `api/` runtime) and starts the stack
 - `docker compose exec mc-gamertime python3 scripts/create-user.py --username admin --display-name "Admin" --role admin --password <pw>` — bootstrap first admin
-- One exposed port, same number both sides (`${APP_PORT:-4263}:4263` on `mc-gamertime`). The container
-  binds 4263 in `docker/entrypoint.sh` and `Dockerfile`'s HEALTHCHECK — change one and the
-  healthcheck fails the container forever. `APP_PORT` is the one self-host env var that must
-  NOT go in the compose `environment:` block: it is read by docker-compose, not the app.
-  Local dev is unrelated and stays on 8000 (vite proxy target).
+- One exposed port, same number both sides (`${APP_BIND:-127.0.0.1}:${APP_PORT:-4263}:4263` on
+  `mc-gamertime`). The container binds 4263 in `docker/entrypoint.sh` and `Dockerfile`'s
+  HEALTHCHECK — change one and the healthcheck fails the container forever. `APP_PORT` and
+  `APP_BIND` are the two self-host env vars that must NOT go in the compose `environment:`
+  block: they are read by docker-compose, not the app. Host bind defaults to loopback (proxy
+  on same host); `APP_BIND=0.0.0.0` for bare-LAN access — Docker port bindings bypass ufw, so
+  that line is the only firewall. uvicorn's `--host 0.0.0.0` inside the container is required
+  (own netns) and not the exposure knob. Local dev is unrelated and stays on 8000 (vite proxy target).
 - **Selfhost is the DEFAULT everywhere; AWS is opt-in.** Unset env = SQLite + local files + env
   secrets + no origin guard + no public recommended. The Dockerfile bakes the same five values in
   (so bare `docker run` works with zero config), and `infra/lambda.tf` names the cloud values

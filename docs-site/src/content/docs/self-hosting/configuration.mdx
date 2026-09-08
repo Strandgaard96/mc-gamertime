@@ -48,12 +48,18 @@ Create a `.env` file next to `docker-compose.yml` (compose auto-loads it) to con
 `JWT_SECRET` is **not** in `.env` — it's auto-generated on first boot and persisted to `/data/.jwt_secret`, bind-mounted from `config/app/` on the host (mode `0600`, never served over HTTP).
 </Aside>
 
-## Host port
+## Host port and bind address
 
-The container listens on `4263` and Compose publishes it as `4263:4263`. Set `APP_PORT` in `.env` to publish it on a different host port — the container's own port never changes, so a reverse proxy reaching `mc-gamertime` over the Docker network keeps targeting `4263`.
+The container listens on `4263` and Compose publishes it as `127.0.0.1:4263:4263`. Set `APP_PORT` in `.env` to publish it on a different host port — the container's own port never changes, so a reverse proxy reaching `mc-gamertime` over the Docker network keeps targeting `4263`.
+
+By default the port is bound to `127.0.0.1`, so it is reachable only from the host itself — which is all a reverse proxy or `tailscale serve` on the same machine needs. To open it directly to other devices on your LAN (`http://<host-ip>:4263`, no proxy), set `APP_BIND=0.0.0.0`.
 
 <Aside type="caution">
-`APP_PORT` is read by docker-compose itself, not by the app. It is deliberately absent from the `mc-gamertime` service's `environment:` block — putting it there does nothing.
+Docker port bindings bypass `ufw`/`firewalld` (Docker inserts its own iptables chain ahead of host rules), so with `APP_BIND=0.0.0.0` the port is reachable by anything that can route to the host — including the internet if the host has a public address or a router port-forward. Put a reverse proxy with TLS in front before doing that; see [HTTPS / Reverse proxy](/self-hosting/https/).
+</Aside>
+
+<Aside type="caution">
+`APP_PORT` and `APP_BIND` are read by docker-compose itself, not by the app. They are deliberately absent from the `mc-gamertime` service's `environment:` block — putting them there does nothing.
 </Aside>
 
 ## BGG Token

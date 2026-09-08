@@ -27,7 +27,10 @@ services:
     # Must match init's chown target above, or the app can't write /data.
     user: "${PUID:-1000}:${PGID:-1000}"
     ports:
-      - "${APP_PORT:-4263}:4263"
+      # APP_BIND=127.0.0.1 (default) keeps the port loopback-only for a reverse proxy on
+      # this host; APP_BIND=0.0.0.0 exposes it to the LAN. Docker port bindings bypass
+      # ufw/firewalld, so this line is the only firewall the app has.
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-4263}:4263"
     environment:
       DB_BACKEND: sqlite
       STORAGE_BACKEND: local
