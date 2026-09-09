@@ -31,6 +31,19 @@ class SeedableTable(SqliteTable):
         self.put_item(Item={k: sorted(v) if isinstance(v, set) else v for k, v in item.items()})
 
 
+def route_paths(app) -> list[str]:
+    """Every registered path, including those inside routers added with
+    ``include_router``. FastAPI >= 0.14x stores those lazily as an
+    ``_IncludedRouter`` entry in ``app.routes`` that has no ``path`` of its own."""
+    paths: list[str] = []
+    for route in app.routes:
+        if hasattr(route, "path"):
+            paths.append(route.path)
+        else:
+            paths.extend(ctx.path for ctx in route.effective_route_contexts())
+    return paths
+
+
 @pytest.fixture(autouse=True)
 def init_app(monkeypatch):
     import main
