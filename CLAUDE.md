@@ -10,6 +10,7 @@ Branch: `main` (pushed to `origin/main`)
 `cd api && uv run pytest tests/ -v` — run API tests (coverage floor `fail_under = 90` in `pyproject.toml`)
 `cd api && uv run ty check` — Python type check (ty, Astral); `uv run ruff check .` — lint
 `cd web && npx oxlint src/` — web lint (type-aware via `web/.oxlintrc.json`, needs TS 7 + `oxlint-tsgolint`)
+`gh workflow run scorecard.yml` — refresh OpenSSF Scorecard on demand; read it with `curl -s https://api.scorecard.dev/projects/github.com/Strandgaard96/mc-gamertime`
 `task build` — `api/build.sh` (lambda.zip) + `vite build` web/
 `task init` — `terraform init` (S3 state; `infra/backend.hcl` override if present) + `npm ci`
 `task state:bootstrap` — create the S3 state bucket from `infra/backend.tf` (once per account); `task state:migrate` — move local state into it
@@ -71,8 +72,42 @@ The project includes a **"Full Stack" VS Code Launch Configuration**:
 - Workflow `uses:` are SHA-pinned (`owner/action@<sha> # vN`); Renovate's `helpers:pinGitHubActionDigests`
   keeps them current and its `pre-commit` manager bumps hook `rev:`s. New action → resolve the tag
   SHA (`gh api repos/<owner>/<repo>/git/ref/tags/<tag>`), never paste a bare tag or zizmor fails CI.
-  Workflow-level `permissions:` stay `contents: read`; grant writes per job.
+  Workflow-level `permissions:` stay `contents: read`; grant writes per job. Every `actions/checkout`
+  sets `persist-credentials: false` (zizmor `artipacked`, medium severity, fails CI otherwise).
+  Dockerfile `FROM` lines are digest-pinned (`image:tag@sha256:…`, Renovate `docker:pinDigests`).
+- OpenSSF Scorecard (`scorecard.yml`, weekly + push to main) is ~6.5 by design: Branch-Protection /
+  Code-Review need a second reviewer, Contributors needs 3 orgs, Fuzzing only detects `fast-check`
+  (JS) not `hypothesis`, Signed-Releases needs release assets + `*.intoto.jsonl`, SAST fills in as
+  CodeQL (default setup, repo settings) covers the last 30 commits. Accepted deduction: `pip install`
+  in the Dockerfile without `--require-hashes` (would fight the hand-maintained requirements split).
 - Git hooks: `prek` (drop-in pre-commit replacement, same config) — `prek run --all-files`.
+- `web/.oxlintrc.json` is the ONLY place lint severities live — never pass `--deny=...`/`--warn=...` on
+  the CLI (a CLI category flag re-enables rules the config turned off; pre-commit and CI must match).
+  `categories.correctness` also enables type-aware rules; `typescript/no-floating-promises` is off on
+  purpose (84/96 hits were TanStack's fire-and-forget `qc.invalidateQueries(...)`), and the
+  React-Compiler-only rules (`set-state-in-effect`/`immutability`/`refs`) are off. `jsx-a11y` is not
+  enabled yet: ~35 real findings (labels without `htmlFor`, clickable `div`s) await their own PR.
+- ty policy: fix diagnostics at the source (narrow, annotate `dict[str, Any]`); `# ty: ignore[...]` only
+  for third-party typing mismatches (slowapi handler, uvicorn `ProxyHeadersMiddleware`). JWT secret is
+  read via `lib/auth.py::_get_secret()` (raises if `set_jwt_secret` never ran), not the module global.
+- FastAPI ≥ 0.14x stores `include_router()` lazily as an `_IncludedRouter` in `app.routes` with no
+  `path` — tests that enumerate routes must use `route_paths(app)` from `tests/conftest.py`, never
+  `[r.path for r in app.routes]`.
+- Tailwind 4: no `tailwind.config.js`/PostCSS — theme tokens live in the `@theme` block of
+  `web/src/styles/globals.css`, the build goes through `@tailwindcss/vite` in `vite.config.ts`,
+  animations come from `tw-animate-css` (`@import`), `tailwind-merge` is v3. If you ever re-run
+  `npx @tailwindcss/upgrade`, it wrongly renames the Button/Badge **variant name** `"outline"` to
+  `"outline-solid"` and adds a border-colour compat layer the base layer already covers — revert both.
+- lucide-react ≥ 1.0 ships no brand icons; the GitHub mark is `web/src/components/ui/github-icon.tsx`.
+- npm major upgrades: set every new version in `package.json` first, then `rm -rf node_modules
+  package-lock.json && npm install`. Incremental `npm install pkg@x` against the stale tree hits
+  ERESOLVE (peer chains resolved one at a time) — both `web/` and `docs-site/` did.
+- Manual web smoke on the SQLite backend: start the API with the env from "Manual QA" below plus
+  `ADMIN_USERNAME`/`ADMIN_PASSWORD`, seed via the API (`POST /api/games`, `POST /api/results` — every
+  `players[].playerId` must be an existing user, `score` is validated 1–10), then drive
+  `localhost:5173` with the chrome-devtools MCP and check `list_console_messages` for errors/warns.
+- Parallel Bash tool calls share one working directory and race on `cd` — use absolute paths in
+  every command (a `docs-site/` edit once landed in `web/package.json`).
 - release-please: `docs:`/`ci:`/`chore:` are hidden changelog sections → they do NOT cut a release on their own; `feat:`/`fix:`/`perf:` do. `web/package.json` and `api/pyproject.toml` versions are bumped by `extra-files` in `release-please-config.json`.
 - Starlette 1.0.1 deprecated per-request cookies — use `client.cookies.set()` on TestClient instead
 - FastAPI `redirect_slashes=False` — all routes use `""` not `"/"` to avoid 307 leaking API Gateway URL
@@ -305,6 +340,11 @@ aws s3api copy-object \
   template, so paste its structure into the body yourself.
 - Subagents CAN run `git commit`/`git push` here, and they do NOT inherit a worktree the controller switched into (one once committed straight to `main`). Tell dispatched subagents not to commit, or to verify `git rev-parse --show-toplevel` equals the worktree path first; for small fixes, apply them directly.
 - `git add <paths>` + `git commit` commits the WHOLE index — check `git diff --cached --name-status` is empty before staging a commit's files, or an earlier `git rm`/`git add` gets swept into the wrong commit.
+- Never stack PRs (base = another feature branch): `ci.yml` only runs for PRs into `main`, so the
+  stacked PR gets no CI, and if the stack merges in the wrong order the commit never reaches `main`
+  (#38 → had to be re-landed as #39). Wait for the base PR to merge, then rebase onto `main`.
+- Remote branches are not auto-deleted after merge — enable "Automatically delete head branches" in
+  repo settings or `git push origin --delete <branch>` after merging.
 - `EnterWorktree`/`git worktree add` defaults to branching from `origin/<default-branch>` ("fresh"), not local HEAD — local-only commits on `main` that haven't been pushed are missing from a freshly created worktree. Cherry-pick them in if the new worktree needs them.
 
 ## Behavioral Guidelines
