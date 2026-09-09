@@ -1,4 +1,5 @@
-import { Dices, Github, Layers, PenLine, Trophy } from "lucide-react";
+import { Dices, Layers, PenLine, Trophy } from "lucide-react";
+import { GithubIcon } from "../components/ui/github-icon";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Avatar } from "../components/Avatar";
@@ -263,7 +264,7 @@ export default function HomePage() {
             title="GitHub"
             aria-label="GitHub"
           >
-            <Github className="w-7 h-7" aria-hidden="true" />
+            <GithubIcon className="w-7 h-7" aria-hidden="true" />
           </a>
         </div>
       </div>

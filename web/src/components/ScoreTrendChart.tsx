@@ -29,7 +29,7 @@ export function ScoreTrendChart({ data }: Props) {
         <XAxis dataKey="label" tick={{ fontSize: 11 }} />
         <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
         <Tooltip
-          formatter={(value: number) => [value, "Avg score"]}
+          formatter={(value) => [value, "Avg score"]}
           contentStyle={{
             fontSize: 12,
             background: "hsl(var(--card))",

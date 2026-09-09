@@ -99,11 +99,11 @@ export function WinRaceChart({ results }: Props) {
           />
           <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} unit="%" />
           <Tooltip
-            formatter={(v: number, name: string) => [
-              `${v}%`,
+            formatter={(v, name) => [
+              `${Number(v)}%`,
               players.find((p) => p.id === name)?.name ?? name,
             ]}
-            labelFormatter={(label: string) => formatTick(String(label))}
+            labelFormatter={(label) => (typeof label === "string" ? formatTick(label) : label)}
             contentStyle={{
               fontSize: 12,
               background: "hsl(var(--card))",
