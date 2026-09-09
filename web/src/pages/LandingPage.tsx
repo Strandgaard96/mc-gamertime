@@ -1,4 +1,5 @@
-import { BookOpen, ClipboardList, Dices, FileText, Github, Star, Trophy } from "lucide-react";
+import { BookOpen, ClipboardList, Dices, FileText, Star, Trophy } from "lucide-react";
+import { GithubIcon } from "../components/ui/github-icon";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -273,7 +274,7 @@ export default function LandingPage() {
               title="GitHub"
               aria-label="GitHub"
             >
-              <Github className="w-7 h-7" aria-hidden="true" />
+              <GithubIcon className="w-7 h-7" aria-hidden="true" />
             </a>
           </div>
         </div>

@@ -33,7 +33,7 @@ export function WinRateTrendChart({ data }: Props) {
         <XAxis dataKey="label" tick={{ fontSize: 11 }} />
         <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} unit="%" />
         <Tooltip
-          formatter={(value: number) => [`${value}%`, "Win rate"]}
+          formatter={(value) => [`${Number(value)}%`, "Win rate"]}
           contentStyle={{
             fontSize: 12,
             background: "hsl(var(--card))",
