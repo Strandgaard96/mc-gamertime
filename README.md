@@ -1,6 +1,7 @@
 # MC GamerTime
 
 [![CI](https://github.com/Strandgaard96/mc-gamertime/actions/workflows/ci.yml/badge.svg)](https://github.com/Strandgaard96/mc-gamertime/actions/workflows/ci.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Strandgaard96/mc-gamertime/badge)](https://scorecard.dev/viewer/?uri=github.com/Strandgaard96/mc-gamertime)
 [![Docker image](https://img.shields.io/badge/ghcr.io-strandgaard96%2Fmc--gamertime-2496ED?logo=docker&logoColor=white)](https://github.com/Strandgaard96/mc-gamertime/pkgs/container/mc-gamertime)
 [![Release](https://img.shields.io/github/v/release/Strandgaard96/mc-gamertime)](https://github.com/Strandgaard96/mc-gamertime/releases)
 [![License: MIT](https://img.shields.io/github/license/Strandgaard96/mc-gamertime)](LICENSE)
@@ -106,7 +107,7 @@ cp infra/terraform.tfvars.example infra/terraform.tfvars
 else (`subdomain`, `bgg_token`, `alert_email`, `cloudfront_web_acl_arn`,
 `extra_cors_origins`, `aws_region`) has a working default; see
 [`infra/terraform.tfvars.example`](./infra/terraform.tfvars.example) or the [full AWS
-guide](https://mcgamertime-docs.drmaggi.com/cloud-deploy/aws/) for what each does. 
+guide](https://mcgamertime-docs.drmaggi.com/cloud-deploy/aws/) for what each does.
 
 For full AWS installation instructions see: [Full AWS guide →](https://mcgamertime-docs.drmaggi.com/cloud-deploy/aws/).
 
