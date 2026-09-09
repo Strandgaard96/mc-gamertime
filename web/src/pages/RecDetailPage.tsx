@@ -54,7 +54,7 @@ export default function RecDetailPage() {
     <PageTransition>
       <div className="min-h-screen bg-background flex flex-col">
         {!user && (
-          <header className="border-b bg-card/60 backdrop-blur-sm sticky top-0 z-10">
+          <header className="border-b bg-card/60 backdrop-blur-xs sticky top-0 z-10">
             <div className="max-w-5xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Dices size={20} className="text-primary" />
@@ -211,7 +211,7 @@ export default function RecDetailPage() {
         </div>
 
         {!user && rec && (
-          <div className="sticky bottom-0 border-t bg-card/80 backdrop-blur-sm py-3">
+          <div className="sticky bottom-0 border-t bg-card/80 backdrop-blur-xs py-3">
             <div className="max-w-5xl mx-auto px-4 md:px-6 flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Track your own game nights</span>
               <Button asChild size="sm">

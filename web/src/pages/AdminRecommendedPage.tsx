@@ -155,10 +155,10 @@ export default function AdminRecommendedPage() {
                   <img
                     src={rec.imageUrl}
                     alt={rec.gameName}
-                    className="w-12 h-12 object-cover rounded shrink-0"
+                    className="w-12 h-12 object-cover rounded-sm shrink-0"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded bg-muted flex items-center justify-center text-lg font-display font-bold text-muted-foreground shrink-0">
+                  <div className="w-12 h-12 rounded-sm bg-muted flex items-center justify-center text-lg font-display font-bold text-muted-foreground shrink-0">
                     {rec.gameName[0]?.toUpperCase()}
                   </div>
                 )}

@@ -359,7 +359,7 @@ export function LogResultDialog({ open, onClose, defaultGameId, editResult }: Pr
                   onClick={() => dispatch({ type: "TOGGLE_PLAYER", playerId: u.username })}
                   className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-sm border transition-all duration-200 ${
                     isSelected
-                      ? "bg-primary text-primary-foreground border-primary scale-105 shadow-sm shadow-primary/20"
+                      ? "bg-primary text-primary-foreground border-primary scale-105 shadow-xs shadow-primary/20"
                       : "bg-background hover:bg-accent border-input hover:border-primary/30"
                   }`}
                 >

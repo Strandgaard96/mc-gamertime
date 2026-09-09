@@ -44,7 +44,7 @@ export default function LandingPage() {
       {/* ── Header ── */}
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? "bg-card/80 backdrop-blur-sm border-b" : "bg-transparent"
+          scrolled ? "bg-card/80 backdrop-blur-xs border-b" : "bg-transparent"
         }`}
       >
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -188,7 +188,7 @@ export default function LandingPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="rounded-xl border bg-card overflow-hidden">
-                  <Skeleton className="w-full aspect-[3/4]" />
+                  <Skeleton className="w-full aspect-3/4" />
                   <div className="p-3 space-y-2">
                     <Skeleton className="h-5 w-3/4" />
                     <Skeleton className="h-4 w-1/2" />
@@ -214,11 +214,11 @@ export default function LandingPage() {
                       <img
                         src={r.imageUrl}
                         alt={r.gameName}
-                        className="w-full aspect-[3/4] object-contain bg-muted"
+                        className="w-full aspect-3/4 object-contain bg-muted"
                       />
                     ) : (
                       <div
-                        className="w-full aspect-[3/4] flex items-center justify-center text-4xl font-display font-bold text-white"
+                        className="w-full aspect-3/4 flex items-center justify-center text-4xl font-display font-bold text-white"
                         style={{ backgroundColor: color }}
                       >
                         {r.gameName[0]?.toUpperCase() ?? "?"}
