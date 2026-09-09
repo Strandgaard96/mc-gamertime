@@ -104,7 +104,9 @@ export function GameConfigDialog({ open, onClose, game }: Props) {
   return (
     <Dialog open={open} onClose={onClose} title={`Configure ${game.name}`}>
       <div className="space-y-4">
-        {imageUrl && <img src={imageUrl} alt={name} className="w-full h-40 object-cover rounded" />}
+        {imageUrl && (
+          <img src={imageUrl} alt={name} className="w-full h-40 object-cover rounded-sm" />
+        )}
         <div>
           <label className="text-sm font-medium">Cover image</label>
           <input

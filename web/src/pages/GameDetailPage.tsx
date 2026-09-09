@@ -119,7 +119,7 @@ export default function GameDetailPage() {
         {game.imageUrl ? (
           <div className="relative w-full h-52 rounded-xl overflow-hidden -mx-4 md:mx-0">
             <img src={game.imageUrl} alt={game.name} className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
             <div className="absolute bottom-0 inset-x-0 p-4">
               <h1 className="text-2xl font-display font-bold text-white mb-1">{game.name}</h1>
               <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-white/70">

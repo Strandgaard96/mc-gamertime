@@ -23,7 +23,7 @@ export function GameListRow({ game, onSelect, onDelete }: Props) {
   return (
     <div
       className={cn(
-        "flex items-center gap-3 p-3 rounded-lg border bg-card hover:border-primary/30 hover:shadow-sm transition-all duration-200",
+        "flex items-center gap-3 p-3 rounded-lg border bg-card hover:border-primary/30 hover:shadow-xs transition-all duration-200",
         onSelect && "cursor-pointer",
         pressable,
       )}

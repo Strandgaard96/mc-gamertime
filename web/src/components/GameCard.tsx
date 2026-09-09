@@ -101,7 +101,7 @@ export const GameCard = memo(function GameCard({
         {playCounts && playCounts > 0 && (
           <Badge
             variant="secondary"
-            className="absolute bottom-2 right-2 z-10 flex items-center gap-1.5 px-2 py-0.5 text-xs text-white bg-black/60 border-none backdrop-blur-sm cursor-help transition-transform hover:scale-105"
+            className="absolute bottom-2 right-2 z-10 flex items-center gap-1.5 px-2 py-0.5 text-xs text-white bg-black/60 border-none backdrop-blur-xs cursor-help transition-transform hover:scale-105"
             title={lastPlayed ? `Last played ${formatDate(lastPlayed)}` : "Never played"}
           >
             <Gamepad2 size={12} className="opacity-80" />
@@ -116,7 +116,7 @@ export const GameCard = memo(function GameCard({
           imageContent
         )}
         {game.imageUrl && (
-          <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-card to-transparent pointer-events-none" />
+          <div className="absolute inset-x-0 bottom-0 h-12 bg-linear-to-t from-card to-transparent pointer-events-none" />
         )}
         {handleDelete && (
           <button

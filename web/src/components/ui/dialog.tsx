@@ -60,7 +60,7 @@ export function Dialog({ open, onClose, title, children, className }: DialogProp
       }}
       className={cn(
         "m-auto w-[calc(100%-2rem)] max-w-md bg-transparent p-0 text-card-foreground",
-        "backdrop:bg-black/60 backdrop:backdrop-blur-sm",
+        "backdrop:bg-black/60 backdrop:backdrop-blur-xs",
         "animate-in fade-in zoom-in-95 slide-in-from-bottom-2 duration-200",
         className,
       )}
@@ -75,7 +75,7 @@ export function Dialog({ open, onClose, title, children, className }: DialogProp
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring"
+            className="rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors focus:outline-hidden focus:ring-2 focus:ring-ring"
           >
             <X size={18} />
             <span className="sr-only">Close</span>
