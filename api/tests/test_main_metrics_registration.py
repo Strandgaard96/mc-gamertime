@@ -1,8 +1,6 @@
 import importlib
 
-
-def _route_paths(app) -> list[str]:
-    return [route.path for route in app.routes]
+from tests.conftest import route_paths as _route_paths
 
 
 def test_metrics_route_not_registered_by_default(monkeypatch):

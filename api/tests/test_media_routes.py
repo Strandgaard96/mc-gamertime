@@ -15,6 +15,7 @@ from tests.conftest import (
     TEST_JWT_SECRET,
     TEST_ORIGIN_TOKEN,
     make_auth_cookie,
+    route_paths,
 )
 
 
@@ -36,7 +37,7 @@ def _client(monkeypatch, backend: str):
 def test_media_routes_registered_on_cloud_backend(monkeypatch):
     main = _client(monkeypatch, "s3")
     try:
-        paths = [r.path for r in main.app.routes]
+        paths = route_paths(main.app)
         for prefix in ("/avatars", "/blog-images", "/game-images"):
             assert any(p.startswith(prefix) for p in paths), prefix
     finally:
