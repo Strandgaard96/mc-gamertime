@@ -29,6 +29,10 @@ on:
         required: true
         type: string
 
+# Default token to read-only; the push job alone gets packages:write.
+permissions:
+  contents: read
+
 jobs:
   push:
     name: Build and push to GHCR

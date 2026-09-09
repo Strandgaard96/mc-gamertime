@@ -1,5 +1,5 @@
 # --- stage 1: build frontend ---
-FROM node:22-alpine AS web-build
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS web-build
 WORKDIR /web
 COPY web/package*.json ./
 RUN npm ci
@@ -7,7 +7,7 @@ COPY web/ .
 RUN npm run build
 
 # --- stage 2: runtime ---
-FROM python:3.12-slim AS app
+FROM python:3.12-slim@sha256:78387bc3881b8273120a12ebe6c1ab22b018ccc2c9adf565ae1ac9b536e184ea AS app
 WORKDIR /app
 
 # sqlite3 CLI is required by the disaster-recovery runbook
