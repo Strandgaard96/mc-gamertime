@@ -160,7 +160,7 @@ export function TiptapEditor({ content, onChange }: Props) {
                   <button
                     key={e}
                     type="button"
-                    className="text-lg p-1 rounded hover:bg-accent transition-colors"
+                    className="text-lg p-1 rounded-sm hover:bg-accent transition-colors"
                     onClick={() => {
                       editor.chain().focus().insertContent(e).run();
                       setEmojiOpen(false);
@@ -176,7 +176,7 @@ export function TiptapEditor({ content, onChange }: Props) {
       </div>
       <EditorContent
         editor={editor}
-        className="prose prose-sm dark:prose-invert max-w-none p-4 min-h-48 focus-within:outline-none"
+        className="prose prose-sm dark:prose-invert max-w-none p-4 min-h-48 focus-within:outline-hidden"
       />
     </div>
   );

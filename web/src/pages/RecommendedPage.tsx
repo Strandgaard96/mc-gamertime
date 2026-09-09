@@ -47,7 +47,7 @@ export default function RecommendedPage() {
     <PageTransition>
       <div className="min-h-screen bg-background">
         {!user && (
-          <header className="border-b bg-card/60 backdrop-blur-sm sticky top-0 z-10">
+          <header className="border-b bg-card/60 backdrop-blur-xs sticky top-0 z-10">
             <div className="max-w-5xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Dices size={20} className="text-primary" />
@@ -79,7 +79,7 @@ export default function RecommendedPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="rounded-lg border bg-card overflow-hidden">
-                    <Skeleton className="w-full aspect-[3/4]" />
+                    <Skeleton className="w-full aspect-3/4" />
                     <div className="p-4 space-y-2">
                       <Skeleton className="h-6 w-3/4" />
                       <Skeleton className="h-4 w-1/3" />
@@ -105,10 +105,10 @@ export default function RecommendedPage() {
                       <img
                         src={r.imageUrl}
                         alt={r.gameName}
-                        className="w-full aspect-[3/4] object-contain bg-muted"
+                        className="w-full aspect-3/4 object-contain bg-muted"
                       />
                     ) : (
-                      <GameImagePlaceholder name={r.gameName} className="w-full aspect-[3/4]" />
+                      <GameImagePlaceholder name={r.gameName} className="w-full aspect-3/4" />
                     )}
                     <div className="p-4 space-y-2">
                       <h3 className="font-display font-bold text-lg leading-tight">{r.gameName}</h3>

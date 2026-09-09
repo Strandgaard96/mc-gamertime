@@ -186,7 +186,7 @@ export function AddGameDialog({ open, onClose }: Props) {
               <li key={r.bggId}>
                 <button
                   onClick={() => handleSelect(r)}
-                  className="w-full text-left px-3 py-2 rounded hover:bg-accent transition-colors text-sm"
+                  className="w-full text-left px-3 py-2 rounded-sm hover:bg-accent transition-colors text-sm"
                 >
                   <span className="font-medium">{r.name}</span>
                   {r.yearPublished && (
@@ -203,7 +203,7 @@ export function AddGameDialog({ open, onClose }: Props) {
             <img
               src={selected.imageUrl}
               alt={selected.name}
-              className="w-full h-48 object-cover rounded"
+              className="w-full h-48 object-cover rounded-sm"
             />
           )}
           <h3 className="font-bold text-base">
@@ -281,7 +281,9 @@ function ManualGameForm({
 }: ManualGameFormProps) {
   return (
     <div className="space-y-3">
-      {imageUrl && <img src={imageUrl} alt={name} className="w-full h-48 object-cover rounded" />}
+      {imageUrl && (
+        <img src={imageUrl} alt={name} className="w-full h-48 object-cover rounded-sm" />
+      )}
       <div>
         <label className="text-sm font-medium">Cover image</label>
         <input

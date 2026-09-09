@@ -186,7 +186,7 @@ function AppShell() {
   return (
     <div className="min-h-dvh bg-background pt-[env(safe-area-inset-top)]">
       {/* Desktop top nav */}
-      <nav className="hidden lg:flex sticky top-0 z-50 items-center gap-6 border-b bg-card/80 backdrop-blur-sm px-6 py-3">
+      <nav className="hidden lg:flex sticky top-0 z-50 items-center gap-6 border-b bg-card/80 backdrop-blur-xs px-6 py-3">
         <Link to="/" className="flex items-center gap-2 mr-4 shrink-0">
           <Dices size={22} className="text-primary" />
           <span className="font-display font-bold text-lg text-primary">{displayName}</span>
@@ -227,7 +227,7 @@ function AppShell() {
       </nav>
 
       {/* Mobile top bar */}
-      <div className="lg:hidden sticky top-0 z-50 flex items-center justify-between border-b bg-card/80 backdrop-blur-sm px-4 py-2">
+      <div className="lg:hidden sticky top-0 z-50 flex items-center justify-between border-b bg-card/80 backdrop-blur-xs px-4 py-2">
         <Link to="/" className="flex items-center gap-2">
           <Dices size={20} className="text-primary" />
           <span className="font-display font-bold text-primary">{displayName}</span>
@@ -257,7 +257,7 @@ function AppShell() {
       {/* Page content */}
       <ErrorBoundary FallbackComponent={ErrorPage} resetKeys={[location.pathname]}>
         <Suspense fallback={<PageSkeleton />}>
-          <main className="pb-[calc(5rem_+_env(safe-area-inset-bottom))] lg:pb-0 overflow-x-hidden">
+          <main className="pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0 overflow-x-hidden">
             <AnimatePresence mode="wait">
               <Routes location={location} key={location.pathname}>
                 <Route path="/" element={<HomePage />} />

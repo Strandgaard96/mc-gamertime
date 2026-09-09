@@ -345,7 +345,7 @@ export default function PlayerProfilePage() {
                 {canEdit ? (
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="relative group focus:outline-none"
+                    className="relative group focus:outline-hidden"
                     disabled={uploading}
                     title="Change photo"
                   >

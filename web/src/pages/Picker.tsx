@@ -59,7 +59,7 @@ function FilterButtons<T extends string>({
               onClick={() => onChange(opt)}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-sm border transition-all duration-200 ${
                 isActive
-                  ? "bg-primary text-primary-foreground border-primary scale-105 shadow-sm shadow-primary/20"
+                  ? "bg-primary text-primary-foreground border-primary scale-105 shadow-xs shadow-primary/20"
                   : "bg-background hover:bg-muted border-input text-muted-foreground hover:text-foreground hover:border-primary/30"
               }`}
             >

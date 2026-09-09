@@ -25,7 +25,7 @@ export function Tooltip({ text, children, fullWidth }: TooltipProps) {
         )}
       </div>
       {isVisible && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-popover text-popover-foreground text-xs rounded shadow-lg text-center z-50 border border-border pointer-events-none">
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-popover text-popover-foreground text-xs rounded-sm shadow-lg text-center z-50 border border-border pointer-events-none">
           {text}
         </div>
       )}
