@@ -1,20 +1,176 @@
-/* Headings one step smaller than Starlight's defaults, at both breakpoints
-   (defaults live in @astrojs/starlight/style/props.css). */
+/* ---------------------------------------------------------------------------
+   VitePress-flavoured Starlight.
+
+   The layout/typography numbers below are lifted from VitePress' default theme
+   (measured off https://dozzle.dev), not eyeballed. Colours are untouched — the
+   Catppuccin plugin (astro.config.mjs) still owns every hue.
+
+   Starlight ships its own CSS inside `@layer starlight.*`, so the unlayered
+   rules here win over it regardless of specificity. The exceptions are
+   Starlight's *scoped* component styles (`[data-astro-cid-…]`), which are
+   unlayered too — those are called out where they matter.
+   --------------------------------------------------------------------------- */
+
+/* --- Layout -------------------------------------------------------------
+   VitePress: 688px content column, 272px sidebar. Starlight defaults are
+   720px / 300px. `--sl-nav-height` (4rem) and `--sl-line-height` (1.75)
+   already match VitePress, so they are deliberately not redeclared. */
 :root {
-	--sl-text-h1: var(--sl-text-3xl);
-	--sl-text-h2: var(--sl-text-2xl);
-	--sl-text-h3: var(--sl-text-xl);
-	--sl-text-h4: var(--sl-text-lg);
+	--sl-content-width: 43rem;
+	--sl-sidebar-width: 17rem;
+}
+
+/* --- Type scale ---------------------------------------------------------
+   VitePress: h1 28px (32px from its 960px breakpoint), h2 24px, h3 20px,
+   h4 16px — flatter than Starlight's default scale. */
+:root {
+	--sl-text-h1: 1.75rem;
+	--sl-text-h2: 1.5rem;
+	--sl-text-h3: 1.25rem;
+	--sl-text-h4: 1rem;
 }
 
 @media (min-width: 72rem) {
 	:root {
-		--sl-text-h1: var(--sl-text-4xl);
-		--sl-text-h2: var(--sl-text-3xl);
-		--sl-text-h3: var(--sl-text-2xl);
-		--sl-text-h4: var(--sl-text-xl);
+		--sl-text-h1: 2rem;
 	}
 }
+
+/* Tighter tracking on headings: VitePress uses -0.02em on h1/h2, -0.01em on h3. */
+.sl-markdown-content :is(h1, h2),
+.content-panel h1 {
+	letter-spacing: -0.02em;
+}
+
+.sl-markdown-content h3 {
+	letter-spacing: -0.01em;
+}
+
+/* The signature VitePress tell: every h2 is preceded by a hairline rule with a
+   lot of air around it (`margin: 48px 0 16px; padding-top: 24px`).
+
+   Starlight wraps any heading that has an anchor link in
+   `.sl-heading-wrapper.level-hN` and makes the heading itself `display: inline`
+   so the link can sit beside it. Spacing and the rule therefore have to go on
+   the wrapper — on the inline heading the border hugs the text instead of
+   spanning the column, and vertical margins are ignored outright. Both
+   selectors are listed so this still works if heading links are ever disabled. */
+.sl-markdown-content .sl-heading-wrapper.level-h2,
+.sl-markdown-content h2:not(:where(.not-content *, .sl-heading-wrapper *)) {
+	margin-top: 3rem;
+	margin-bottom: 1rem;
+	padding-top: 1.5rem;
+	border-top: 1px solid var(--sl-color-hairline-light);
+}
+
+.sl-markdown-content .sl-heading-wrapper.level-h3,
+.sl-markdown-content h3:not(:where(.not-content *, .sl-heading-wrapper *)) {
+	margin-top: 2rem;
+}
+
+.sl-markdown-content h2:not(:where(.not-content *)) {
+	line-height: 2rem;
+}
+
+.sl-markdown-content h3:not(:where(.not-content *)) {
+	line-height: 1.75rem;
+}
+
+/* --- Links --------------------------------------------------------------
+   VitePress: 500 weight, underline held 2px off the baseline, colour fades
+   rather than snaps. */
+.sl-markdown-content a:not(:where(.not-content *)) {
+	font-weight: 500;
+	text-underline-offset: 2px;
+	transition: color 0.25s;
+}
+
+/* --- Asides → VitePress custom blocks -----------------------------------
+   VitePress geometry (1px border, 8px radius, 16px/16px/8px padding, 14px
+   text) with Starlight's severity icon kept, per the brief. The 4px leading
+   bar is what makes an aside read as Starlight, so it goes. */
+.starlight-aside {
+	border-inline-start: none;
+	border: 1px solid var(--sl-color-asides-border);
+	border-radius: 0.5rem;
+	padding: 1rem 1rem 0.5rem;
+	font-size: var(--sl-text-sm);
+}
+
+.starlight-aside__title {
+	font-size: inherit;
+}
+
+/* --- Aside hue mapping --------------------------------------------------
+   Starlight maps severities onto Catppuccin hues:
+
+     note → blue     tip → purple     caution → orange     danger → red
+
+   VitePress maps them differently (info → neutral, tip → brand,
+   warning → yellow, danger → red), and one of Starlight's choices collides
+   here: `caution` is orange at hue 23, and the accent is Catppuccin Peach —
+   also hue 23. In Mocha a caution aside next to an accent link or the active
+   sidebar item reads as one orange smear, on the severity that most needs to
+   stand out.
+
+   Each variant exposes three knobs, and overriding them here keeps the rest
+   of the theme untouched:
+
+     --sl-color-asides-text-accent   title text and links inside the aside
+     --sl-color-asides-border        the 1px outline
+     background-color                the fill
+
+   Catppuccin, if a variant should move off its current hue:
+     Mocha  yellow #f9e2af  sky #89dceb  teal #94e2d5  maroon #eba0ac
+     Latte  yellow #df8e1d  sky #04a5e5  teal #179299  maroon #e64553
+
+   Uncomment and fill in only the variants you want to move; anything left
+   commented keeps Starlight's default, which is what ships today. */
+
+/*
+.starlight-aside--caution {
+	--sl-color-asides-text-accent: ;
+	--sl-color-asides-border: ;
+	background-color: ;
+}
+*/
+
+/* --- Sidebar ------------------------------------------------------------
+   VitePress marks the current page with accent *text*; Starlight fills a pill
+   with the accent colour. Starlight's rule is scoped, so it carries an extra
+   attribute selector — `.sidebar-content a[aria-current]` (0,2,1) is the
+   cheapest thing that outranks it without `!important`. */
+.sidebar-content a[aria-current='page'],
+.sidebar-content a[aria-current='page']:hover,
+.sidebar-content a[aria-current='page']:focus {
+	background-color: transparent;
+	color: var(--sl-color-text-accent);
+}
+
+/* --- Table of contents --------------------------------------------------
+   VitePress' outline is unboxed, 13px, and dimmer than body text. */
+.right-sidebar {
+	border-inline-start-color: transparent;
+}
+
+starlight-toc a {
+	font-size: var(--sl-text-xs);
+	color: var(--sl-color-gray-3);
+}
+
+/* --- Prev / next --------------------------------------------------------- */
+.pagination-links a {
+	border-radius: 0.5rem;
+	transition: border-color 0.25s;
+}
+
+.pagination-links a:hover {
+	border-color: var(--sl-color-accent);
+}
+
+/* ---------------------------------------------------------------------------
+   Pre-existing rules below this line — hero framing, link cards, second hue.
+   --------------------------------------------------------------------------- */
 
 /* Hero: show the whole app screenshot, framed like a browser window, instead of
    Starlight's default 400px column. Starlight's own hero rules live in
@@ -59,6 +215,14 @@
 
 .sl-markdown-content code:not(:where(pre *)) {
 	color: var(--sl-color-blue);
+}
+
+/* Link cards as VitePress feature cards: filled, 12px radius, border lights up
+   to the accent on hover. */
+.sl-link-card {
+	border-radius: 0.75rem;
+	background-color: var(--sl-color-gray-6);
+	transition: border-color 0.25s;
 }
 
 .sl-link-card:hover {
