@@ -32,6 +32,16 @@ export default defineConfig({
         starlightLlmsTxt(),
       ],
       lastUpdated: true,
+      // VitePress' code blocks are 8px-rounded and flat; Expressive Code
+      // defaults to a tighter radius plus a drop shadow.
+      expressiveCode: {
+        styleOverrides: {
+          borderRadius: "0.5rem",
+          frames: {
+            shadowColor: "transparent",
+          },
+        },
+      },
       social: [
         { icon: "github", label: "GitHub", href: "https://github.com/Strandgaard96/mc-gamertime" },
       ],
