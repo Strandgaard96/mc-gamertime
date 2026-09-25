@@ -123,7 +123,7 @@ export default function LandingPage() {
               "radial-gradient(ellipse 70% 55% at 75% 45%, hsl(var(--primary) / 0.10) 0%, transparent 65%)",
           }}
         >
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-28 pb-12 md:pt-32 md:pb-16 grid md:grid-cols-[5fr_7fr] gap-10 md:gap-12 items-center">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-24 pb-8 md:pt-28 md:pb-10 grid md:grid-cols-[5fr_7fr] gap-10 md:gap-12 items-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -166,14 +166,13 @@ export default function LandingPage() {
         </section>
 
         {/* ── Showcase ── */}
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 pb-16 md:pt-16 md:pb-24 space-y-10">
-          <motion.div {...reveal} className="space-y-3">
-            <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight">Features</h2>
-            <p className="text-muted-foreground max-w-[60ch] leading-relaxed">
-              Also included: a game catalog with BoardGameGeek import, a random game picker,
-              achievements and a blog.
-            </p>
-          </motion.div>
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-12 md:pt-10 md:pb-16 space-y-8">
+          <motion.h2
+            {...reveal}
+            className="text-3xl md:text-4xl font-display font-bold tracking-tight"
+          >
+            Features
+          </motion.h2>
 
           <div className="grid gap-6 md:grid-cols-2 items-start">
             <motion.figure {...reveal} className="md:row-span-2 space-y-3">
@@ -213,11 +212,19 @@ export default function LandingPage() {
               </figcaption>
             </motion.figure>
           </div>
+
+          <motion.p {...reveal} className="text-muted-foreground max-w-[60ch] leading-relaxed">
+            Also included: a game catalog with BoardGameGeek import, a random game picker,
+            achievements and a blog.
+          </motion.p>
         </section>
 
         {/* ── Recommendations ── */}
         {hasPicks && (
-          <section id="picks" className="max-w-6xl mx-auto px-4 sm:px-6 py-16 space-y-8">
+          <section
+            id="picks"
+            className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 pb-16 md:pt-16 md:pb-20 space-y-8"
+          >
             <div className="flex items-end justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-display font-bold">Recommendations</h2>
@@ -295,8 +302,8 @@ export default function LandingPage() {
         {/* ── Self-host (opt-in via Settings → Landing Page) ── */}
         {showProjectInfo && (
           <section id="self-host" className="scroll-mt-20 border-y bg-card/40">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-24 grid gap-10 md:grid-cols-[7fr_5fr] md:gap-16">
-              <motion.div {...reveal} className="space-y-6 min-w-0">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-20 grid gap-10 md:grid-cols-[7fr_5fr] md:gap-16">
+              <motion.div {...reveal} className="min-w-0">
                 <div className="space-y-3">
                   <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight">
                     Run your own
@@ -305,6 +312,21 @@ export default function LandingPage() {
                     MIT licensed. Runs as a single Docker container with SQLite.
                   </p>
                 </div>
+              </motion.div>
+
+              <motion.dl {...reveal} className="grid gap-6 content-start">
+                {STACK.map(({ label, value }) => (
+                  <div key={label} className="space-y-1">
+                    <dt className="text-sm text-muted-foreground">{label}</dt>
+                    <dd className="font-medium">{value}</dd>
+                  </div>
+                ))}
+              </motion.dl>
+
+              <motion.div {...reveal} className="md:col-span-2 space-y-6 min-w-0">
+                <pre className="rounded-xl border bg-background p-4 text-sm leading-relaxed overflow-x-auto">
+                  <code>{INSTALL}</code>
+                </pre>
                 <div className="flex flex-wrap gap-3">
                   <Button asChild>
                     <a href={DOCS_URL} target="_blank" rel="noopener noreferrer">
@@ -320,22 +342,6 @@ export default function LandingPage() {
                   </Button>
                 </div>
               </motion.div>
-
-              <motion.dl {...reveal} className="grid gap-6 content-start">
-                {STACK.map(({ label, value }) => (
-                  <div key={label} className="space-y-1">
-                    <dt className="text-sm text-muted-foreground">{label}</dt>
-                    <dd className="font-medium">{value}</dd>
-                  </div>
-                ))}
-              </motion.dl>
-
-              <motion.pre
-                {...reveal}
-                className="md:col-span-2 rounded-xl border bg-background p-4 text-sm leading-relaxed overflow-x-auto"
-              >
-                <code>{INSTALL}</code>
-              </motion.pre>
             </div>
           </section>
         )}
