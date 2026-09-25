@@ -192,12 +192,22 @@ function InstanceUrlCard({ data }: { data: AdminSettings | undefined }) {
 function LandingPageCard({ data }: { data: AdminSettings | undefined }) {
   const qc = useQueryClient();
   const [showProjectInfo, setShowProjectInfo] = useState(false);
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [docsUrl, setDocsUrl] = useState("");
 
   useEffect(() => {
-    if (data) setShowProjectInfo(data.showProjectInfo);
+    if (data) {
+      setShowProjectInfo(data.showProjectInfo);
+      setSourceUrl(data.sourceUrl ?? "");
+      setDocsUrl(data.docsUrl ?? "");
+    }
   }, [data]);
 
-  const isDirty = data !== undefined && showProjectInfo !== data.showProjectInfo;
+  const isDirty =
+    data !== undefined &&
+    (showProjectInfo !== data.showProjectInfo ||
+      sourceUrl !== (data.sourceUrl ?? "") ||
+      docsUrl !== (data.docsUrl ?? ""));
 
   const saveMutation = useMutation({
     mutationFn: updateSettings,
@@ -213,12 +223,43 @@ function LandingPageCard({ data }: { data: AdminSettings | undefined }) {
 
   function handleSave(e: FormEvent) {
     e.preventDefault();
-    saveMutation.mutate({ showProjectInfo });
+    // Explicit null clears a URL; undefined would be dropped by JSON.stringify
+    // and read by the API as "unchanged".
+    saveMutation.mutate({
+      showProjectInfo,
+      sourceUrl: sourceUrl.trim() || null,
+      docsUrl: docsUrl.trim() || null,
+    });
   }
 
   return (
     <form onSubmit={handleSave} className="space-y-3 rounded-lg border bg-card p-4">
       <h2 className="font-semibold">Landing Page</h2>
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium" htmlFor="sourceUrl">
+          Source Code URL
+        </label>
+        <Input
+          id="sourceUrl"
+          placeholder="e.g. https://github.com/you/your-fork"
+          value={sourceUrl}
+          onChange={(e) => setSourceUrl(e.target.value)}
+        />
+      </div>
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium" htmlFor="docsUrl">
+          Documentation URL
+        </label>
+        <Input
+          id="docsUrl"
+          placeholder="e.g. https://docs.example.com"
+          value={docsUrl}
+          onChange={(e) => setDocsUrl(e.target.value)}
+        />
+        <p className="text-sm text-muted-foreground">
+          Shown as Source and Docs buttons on the landing page. Leave blank to hide a button.
+        </p>
+      </div>
       <div className="space-y-1.5">
         <label className="flex items-center gap-2 text-sm font-medium">
           <input
@@ -229,8 +270,7 @@ function LandingPageCard({ data }: { data: AdminSettings | undefined }) {
           Show project info
         </label>
         <p className="text-sm text-muted-foreground">
-          Adds a "Run your own" section with install steps, the tech stack and links to the source
-          code and docs.
+          Adds a "Run your own" section with install steps and the tech stack.
         </p>
       </div>
       <div className="flex justify-end">

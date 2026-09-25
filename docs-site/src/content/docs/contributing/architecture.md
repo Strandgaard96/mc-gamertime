@@ -183,7 +183,7 @@ Routes are defined in `web/src/App.tsx`. `AppShell` renders one of two `<Routes>
 
 #### `/` — `LandingPage`
 
-Marketing/splash page shown to signed-out visitors. Fetches public data only: `useRecommended()` (for a 4-item "featured" teaser grid) and `usePublicSettings()` (for the instance display name and `showProjectInfo`). No auth required — these are public-safe endpoints. The product screenshots are static files in `web/public/landing/`, captured from a throwaway instance seeded with fictional players — never re-shoot them against real data. The "Run your own" section (install commands, stack, source/docs links) and the hero's "Self-host it" button render only when an admin has turned on `showProjectInfo` in Settings; it is off by default. Links to `/login` and `/recommended`.
+Marketing/splash page shown to signed-out visitors. Fetches public data only: `useRecommended()` (for a 4-item "featured" teaser grid) and `usePublicSettings()` (for the instance display name, `showProjectInfo`, and the `sourceUrl`/`docsUrl` header links, each hidden while unset — nothing deployment-specific is hardcoded). No auth required — these are public-safe endpoints. The product screenshots are static files in `web/public/landing/`, captured from a throwaway instance seeded with fictional players — never re-shoot them against real data. The "Run your own" section (install commands, stack, source/docs links) and the hero's "Self-host it" button render only when an admin has turned on `showProjectInfo` in Settings; it is off by default. Links to `/login` and `/recommended`.
 
 #### `/login` — `LoginPage`
 
@@ -265,7 +265,7 @@ A focused full-screen `TiptapEditor` for the recommendation's long-form `content
 
 #### `/admin/settings` — `SettingsPage` (admin only)
 
-Four independent forms (`BrandingCard`, `IntegrationsCard`, `InstanceUrlCard`, `LandingPageCard`), each its own `useMutation` calling `updateSettings()` and invalidating `["settings"]` on success: instance display name, the BGG API token (write-only — only shows whether one is set, never its value, with a "Clear token" action), and the public base URL used for password-reset email links (falls back to the server's `APP_BASE_URL` env var if left blank), and the landing page's `showProjectInfo` toggle.
+Four independent forms (`BrandingCard`, `IntegrationsCard`, `InstanceUrlCard`, `LandingPageCard`), each its own `useMutation` calling `updateSettings()` and invalidating `["settings"]` on success: instance display name, the BGG API token (write-only — only shows whether one is set, never its value, with a "Clear token" action), and the public base URL used for password-reset email links (falls back to the server's `APP_BASE_URL` env var if left blank), and the landing page's `showProjectInfo` toggle plus `sourceUrl`/`docsUrl` (validated like the base URL: `http(s)://` only, since they render as public `href`s).
 
 #### `/records` — `RecordsPage`
 

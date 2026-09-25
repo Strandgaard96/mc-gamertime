@@ -19,9 +19,6 @@ const COLORS = [
   "#be185d",
 ];
 
-const REPO_URL = "https://github.com/Strandgaard96/mc-gamertime";
-const DOCS_URL = "https://mcgamertime-docs.drmaggi.com/self-hosting/quickstart/";
-
 const INSTALL = `curl -fsSLO https://raw.githubusercontent.com/Strandgaard96/mc-gamertime/main/docker-compose.yml
 printf 'ADMIN_USERNAME=admin\\nADMIN_PASSWORD=<your-password>\\n' > .env
 docker compose up -d`;
@@ -76,6 +73,9 @@ export default function LandingPage() {
   const { data: publicSettings } = usePublicSettings();
   const displayName = publicSettings?.displayName ?? "MC GamerTime";
   const showProjectInfo = publicSettings?.showProjectInfo ?? false;
+  // Set per deployment in Settings → Landing Page; each link hides while unset.
+  const sourceUrl = publicSettings?.sourceUrl ?? null;
+  const docsUrl = publicSettings?.docsUrl ?? null;
 
   useEffect(() => {
     document.title = displayName;
@@ -97,13 +97,33 @@ export default function LandingPage() {
           }`}
         >
           <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Dices size={22} className="text-primary" />
-              <span className="font-display font-bold text-lg text-primary">{displayName}</span>
+            <div className="flex items-center gap-2 min-w-0">
+              <Dices size={22} className="text-primary shrink-0" />
+              <span className="font-display font-bold text-base sm:text-lg text-primary truncate">
+                {displayName}
+              </span>
             </div>
-            <Button asChild size="sm">
-              <Link to="/login">Sign in</Link>
-            </Button>
+            <div className="flex items-center gap-2 shrink-0">
+              {docsUrl && (
+                <Button asChild size="sm" variant="outline">
+                  <a href={docsUrl} target="_blank" rel="noopener noreferrer">
+                    <BookOpen size={16} className="sm:mr-2" aria-hidden="true" />
+                    <span className="sr-only sm:not-sr-only">Docs</span>
+                  </a>
+                </Button>
+              )}
+              {sourceUrl && (
+                <Button asChild size="sm" variant="outline">
+                  <a href={sourceUrl} target="_blank" rel="noopener noreferrer">
+                    <GithubIcon className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+                    <span className="sr-only sm:not-sr-only">Source</span>
+                  </a>
+                </Button>
+              )}
+              <Button asChild size="sm" className="whitespace-nowrap">
+                <Link to="/login">Sign in</Link>
+              </Button>
+            </div>
           </div>
         </header>
 
@@ -115,7 +135,7 @@ export default function LandingPage() {
               "radial-gradient(ellipse 70% 55% at 75% 45%, hsl(var(--primary) / 0.10) 0%, transparent 65%)",
           }}
         >
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-28 pb-12 md:pt-32 md:pb-16 grid md:grid-cols-[5fr_7fr] gap-10 md:gap-12 items-center">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-24 pb-8 md:pt-28 md:pb-10 grid md:grid-cols-[5fr_7fr] gap-10 md:gap-12 items-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -158,14 +178,13 @@ export default function LandingPage() {
         </section>
 
         {/* ── Showcase ── */}
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 pb-16 md:pt-16 md:pb-24 space-y-10">
-          <motion.div {...reveal} className="space-y-3">
-            <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight">Features</h2>
-            <p className="text-muted-foreground max-w-[60ch] leading-relaxed">
-              Also included: a game catalog with BoardGameGeek import, a random game picker,
-              achievements and a blog.
-            </p>
-          </motion.div>
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-12 md:pt-10 md:pb-16 space-y-8">
+          <motion.h2
+            {...reveal}
+            className="text-3xl md:text-4xl font-display font-bold tracking-tight"
+          >
+            Features
+          </motion.h2>
 
           <div className="grid gap-6 md:grid-cols-2 items-start">
             <motion.figure {...reveal} className="md:row-span-2 space-y-3">
@@ -205,11 +224,19 @@ export default function LandingPage() {
               </figcaption>
             </motion.figure>
           </div>
+
+          <motion.p {...reveal} className="text-muted-foreground max-w-[60ch] leading-relaxed">
+            Also included: a game catalog with BoardGameGeek import, a random game picker,
+            achievements and a blog.
+          </motion.p>
         </section>
 
         {/* ── Recommendations ── */}
         {hasPicks && (
-          <section id="picks" className="max-w-6xl mx-auto px-4 sm:px-6 py-16 space-y-8">
+          <section
+            id="picks"
+            className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 pb-16 md:pt-16 md:pb-20 space-y-8"
+          >
             <div className="flex items-end justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-display font-bold">Recommendations</h2>
@@ -287,8 +314,8 @@ export default function LandingPage() {
         {/* ── Self-host (opt-in via Settings → Landing Page) ── */}
         {showProjectInfo && (
           <section id="self-host" className="scroll-mt-20 border-y bg-card/40">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-24 grid gap-10 md:grid-cols-[7fr_5fr] md:gap-16">
-              <motion.div {...reveal} className="space-y-6 min-w-0">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-20 grid gap-10 md:grid-cols-[7fr_5fr] md:gap-16">
+              <motion.div {...reveal} className="min-w-0">
                 <div className="space-y-3">
                   <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight">
                     Run your own
@@ -296,20 +323,6 @@ export default function LandingPage() {
                   <p className="text-muted-foreground max-w-[55ch] leading-relaxed">
                     MIT licensed. Runs as a single Docker container with SQLite.
                   </p>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  <Button asChild>
-                    <a href={DOCS_URL} target="_blank" rel="noopener noreferrer">
-                      <BookOpen size={16} className="mr-2" aria-hidden="true" />
-                      Read the docs
-                    </a>
-                  </Button>
-                  <Button asChild variant="outline">
-                    <a href={REPO_URL} target="_blank" rel="noopener noreferrer">
-                      <GithubIcon className="w-4 h-4 mr-2" aria-hidden="true" />
-                      View source
-                    </a>
-                  </Button>
                 </div>
               </motion.div>
 
@@ -322,12 +335,31 @@ export default function LandingPage() {
                 ))}
               </motion.dl>
 
-              <motion.pre
-                {...reveal}
-                className="md:col-span-2 rounded-xl border bg-background p-4 text-sm leading-relaxed overflow-x-auto"
-              >
-                <code>{INSTALL}</code>
-              </motion.pre>
+              <motion.div {...reveal} className="md:col-span-2 space-y-6 min-w-0">
+                <pre className="rounded-xl border bg-background p-4 text-sm leading-relaxed overflow-x-auto">
+                  <code>{INSTALL}</code>
+                </pre>
+                {(docsUrl || sourceUrl) && (
+                  <div className="flex flex-wrap gap-3">
+                    {docsUrl && (
+                      <Button asChild>
+                        <a href={docsUrl} target="_blank" rel="noopener noreferrer">
+                          <BookOpen size={16} className="mr-2" aria-hidden="true" />
+                          Read the docs
+                        </a>
+                      </Button>
+                    )}
+                    {sourceUrl && (
+                      <Button asChild variant="outline">
+                        <a href={sourceUrl} target="_blank" rel="noopener noreferrer">
+                          <GithubIcon className="w-4 h-4 mr-2" aria-hidden="true" />
+                          View source
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </motion.div>
             </div>
           </section>
         )}
@@ -340,15 +372,17 @@ export default function LandingPage() {
               <Link to="/privacy" className="hover:text-foreground transition-colors">
                 Privacy
               </Link>
-              <a
-                href={REPO_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors"
-              >
-                <GithubIcon className="w-4 h-4" aria-hidden="true" />
-                Source
-              </a>
+              {sourceUrl && (
+                <a
+                  href={sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors"
+                >
+                  <GithubIcon className="w-4 h-4" aria-hidden="true" />
+                  Source
+                </a>
+              )}
             </div>
           </div>
         </footer>

@@ -8,7 +8,12 @@ def test_public_settings_unauthenticated_default():
     c = TestClient(app, raise_server_exceptions=False)
     resp = c.get("/api/settings/public", headers=ORIGIN)
     assert resp.status_code == 200
-    assert resp.json() == {"displayName": "MC GamerTime", "showProjectInfo": False}
+    assert resp.json() == {
+        "displayName": "MC GamerTime",
+        "showProjectInfo": False,
+        "sourceUrl": None,
+        "docsUrl": None,
+    }
 
 
 def test_admin_get_settings_readonly_forbidden(authed_client):
@@ -26,6 +31,8 @@ def test_admin_get_settings_default(authed_client):
         "appBaseUrl": None,
         "appBaseUrlEnvFallback": None,
         "showProjectInfo": False,
+        "sourceUrl": None,
+        "docsUrl": None,
     }
 
 
@@ -38,6 +45,8 @@ def test_put_settings_display_name_reflected_in_public_and_admin_get(authed_clie
     assert c.get("/api/settings/public", headers=ORIGIN).json() == {
         "displayName": "My Game Nights",
         "showProjectInfo": False,
+        "sourceUrl": None,
+        "docsUrl": None,
     }
     assert c.get("/api/settings", headers=ORIGIN).json() == {
         "displayName": "My Game Nights",
@@ -45,6 +54,8 @@ def test_put_settings_display_name_reflected_in_public_and_admin_get(authed_clie
         "appBaseUrl": None,
         "appBaseUrlEnvFallback": None,
         "showProjectInfo": False,
+        "sourceUrl": None,
+        "docsUrl": None,
     }
 
 
@@ -180,3 +191,36 @@ def test_put_settings_show_project_info_readonly_forbidden(authed_client):
     c = authed_client("readonly")
     resp = c.put("/api/settings", json={"showProjectInfo": True}, headers=ORIGIN)
     assert resp.status_code == 403
+
+
+def test_put_settings_project_links_reflected_in_public(authed_client):
+    c = authed_client("admin")
+    resp = c.put(
+        "/api/settings",
+        json={"sourceUrl": " https://github.com/me/fork ", "docsUrl": "https://docs.example.com/"},
+        headers=ORIGIN,
+    )
+    assert resp.status_code == 200
+    assert resp.json()["sourceUrl"] == "https://github.com/me/fork"
+    assert resp.json()["docsUrl"] == "https://docs.example.com"
+
+    public = TestClient(app, raise_server_exceptions=False).get(
+        "/api/settings/public", headers=ORIGIN
+    )
+    assert public.json()["sourceUrl"] == "https://github.com/me/fork"
+    assert public.json()["docsUrl"] == "https://docs.example.com"
+
+
+def test_put_settings_project_link_blank_clears_it(authed_client):
+    c = authed_client("admin")
+    c.put("/api/settings", json={"sourceUrl": "https://github.com/me/fork"}, headers=ORIGIN)
+
+    resp = c.put("/api/settings", json={"sourceUrl": "  "}, headers=ORIGIN)
+    assert resp.status_code == 200
+    assert resp.json()["sourceUrl"] is None
+
+
+def test_put_settings_project_link_rejects_non_http(authed_client):
+    c = authed_client("admin")
+    resp = c.put("/api/settings", json={"docsUrl": "javascript:alert(1)"}, headers=ORIGIN)
+    assert resp.status_code == 422

@@ -319,6 +319,8 @@ export function updateSettings(data: {
   bggToken?: string | null;
   appBaseUrl?: string | null;
   showProjectInfo?: boolean;
+  sourceUrl?: string | null;
+  docsUrl?: string | null;
 }): Promise<AdminSettings> {
   return apiFetch("/settings", {
     method: "PUT",
