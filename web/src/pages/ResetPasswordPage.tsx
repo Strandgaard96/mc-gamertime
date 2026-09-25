@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { PageTransition } from "../components/PageTransition";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { useDisplayName } from "../hooks/useSettings";
 import { resetPassword } from "../lib/api";
 
 export default function ResetPasswordPage() {
@@ -15,6 +16,7 @@ export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get("token") ?? "";
+  const displayName = useDisplayName();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -38,7 +40,7 @@ export default function ResetPasswordPage() {
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
               <Dices size={28} className="text-primary" />
-              <span className="text-3xl font-display font-bold text-primary">MC GamerTime</span>
+              <span className="text-3xl font-display font-bold text-primary">{displayName}</span>
             </div>
             <p className="text-muted-foreground mt-2">Choose a new password</p>
           </div>

@@ -5,12 +5,14 @@ import { Link } from "react-router-dom";
 import { PageTransition } from "../components/PageTransition";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { useDisplayName } from "../hooks/useSettings";
 import { forgotPassword } from "../lib/api";
 
 export default function ForgotPasswordPage() {
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const displayName = useDisplayName();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -32,7 +34,7 @@ export default function ForgotPasswordPage() {
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
               <Dices size={28} className="text-primary" />
-              <span className="text-3xl font-display font-bold text-primary">MC GamerTime</span>
+              <span className="text-3xl font-display font-bold text-primary">{displayName}</span>
             </div>
             <p className="text-muted-foreground mt-2">Reset your password</p>
           </div>

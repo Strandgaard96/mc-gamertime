@@ -10,7 +10,7 @@ import { Skeleton } from "../components/ui/skeleton";
 import { Tooltip } from "../components/ui/tooltip";
 import { useCountUp } from "../hooks/useCountUp";
 import { useResults } from "../hooks/useResults";
-import { usePublicSettings } from "../hooks/useSettings";
+import { useDisplayName, usePublicSettings } from "../hooks/useSettings";
 import { useStats } from "../hooks/useStats";
 import { useAuth } from "../lib/AuthContext";
 import { formatDate, pluralize } from "../lib/utils";
@@ -27,7 +27,7 @@ export default function HomePage() {
   const { data: results = [], isLoading: rL } = useResults();
   const { data: stats, isLoading: sL } = useStats();
   const { data: publicSettings } = usePublicSettings();
-  const displayName = publicSettings?.displayName ?? "MC GamerTime";
+  const displayName = useDisplayName();
   const sourceUrl = publicSettings?.sourceUrl ?? null;
   const [showLog, setShowLog] = useState(false);
 
