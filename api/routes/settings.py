@@ -18,7 +18,10 @@ _DEFAULT_DISPLAY_NAME = "MC GamerTime"
 @router.get("/public")
 def get_public_settings():
     settings = get_settings()
-    return {"displayName": settings.get("displayName") or _DEFAULT_DISPLAY_NAME}
+    return {
+        "displayName": settings.get("displayName") or _DEFAULT_DISPLAY_NAME,
+        "showProjectInfo": bool(settings.get("showProjectInfo")),
+    }
 
 
 @router.get("")
@@ -29,6 +32,7 @@ def get_settings_route(_: Annotated[AuthUser, Depends(require_admin)]):
         "bggTokenSet": bool(settings.get("bggToken")),
         "appBaseUrl": settings.get("appBaseUrl"),
         "appBaseUrlEnvFallback": os.environ.get("APP_BASE_URL") or None,
+        "showProjectInfo": bool(settings.get("showProjectInfo")),
     }
 
 
@@ -36,6 +40,9 @@ class UpdateSettingsBody(BaseModel):
     displayName: str | None = None
     bggToken: str | None = None
     appBaseUrl: str | None = None
+    # Landing-page "run your own / built with" section. Off by default so a
+    # friend group's self-hosted instance doesn't advertise the project.
+    showProjectInfo: bool | None = None
 
     @field_validator("displayName")
     @classmethod
@@ -85,4 +92,5 @@ def update_settings_route(body: UpdateSettingsBody, _: Annotated[AuthUser, Depen
         "bggTokenSet": bool(updated.get("bggToken")),
         "appBaseUrl": updated.get("appBaseUrl"),
         "appBaseUrlEnvFallback": os.environ.get("APP_BASE_URL") or None,
+        "showProjectInfo": bool(updated.get("showProjectInfo")),
     }
