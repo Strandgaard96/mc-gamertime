@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
@@ -9,12 +10,16 @@ import LoginPage from "./LoginPage";
 vi.mock("../lib/api");
 
 function renderLoginPage() {
+  // LoginPage reads the instance display name through TanStack Query.
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <MemoryRouter>
-      <AuthProvider>
-        <LoginPage />
-      </AuthProvider>
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <AuthProvider>
+          <LoginPage />
+        </AuthProvider>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
@@ -23,6 +28,20 @@ beforeEach(() => {
 });
 
 describe("LoginPage", () => {
+  it("shows the configured instance display name", async () => {
+    vi.mocked(api.getPublicSettings).mockResolvedValue({
+      displayName: "Friday Games",
+      showProjectInfo: false,
+      sourceUrl: null,
+      docsUrl: null,
+    });
+
+    renderLoginPage();
+
+    expect(await screen.findByText("Friday Games")).toBeInTheDocument();
+    expect(screen.queryByText("MC GamerTime")).not.toBeInTheDocument();
+  });
+
   it("logs in and redirects on valid credentials", async () => {
     const user = userEvent.setup();
     vi.mocked(api.login).mockResolvedValue({

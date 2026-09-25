@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { PageTransition } from "../components/PageTransition";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { useDisplayName } from "../hooks/useSettings";
 import { useAuth } from "../lib/AuthContext";
 import { checkHealth, login } from "../lib/api";
 
@@ -14,6 +15,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { setUser } = useAuth();
+  const displayName = useDisplayName();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -59,7 +61,7 @@ export default function LoginPage() {
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
               <Dices size={28} className="text-primary" />
-              <span className="text-3xl font-display font-bold text-primary">MC GamerTime</span>
+              <span className="text-3xl font-display font-bold text-primary">{displayName}</span>
             </div>
             <p className="text-muted-foreground mt-2">Sign in to continue</p>
           </div>

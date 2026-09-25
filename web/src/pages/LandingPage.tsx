@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { useRecommended } from "../hooks/useRecommended";
-import { usePublicSettings } from "../hooks/useSettings";
+import { useDisplayName, usePublicSettings } from "../hooks/useSettings";
 
 const COLORS = [
   "#e11d48",
@@ -71,7 +71,7 @@ export default function LandingPage() {
   useMotionValueEvent(scrollY, "change", (y) => setScrolled(y > 20));
   const { data: recs = [], isLoading } = useRecommended();
   const { data: publicSettings } = usePublicSettings();
-  const displayName = publicSettings?.displayName ?? "MC GamerTime";
+  const displayName = useDisplayName();
   const showProjectInfo = publicSettings?.showProjectInfo ?? false;
   // Set per deployment in Settings → Landing Page; each link hides while unset.
   const sourceUrl = publicSettings?.sourceUrl ?? null;

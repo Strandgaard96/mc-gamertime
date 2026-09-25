@@ -10,14 +10,14 @@ import {
   Users,
 } from "lucide-react";
 import { AnimatePresence } from "motion/react";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { Link, Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import { NotificationBell } from "./components/NotificationBell";
 import { PageSkeleton } from "./components/PageSkeleton";
 import { UserMenu } from "./components/UserMenu";
 import { usePlayers } from "./hooks/usePlayers";
-import { usePublicSettings } from "./hooks/useSettings";
+import { useDisplayName } from "./hooks/useSettings";
 import { AuthProvider, useAuth } from "./lib/AuthContext";
 import { setClearAuth } from "./lib/navigation";
 import { syncThemeColor } from "./lib/themeColor";
@@ -114,8 +114,14 @@ function AppShell() {
   const { user, loading, logout, setUser } = useAuth();
   const location = useLocation();
   const { data: players = [] } = usePlayers();
-  const { data: publicSettings } = usePublicSettings();
-  const displayName = publicSettings?.displayName ?? "MC GamerTime";
+  const displayName = useDisplayName();
+
+  // Base tab title for every page. A layout effect runs before all passive
+  // effects, so pages that set a more specific title in their own useEffect
+  // (RecommendedPage, RecDetailPage) still win on the same render.
+  useLayoutEffect(() => {
+    document.title = displayName;
+  }, [displayName]);
 
   useEffect(() => {
     setClearAuth(() => setUser(null));

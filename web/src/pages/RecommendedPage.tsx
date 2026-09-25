@@ -7,6 +7,7 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { useRecommended } from "../hooks/useRecommended";
+import { useDisplayName } from "../hooks/useSettings";
 import { useAuth } from "../lib/AuthContext";
 
 const COLORS = [
@@ -35,13 +36,14 @@ function GameImagePlaceholder({ name, className = "" }: { name: string; classNam
 export default function RecommendedPage() {
   const { data: recs = [], isLoading } = useRecommended();
   const { user } = useAuth();
+  const displayName = useDisplayName();
 
   useEffect(() => {
-    document.title = "MC GamerTime — Recommended Games";
+    document.title = `${displayName} — Recommended Games`;
     return () => {
-      document.title = "MC GamerTime";
+      document.title = displayName;
     };
-  }, []);
+  }, [displayName]);
 
   return (
     <PageTransition>
@@ -51,7 +53,7 @@ export default function RecommendedPage() {
             <div className="max-w-5xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Dices size={20} className="text-primary" />
-                <span className="font-display font-bold text-foreground">MC GamerTime</span>
+                <span className="font-display font-bold text-foreground">{displayName}</span>
               </div>
               <Button asChild size="sm">
                 <Link to="/login">Sign in →</Link>

@@ -7,6 +7,7 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { useRecommendedDetail } from "../hooks/useRecommended";
+import { useDisplayName } from "../hooks/useSettings";
 import { useAuth } from "../lib/AuthContext";
 
 const COLORS = [
@@ -40,13 +41,14 @@ export default function RecDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: rec, isLoading } = useRecommendedDetail(id);
   const { user } = useAuth();
+  const displayName = useDisplayName();
 
   useEffect(() => {
-    if (rec) document.title = `MC GamerTime — ${rec.gameName}`;
+    if (rec) document.title = `${displayName} — ${rec.gameName}`;
     return () => {
-      document.title = "MC GamerTime";
+      document.title = displayName;
     };
-  }, [rec?.gameName, rec]);
+  }, [rec?.gameName, rec, displayName]);
 
   const color = rec ? COLORS[rec.gameName.charCodeAt(0) % COLORS.length] : "#7c3aed";
 
@@ -58,7 +60,7 @@ export default function RecDetailPage() {
             <div className="max-w-5xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Dices size={20} className="text-primary" />
-                <span className="font-display font-bold text-foreground">MC GamerTime</span>
+                <span className="font-display font-bold text-foreground">{displayName}</span>
               </div>
               <Button asChild size="sm">
                 <Link to="/login">Sign in →</Link>
