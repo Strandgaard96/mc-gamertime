@@ -126,8 +126,8 @@ export default function LandingPage() {
                 Who won game night? Now there's proof.
               </h1>
               <p className="text-lg text-muted-foreground max-w-[42ch] leading-relaxed">
-                Log every session, crown champions, and settle rivalries with stats your group
-                can't argue with.
+                Log every session, crown champions, and settle rivalries with stats your group can't
+                argue with.
               </p>
               <div className="flex flex-wrap items-center gap-3">
                 <Button asChild size="lg">
@@ -266,9 +266,7 @@ export default function LandingPage() {
                         </div>
                       )}
                       <div className="p-3 space-y-1">
-                        <p className="font-display font-bold text-sm leading-tight">
-                          {r.gameName}
-                        </p>
+                        <p className="font-display font-bold text-sm leading-tight">{r.gameName}</p>
                       </div>
                     </motion.div>
                   );
@@ -298,8 +296,7 @@ export default function LandingPage() {
                     Run your own
                   </h2>
                   <p className="text-muted-foreground max-w-[55ch] leading-relaxed">
-                    Open source under MIT. One container, one SQLite file, no cloud account
-                    needed.
+                    Open source under MIT. One container, one SQLite file, no cloud account needed.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-3">
