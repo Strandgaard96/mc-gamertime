@@ -101,9 +101,17 @@ export default function LandingPage() {
               <Dices size={22} className="text-primary" />
               <span className="font-display font-bold text-lg text-primary">{displayName}</span>
             </div>
-            <Button asChild size="sm">
-              <Link to="/login">Sign in</Link>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button asChild size="sm" variant="outline">
+                <a href={REPO_URL} target="_blank" rel="noopener noreferrer">
+                  <GithubIcon className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+                  <span className="sr-only sm:not-sr-only">Source</span>
+                </a>
+              </Button>
+              <Button asChild size="sm">
+                <Link to="/login">Sign in</Link>
+              </Button>
+            </div>
           </div>
         </header>
 
