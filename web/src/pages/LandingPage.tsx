@@ -30,7 +30,7 @@ const STACK = [
   { label: "Frontend", value: "React, TypeScript, Tailwind, TanStack Query" },
   { label: "API", value: "FastAPI on Python, SQLite or DynamoDB" },
   { label: "Runs on", value: "One Docker container, or AWS Lambda via Terraform" },
-  { label: "Quality", value: "CI, 90% coverage floor, OpenSSF Scorecard" },
+  { label: "Testing", value: "CI on every pull request, 90% minimum test coverage" },
 ];
 
 // Screenshots in public/landing/ come from a throwaway instance seeded with
@@ -122,12 +122,12 @@ export default function LandingPage() {
               transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
               className="space-y-6"
             >
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold tracking-tight leading-[1.05]">
-                Who won game night? Now there's proof.
+              <h1 className="text-4xl md:text-5xl font-display font-bold tracking-tight leading-[1.1]">
+                Boardgame inventory tracker and session logger
               </h1>
               <p className="text-lg text-muted-foreground max-w-[42ch] leading-relaxed">
-                Log every session, crown champions, and settle rivalries with stats your group can't
-                argue with.
+                Keep a list of the games you own and log every play: who played, who won, and the
+                scores.
               </p>
               <div className="flex flex-wrap items-center gap-3">
                 <Button asChild size="lg">
@@ -160,12 +160,10 @@ export default function LandingPage() {
         {/* ── Showcase ── */}
         <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 pb-16 md:pt-16 md:pb-24 space-y-10">
           <motion.div {...reveal} className="space-y-3">
-            <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight">
-              Every game night, remembered
-            </h2>
+            <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight">Features</h2>
             <p className="text-muted-foreground max-w-[60ch] leading-relaxed">
-              Also inside: a game catalog with BoardGameGeek import, a picker for when nobody can
-              decide, achievements, and a group blog.
+              Also included: a game catalog with BoardGameGeek import, a random game picker,
+              achievements and a blog.
             </p>
           </motion.div>
 
@@ -178,8 +176,8 @@ export default function LandingPage() {
                 height={2200}
               />
               <figcaption className="text-sm text-muted-foreground">
-                <span className="text-foreground font-medium">Player profiles.</span> Streaks,
-                favourite games, and the nemesis who keeps beating you.
+                <span className="text-foreground font-medium">Player profiles.</span> Win rate,
+                streaks, favourite game and head-to-head results.
               </figcaption>
             </motion.figure>
             <motion.figure {...reveal} className="space-y-3">
@@ -191,7 +189,7 @@ export default function LandingPage() {
               />
               <figcaption className="text-sm text-muted-foreground">
                 <span className="text-foreground font-medium">Home.</span> Recent sessions and
-                standings the moment you sign in.
+                current standings.
               </figcaption>
             </motion.figure>
             <motion.figure {...reveal} className="space-y-3">
@@ -202,8 +200,8 @@ export default function LandingPage() {
                 height={1080}
               />
               <figcaption className="text-sm text-muted-foreground">
-                <span className="text-foreground font-medium">All-time records.</span> Longest
-                streaks, busiest months, and the reigning champion.
+                <span className="text-foreground font-medium">Records.</span> Most played game,
+                longest win streak and most active month.
               </figcaption>
             </motion.figure>
           </div>
@@ -214,8 +212,8 @@ export default function LandingPage() {
           <section id="picks" className="max-w-6xl mx-auto px-4 sm:px-6 py-16 space-y-8">
             <div className="flex items-end justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-display font-bold">Our recommendations</h2>
-                <p className="text-sm text-muted-foreground mt-1">Some of our personal favorites</p>
+                <h2 className="text-2xl font-display font-bold">Recommendations</h2>
+                <p className="text-sm text-muted-foreground mt-1">Personal favorites</p>
               </div>
               <Link
                 to="/recommended"
@@ -296,7 +294,7 @@ export default function LandingPage() {
                     Run your own
                   </h2>
                   <p className="text-muted-foreground max-w-[55ch] leading-relaxed">
-                    Open source under MIT. One container, one SQLite file, no cloud account needed.
+                    MIT licensed. Runs as a single Docker container with SQLite.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-3">
