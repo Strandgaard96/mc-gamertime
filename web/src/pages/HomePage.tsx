@@ -10,6 +10,7 @@ import { Skeleton } from "../components/ui/skeleton";
 import { Tooltip } from "../components/ui/tooltip";
 import { useCountUp } from "../hooks/useCountUp";
 import { useResults } from "../hooks/useResults";
+import { usePublicSettings } from "../hooks/useSettings";
 import { useStats } from "../hooks/useStats";
 import { useAuth } from "../lib/AuthContext";
 import { formatDate, pluralize } from "../lib/utils";
@@ -25,6 +26,9 @@ export default function HomePage() {
   const { user } = useAuth();
   const { data: results = [], isLoading: rL } = useResults();
   const { data: stats, isLoading: sL } = useStats();
+  const { data: publicSettings } = usePublicSettings();
+  const displayName = publicSettings?.displayName ?? "MC GamerTime";
+  const sourceUrl = publicSettings?.sourceUrl ?? null;
   const [showLog, setShowLog] = useState(false);
 
   const recentSessions = useMemo(
@@ -247,26 +251,29 @@ export default function HomePage() {
           </div>
         </section>
 
-        <div className="pt-4 pb-2 flex justify-center items-center gap-3">
-          <a
-            href="https://github.com/Strandgaard96/mc-gamertime"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-base text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors"
-          >
-            MC GamerTime
-          </a>
-          <a
-            href="https://github.com/Strandgaard96/mc-gamertime"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="opacity-30 hover:opacity-70 transition-opacity"
-            title="GitHub"
-            aria-label="GitHub"
-          >
-            <GithubIcon className="w-7 h-7" aria-hidden="true" />
-          </a>
-        </div>
+        {/* Links to Settings → Landing Page → Source Code URL; hidden while unset. */}
+        {sourceUrl && (
+          <div className="pt-4 pb-2 flex justify-center items-center gap-3">
+            <a
+              href={sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-base text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors"
+            >
+              {displayName}
+            </a>
+            <a
+              href={sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="opacity-30 hover:opacity-70 transition-opacity"
+              title="Source code"
+              aria-label="Source code"
+            >
+              <GithubIcon className="w-7 h-7" aria-hidden="true" />
+            </a>
+          </div>
+        )}
       </div>
       <LogResultDialog open={showLog} onClose={() => setShowLog(false)} />
     </PageTransition>
