@@ -103,6 +103,13 @@ only) — no restart needed. The Settings-page value takes precedence over
 `APP_BASE_URL` when both are set, so you can override or correct it without
 touching `.env`.
 
+## Landing page
+
+The public landing page shows product screenshots and, if enabled, your recommended
+games. A **Run your own** section with install commands and links to the project's
+source and docs is off by default, so your instance doesn't advertise the project to
+your group. Turn it on under **Settings → Landing Page** (admin only).
+
 ## Metrics <Badge text="optional" variant="note" />
 
 Set `METRICS_ENABLED=true` in `.env` and restart to expose `GET /metrics` in

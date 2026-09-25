@@ -189,6 +189,59 @@ function InstanceUrlCard({ data }: { data: AdminSettings | undefined }) {
   );
 }
 
+function LandingPageCard({ data }: { data: AdminSettings | undefined }) {
+  const qc = useQueryClient();
+  const [showProjectInfo, setShowProjectInfo] = useState(false);
+
+  useEffect(() => {
+    if (data) setShowProjectInfo(data.showProjectInfo);
+  }, [data]);
+
+  const isDirty = data !== undefined && showProjectInfo !== data.showProjectInfo;
+
+  const saveMutation = useMutation({
+    mutationFn: updateSettings,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["settings"] });
+      toast.success("Landing page saved");
+    },
+    onError: (err) =>
+      toast.error(
+        err instanceof Error && err.message ? err.message : "Failed to save the landing page",
+      ),
+  });
+
+  function handleSave(e: FormEvent) {
+    e.preventDefault();
+    saveMutation.mutate({ showProjectInfo });
+  }
+
+  return (
+    <form onSubmit={handleSave} className="space-y-3 rounded-lg border bg-card p-4">
+      <h2 className="font-semibold">Landing Page</h2>
+      <div className="space-y-1.5">
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input
+            type="checkbox"
+            checked={showProjectInfo}
+            onChange={(e) => setShowProjectInfo(e.target.checked)}
+          />
+          Show project info
+        </label>
+        <p className="text-sm text-muted-foreground">
+          Adds a "Run your own" section with install steps, the tech stack and links to the source
+          code and docs.
+        </p>
+      </div>
+      <div className="flex justify-end">
+        <Button type="submit" disabled={!isDirty || saveMutation.isPending}>
+          {saveMutation.isPending ? "Saving…" : "Save"}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 export default function SettingsPage() {
   const { data, isLoading } = useQuery<AdminSettings>({
     queryKey: ["settings", "admin"],
@@ -208,6 +261,7 @@ export default function SettingsPage() {
           <BrandingCard data={data} />
           <IntegrationsCard data={data} />
           <InstanceUrlCard data={data} />
+          <LandingPageCard data={data} />
         </div>
       </div>
     </PageTransition>

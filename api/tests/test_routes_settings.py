@@ -8,7 +8,7 @@ def test_public_settings_unauthenticated_default():
     c = TestClient(app, raise_server_exceptions=False)
     resp = c.get("/api/settings/public", headers=ORIGIN)
     assert resp.status_code == 200
-    assert resp.json() == {"displayName": "MC GamerTime"}
+    assert resp.json() == {"displayName": "MC GamerTime", "showProjectInfo": False}
 
 
 def test_admin_get_settings_readonly_forbidden(authed_client):
@@ -25,6 +25,7 @@ def test_admin_get_settings_default(authed_client):
         "bggTokenSet": False,
         "appBaseUrl": None,
         "appBaseUrlEnvFallback": None,
+        "showProjectInfo": False,
     }
 
 
@@ -34,12 +35,16 @@ def test_put_settings_display_name_reflected_in_public_and_admin_get(authed_clie
     assert put_resp.status_code == 200
     assert put_resp.json()["displayName"] == "My Game Nights"
 
-    assert c.get("/api/settings/public", headers=ORIGIN).json() == {"displayName": "My Game Nights"}
+    assert c.get("/api/settings/public", headers=ORIGIN).json() == {
+        "displayName": "My Game Nights",
+        "showProjectInfo": False,
+    }
     assert c.get("/api/settings", headers=ORIGIN).json() == {
         "displayName": "My Game Nights",
         "bggTokenSet": False,
         "appBaseUrl": None,
         "appBaseUrlEnvFallback": None,
+        "showProjectInfo": False,
     }
 
 
@@ -149,3 +154,29 @@ def test_put_settings_empty_app_base_url_clears_it(authed_client):
     resp = c.put("/api/settings", json={"appBaseUrl": "   "}, headers=ORIGIN)
     assert resp.status_code == 200
     assert resp.json()["appBaseUrl"] is None
+
+
+def test_put_settings_show_project_info_reflected_in_public(authed_client):
+    c = authed_client("admin")
+    resp = c.put("/api/settings", json={"showProjectInfo": True}, headers=ORIGIN)
+    assert resp.status_code == 200
+    assert resp.json()["showProjectInfo"] is True
+
+    anon = TestClient(app, raise_server_exceptions=False)
+    assert anon.get("/api/settings/public", headers=ORIGIN).json()["showProjectInfo"] is True
+
+
+def test_put_settings_show_project_info_false_turns_it_off(authed_client):
+    c = authed_client("admin")
+    c.put("/api/settings", json={"showProjectInfo": True}, headers=ORIGIN)
+
+    resp = c.put("/api/settings", json={"showProjectInfo": False}, headers=ORIGIN)
+    assert resp.status_code == 200
+    assert resp.json()["showProjectInfo"] is False
+    assert c.get("/api/settings/public", headers=ORIGIN).json()["showProjectInfo"] is False
+
+
+def test_put_settings_show_project_info_readonly_forbidden(authed_client):
+    c = authed_client("readonly")
+    resp = c.put("/api/settings", json={"showProjectInfo": True}, headers=ORIGIN)
+    assert resp.status_code == 403

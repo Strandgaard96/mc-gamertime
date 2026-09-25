@@ -132,6 +132,7 @@ export interface UserSummary {
 
 export interface PublicSettings {
   displayName: string;
+  showProjectInfo: boolean;
 }
 
 export interface AdminSettings {
@@ -139,6 +140,7 @@ export interface AdminSettings {
   bggTokenSet: boolean;
   appBaseUrl: string | null;
   appBaseUrlEnvFallback: string | null;
+  showProjectInfo: boolean;
 }
 
 export interface Post {
