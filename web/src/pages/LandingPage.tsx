@@ -19,9 +19,6 @@ const COLORS = [
   "#be185d",
 ];
 
-const REPO_URL = "https://github.com/Strandgaard96/mc-gamertime";
-const DOCS_URL = "https://mcgamertime-docs.drmaggi.com/self-hosting/quickstart/";
-
 const INSTALL = `curl -fsSLO https://raw.githubusercontent.com/Strandgaard96/mc-gamertime/main/docker-compose.yml
 printf 'ADMIN_USERNAME=admin\\nADMIN_PASSWORD=<your-password>\\n' > .env
 docker compose up -d`;
@@ -76,6 +73,9 @@ export default function LandingPage() {
   const { data: publicSettings } = usePublicSettings();
   const displayName = publicSettings?.displayName ?? "MC GamerTime";
   const showProjectInfo = publicSettings?.showProjectInfo ?? false;
+  // Set per deployment in Settings → Landing Page; each link hides while unset.
+  const sourceUrl = publicSettings?.sourceUrl ?? null;
+  const docsUrl = publicSettings?.docsUrl ?? null;
 
   useEffect(() => {
     document.title = displayName;
@@ -97,18 +97,30 @@ export default function LandingPage() {
           }`}
         >
           <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Dices size={22} className="text-primary" />
-              <span className="font-display font-bold text-lg text-primary">{displayName}</span>
+            <div className="flex items-center gap-2 min-w-0">
+              <Dices size={22} className="text-primary shrink-0" />
+              <span className="font-display font-bold text-base sm:text-lg text-primary truncate">
+                {displayName}
+              </span>
             </div>
-            <div className="flex items-center gap-2">
-              <Button asChild size="sm" variant="outline">
-                <a href={REPO_URL} target="_blank" rel="noopener noreferrer">
-                  <GithubIcon className="w-4 h-4 sm:mr-2" aria-hidden="true" />
-                  <span className="sr-only sm:not-sr-only">Source</span>
-                </a>
-              </Button>
-              <Button asChild size="sm">
+            <div className="flex items-center gap-2 shrink-0">
+              {docsUrl && (
+                <Button asChild size="sm" variant="outline">
+                  <a href={docsUrl} target="_blank" rel="noopener noreferrer">
+                    <BookOpen size={16} className="sm:mr-2" aria-hidden="true" />
+                    <span className="sr-only sm:not-sr-only">Docs</span>
+                  </a>
+                </Button>
+              )}
+              {sourceUrl && (
+                <Button asChild size="sm" variant="outline">
+                  <a href={sourceUrl} target="_blank" rel="noopener noreferrer">
+                    <GithubIcon className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+                    <span className="sr-only sm:not-sr-only">Source</span>
+                  </a>
+                </Button>
+              )}
+              <Button asChild size="sm" className="whitespace-nowrap">
                 <Link to="/login">Sign in</Link>
               </Button>
             </div>
@@ -327,20 +339,26 @@ export default function LandingPage() {
                 <pre className="rounded-xl border bg-background p-4 text-sm leading-relaxed overflow-x-auto">
                   <code>{INSTALL}</code>
                 </pre>
-                <div className="flex flex-wrap gap-3">
-                  <Button asChild>
-                    <a href={DOCS_URL} target="_blank" rel="noopener noreferrer">
-                      <BookOpen size={16} className="mr-2" aria-hidden="true" />
-                      Read the docs
-                    </a>
-                  </Button>
-                  <Button asChild variant="outline">
-                    <a href={REPO_URL} target="_blank" rel="noopener noreferrer">
-                      <GithubIcon className="w-4 h-4 mr-2" aria-hidden="true" />
-                      View source
-                    </a>
-                  </Button>
-                </div>
+                {(docsUrl || sourceUrl) && (
+                  <div className="flex flex-wrap gap-3">
+                    {docsUrl && (
+                      <Button asChild>
+                        <a href={docsUrl} target="_blank" rel="noopener noreferrer">
+                          <BookOpen size={16} className="mr-2" aria-hidden="true" />
+                          Read the docs
+                        </a>
+                      </Button>
+                    )}
+                    {sourceUrl && (
+                      <Button asChild variant="outline">
+                        <a href={sourceUrl} target="_blank" rel="noopener noreferrer">
+                          <GithubIcon className="w-4 h-4 mr-2" aria-hidden="true" />
+                          View source
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                )}
               </motion.div>
             </div>
           </section>
@@ -354,15 +372,17 @@ export default function LandingPage() {
               <Link to="/privacy" className="hover:text-foreground transition-colors">
                 Privacy
               </Link>
-              <a
-                href={REPO_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors"
-              >
-                <GithubIcon className="w-4 h-4" aria-hidden="true" />
-                Source
-              </a>
+              {sourceUrl && (
+                <a
+                  href={sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors"
+                >
+                  <GithubIcon className="w-4 h-4" aria-hidden="true" />
+                  Source
+                </a>
+              )}
             </div>
           </div>
         </footer>

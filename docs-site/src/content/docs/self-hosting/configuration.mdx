@@ -106,9 +106,15 @@ touching `.env`.
 ## Landing page
 
 The public landing page shows product screenshots and, if enabled, your recommended
-games. A **Run your own** section with install commands and links to the project's
-source and docs is off by default, so your instance doesn't advertise the project to
-your group. Turn it on under **Settings → Landing Page** (admin only).
+games. Under **Settings → Landing Page** (admin only) you can:
+
+- set a **Source Code URL** and a **Documentation URL**: each adds a button to the
+  landing page header (and the "Run your own" section). Leave one blank to hide its
+  button. Both are blank by default, so point them at your own fork and docs if you
+  have them.
+- turn on **Show project info**: adds a **Run your own** section with install commands
+  and the tech stack. Off by default, so your instance doesn't advertise the project to
+  your group.
 
 ## Metrics <Badge text="optional" variant="note" />
 

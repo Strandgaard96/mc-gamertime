@@ -21,6 +21,8 @@ def get_public_settings():
     return {
         "displayName": settings.get("displayName") or _DEFAULT_DISPLAY_NAME,
         "showProjectInfo": bool(settings.get("showProjectInfo")),
+        "sourceUrl": settings.get("sourceUrl"),
+        "docsUrl": settings.get("docsUrl"),
     }
 
 
@@ -33,6 +35,8 @@ def get_settings_route(_: Annotated[AuthUser, Depends(require_admin)]):
         "appBaseUrl": settings.get("appBaseUrl"),
         "appBaseUrlEnvFallback": os.environ.get("APP_BASE_URL") or None,
         "showProjectInfo": bool(settings.get("showProjectInfo")),
+        "sourceUrl": settings.get("sourceUrl"),
+        "docsUrl": settings.get("docsUrl"),
     }
 
 
@@ -43,6 +47,10 @@ class UpdateSettingsBody(BaseModel):
     # Landing-page "run your own / built with" section. Off by default so a
     # friend group's self-hosted instance doesn't advertise the project.
     showProjectInfo: bool | None = None
+    # Landing-page header links. Per deployment (forks have their own repo and
+    # docs), so nothing is hardcoded; a link is hidden while its URL is unset.
+    sourceUrl: str | None = None
+    docsUrl: str | None = None
 
     @field_validator("displayName")
     @classmethod
@@ -61,9 +69,11 @@ class UpdateSettingsBody(BaseModel):
             return v
         return v.strip() or None
 
-    @field_validator("appBaseUrl")
+    # Shared by every URL field: they end up in hrefs on the public landing page,
+    # so anything but http(s) (e.g. javascript:) must be rejected here.
+    @field_validator("appBaseUrl", "sourceUrl", "docsUrl")
     @classmethod
-    def validate_app_base_url(cls, v: str | None) -> str | None:
+    def validate_url(cls, v: str | None) -> str | None:
         if v is None:
             return v
         v = v.strip()
@@ -93,4 +103,6 @@ def update_settings_route(body: UpdateSettingsBody, _: Annotated[AuthUser, Depen
         "appBaseUrl": updated.get("appBaseUrl"),
         "appBaseUrlEnvFallback": os.environ.get("APP_BASE_URL") or None,
         "showProjectInfo": bool(updated.get("showProjectInfo")),
+        "sourceUrl": updated.get("sourceUrl"),
+        "docsUrl": updated.get("docsUrl"),
     }

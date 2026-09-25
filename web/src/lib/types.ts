@@ -133,6 +133,8 @@ export interface UserSummary {
 export interface PublicSettings {
   displayName: string;
   showProjectInfo: boolean;
+  sourceUrl: string | null;
+  docsUrl: string | null;
 }
 
 export interface AdminSettings {
@@ -141,6 +143,8 @@ export interface AdminSettings {
   appBaseUrl: string | null;
   appBaseUrlEnvFallback: string | null;
   showProjectInfo: boolean;
+  sourceUrl: string | null;
+  docsUrl: string | null;
 }
 
 export interface Post {
