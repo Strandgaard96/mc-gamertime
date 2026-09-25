@@ -122,8 +122,8 @@ export default function LandingPage() {
               transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
               className="space-y-6"
             >
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold tracking-tight leading-[1.05]">
-                Who won game night? Now there's proof.
+              <h1 className="text-4xl md:text-5xl font-display font-bold tracking-tight leading-[1.1]">
+                Boardgame inventory tracker and session logger
               </h1>
               <p className="text-lg text-muted-foreground max-w-[42ch] leading-relaxed">
                 Log every session, crown champions, and settle rivalries with stats your group can't
