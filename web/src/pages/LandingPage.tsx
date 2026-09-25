@@ -214,7 +214,7 @@ export default function LandingPage() {
           <section id="picks" className="max-w-6xl mx-auto px-4 sm:px-6 py-16 space-y-8">
             <div className="flex items-end justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-display font-bold">Our recommendations</h2>
+                <h2 className="text-2xl font-display font-bold">Recommendations</h2>
                 <p className="text-sm text-muted-foreground mt-1">Some of our personal favorites</p>
               </div>
               <Link
