@@ -32,27 +32,9 @@ Self-host it, or use the built-in support for serverless hosting on AWS for ≈$
 | ![The leaderboard: podium, Elo ratings per player, win rates and streaks](docs-site/src/assets/hero-leaderboard.png) | ![Player profile: win rate, streaks, favourite game and nemesis](docs-site/src/assets/screenshot-player.png) |
 
 
-## Engineering highlights
-
-- **One codebase, two deployment targets.** The same FastAPI app and React build run in a
-  single Docker container (SQLite + local files) or serverless on AWS (Lambda, DynamoDB, S3,
-  CloudFront), selected by environment variables. One contract test suite runs against both
-  database backends (SQLite and DynamoDB via moto) so they cannot drift apart.
-- **Tested and typed.** 500+ API tests with a 90% coverage floor enforced in CI (currently
-  ~93%); Python type-checked with [ty](https://github.com/astral-sh/ty), TypeScript strict with
-  type-aware [oxlint](https://oxc.rs).
-- **Supply chain locked down.** Every GitHub Action SHA-pinned and audited by
-  [zizmor](https://github.com/zizmorcore/zizmor), base images digest-pinned, container images
-  scanned by Trivy, secrets scanned by gitleaks, dependencies kept current by Renovate.
-- **Infrastructure as code.** ~1.1k lines of Terraform with per-environment workspaces and
-  remote state; releases, changelog and GHCR images are cut automatically by release-please.
-- **Security by design.** Media is served only through an auth-gated proxy, the API rejects
-  requests that bypass CloudFront, and the threat model is documented in the
-  [security model](https://mcgamertime-docs.drmaggi.com/self-hosting/security/).
 
 ## Contents
 
-- [Engineering highlights](#engineering-highlights)
 - [Built with Claude Code](#built-with-claude-code)
 - [Quick start](#quick-start)
   - [1. Self-hosted with Docker](#1-self-hosted-with-docker)
