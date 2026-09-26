@@ -164,19 +164,11 @@ export function LogResultDialog({ open, onClose, defaultGameId, editResult }: Pr
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useLayoutEffect(() => {
-    // When `open` is true, call focus() on the input DOM node.
-    //
-    // The ref's `.current` property is the actual HTMLInputElement set by React
-    // after the component mounts. Use optional chaining to be safe:
     if (open) searchInputRef.current?.focus();
-    //
-    // The dependency array should be [open] — this effect re-runs
-    // every time `open` changes.
   }, [open]);
 
   useLayoutEffect(() => {
     if (open) dispatch({ type: "RESET", init: { defaultGameId, editResult } });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editResult?.pk, editResult, defaultGameId]);
 
   const filteredGames = useMemo(

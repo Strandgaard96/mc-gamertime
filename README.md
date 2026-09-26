@@ -1,6 +1,7 @@
 # MC GamerTime
 
 [![CI](https://github.com/Strandgaard96/mc-gamertime/actions/workflows/ci.yml/badge.svg)](https://github.com/Strandgaard96/mc-gamertime/actions/workflows/ci.yml)
+[![API coverage](https://codecov.io/gh/Strandgaard96/mc-gamertime/branch/main/graph/badge.svg?flag=api)](https://codecov.io/gh/Strandgaard96/mc-gamertime)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Strandgaard96/mc-gamertime/badge)](https://scorecard.dev/viewer/?uri=github.com/Strandgaard96/mc-gamertime)
 [![Docker image](https://img.shields.io/badge/ghcr.io-strandgaard96%2Fmc--gamertime-2496ED?logo=docker&logoColor=white)](https://github.com/Strandgaard96/mc-gamertime/pkgs/container/mc-gamertime)
 [![Release](https://img.shields.io/github/v/release/Strandgaard96/mc-gamertime)](https://github.com/Strandgaard96/mc-gamertime/releases)
@@ -39,7 +40,6 @@ Self-host it, or use the built-in support for serverless hosting on AWS for ≈$
   - [1. Self-hosted with Docker](#1-self-hosted-with-docker)
   - [2. Cloud-hosted on AWS](#2-cloud-hosted-on-aws)
 - [Stack](#stack)
-- [Features](#features)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -117,7 +117,8 @@ The security considerations for the AWS hosted app are described here:
 
 ## Stack
 
-- **Frontend** — React 18, Vite, TypeScript, Tailwind, TanStack Query, Recharts
+- **Frontend** — React 19, TypeScript, Vite, Tailwind CSS 4, React Router 7, TanStack Query 5,
+  Zod, Recharts
 - **Backend** — Python, FastAPI; uvicorn when self-hosted, Lambda + Mangum on AWS
 - **Data** — embedded SQLite, or DynamoDB
 - **Storage** — local filesystem, or S3; uploaded media is served by the app behind auth,

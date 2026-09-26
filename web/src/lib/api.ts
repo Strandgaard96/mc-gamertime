@@ -25,6 +25,11 @@ import type {
 // In production: CloudFront routes these to the Lambda function
 const BASE = "/api";
 
+export interface RateLimitError extends Error {
+  status: 429;
+  retryAfter: number | null;
+}
+
 class AuthError extends Error {
   readonly status = 401;
   constructor() {
@@ -52,8 +57,8 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     }
     if (res.status === 429) {
       const retryAfterRaw = Number.parseInt(res.headers.get("Retry-After") ?? "", 10);
-      const err = Object.assign(new Error(msg), {
-        status: 429,
+      const err: RateLimitError = Object.assign(new Error(msg), {
+        status: 429 as const,
         retryAfter: Number.isNaN(retryAfterRaw) ? null : retryAfterRaw,
       });
       throw err;
