@@ -60,3 +60,8 @@ audits/
 docs-site/src/content/docs/self-hosting/release-notes.md
 docs-site/src/version.json
 !infra/.terraform.lock.hcl
+
+# Coverage reports
+coverage/
+coverage.xml
+.coverage

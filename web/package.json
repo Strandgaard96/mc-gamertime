@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "oxlint src/",
     "format": "oxfmt src/",
-    "format:check": "oxfmt --check src/"
+    "format:check": "oxfmt --check src/",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@fontsource/space-grotesk": "^5.2.10",
@@ -47,6 +48,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "@vitest/coverage-v8": "^5.0.0",
     "jsdom": "^30.0.1",
     "oxfmt": "~0.67.0",
     "oxlint": "^1.82.0",
