@@ -34,6 +34,7 @@ import { useResults } from "../hooks/useResults";
 import { useStats } from "../hooks/useStats";
 import { useAuth } from "../lib/AuthContext";
 import { deleteAvatar, uploadAvatar } from "../lib/api";
+import type { Player } from "../lib/types";
 import { formatDate, idFromPk, pluralize } from "../lib/utils";
 
 export default function PlayerProfilePage() {
@@ -57,7 +58,7 @@ export default function PlayerProfilePage() {
     const localUrl = URL.createObjectURL(file);
 
     // Optimistically update global cache so Header and Profile sync
-    const previousPlayers = queryClient.getQueryData<any[]>(["players"]);
+    const previousPlayers = queryClient.getQueryData<Player[]>(["players"]);
     if (previousPlayers) {
       queryClient.setQueryData(
         ["players"],
@@ -85,11 +86,11 @@ export default function PlayerProfilePage() {
   async function handleRemovePhoto() {
     if (!id) return;
 
-    const previousPlayers = queryClient.getQueryData<any[]>(["players"]);
+    const previousPlayers = queryClient.getQueryData<Player[]>(["players"]);
     if (previousPlayers) {
       queryClient.setQueryData(
         ["players"],
-        previousPlayers.map((p) => (p.pk === id ? { ...p, avatarUrl: null } : p)),
+        previousPlayers.map((p) => (p.pk === id ? { ...p, avatarUrl: undefined } : p)),
       );
     }
 

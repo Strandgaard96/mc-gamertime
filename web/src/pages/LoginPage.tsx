@@ -7,7 +7,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { useDisplayName } from "../hooks/useSettings";
 import { useAuth } from "../lib/AuthContext";
-import { checkHealth, login } from "../lib/api";
+import { checkHealth, login, type RateLimitError } from "../lib/api";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -36,8 +36,9 @@ export default function LoginPage() {
       setUser(user);
       navigate(searchParams.get("redirect") ?? "/");
     } catch (err) {
-      if ((err as any).status === 429) {
-        const secs = (err as any).retryAfter as number | null;
+      const rateLimited = err as Partial<RateLimitError>;
+      if (rateLimited.status === 429) {
+        const secs = rateLimited.retryAfter ?? null;
         setError(
           secs
             ? `Too many failed attempts — try again in ${secs} seconds`
