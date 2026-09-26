@@ -75,10 +75,10 @@ import version from '../../version.json';
 
 ## Stack
 
-- **Frontend:** React 18, Vite, Tailwind CSS, TanStack Query, Recharts
+- **Frontend:** React 19, TypeScript, Vite, Tailwind CSS 4, React Router 7, TanStack Query 5, Recharts
 - **Backend:** Python / FastAPI — uvicorn when self-hosted, Lambda + Mangum on AWS
 - **Data:** embedded SQLite (self-hosted) or DynamoDB (AWS)
-- **Storage:** local filesystem (self-hosted) or S3 + CloudFront (AWS)
+- **Storage:** local filesystem (self-hosted) or S3 (AWS); uploaded media is served by the app behind auth
 
 These docs describe **v{version.version}** — see the [release notes](/self-hosting/release-notes/)
 for what changed, and pin the matching image tag if you upgrade deliberately.
