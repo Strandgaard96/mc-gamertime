@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1](https://github.com/Strandgaard96/mc-gamertime/compare/v0.2.0...v0.2.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* **web:** mobile UI fixes from UI review ([2591e43](https://github.com/Strandgaard96/mc-gamertime/commit/2591e4316f8ab3e77463bc46f5fd8ac00b0a1310))
+* **web:** mobile UI fixes from UI review ([e45cc7c](https://github.com/Strandgaard96/mc-gamertime/commit/e45cc7c2b8638a1a53f3d07d757821c90178782d))
+
 ## [0.2.0](https://github.com/Strandgaard96/mc-gamertime/compare/v0.1.2...v0.2.0) (2026-10-02)
 
 
