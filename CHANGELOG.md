@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/Strandgaard96/mc-gamertime/compare/v0.2.2...v0.2.3) (2026-10-07)
+
+
+### Bug Fixes
+
+* **deps:** update dependency pyjwt to v2.15.1 ([361caa7](https://github.com/Strandgaard96/mc-gamertime/commit/361caa7bf0abf93fba5d986d22d3795ef4a57786))
+
 ## [0.2.2](https://github.com/Strandgaard96/mc-gamertime/compare/v0.2.1...v0.2.2) (2026-10-07)
 
 
