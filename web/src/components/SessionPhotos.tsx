@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, ImagePlus, Trash2 } from "lucide-react";
-import { type ChangeEvent, useId, useMemo, useState } from "react";
+import { type ChangeEvent, useEffect, useId, useMemo, useState } from "react";
 import { useAddPhoto, useDeletePhoto } from "../hooks/usePhotos";
 import { useReactions } from "../hooks/useReactions";
 import { useAuth } from "../lib/AuthContext";
@@ -32,9 +32,21 @@ export function SessionPhotos({ sessionPk }: { sessionPk: string }) {
   }
 
   function step(delta: number) {
-    if (open == null || photos.length === 0) return;
-    setOpen((open + delta + photos.length) % photos.length);
+    setOpen((o) => (o == null || photos.length === 0 ? o : (o + delta + photos.length) % photos.length));
   }
+
+  // showModal() focuses the dialog's close button, outside the image wrapper, so
+  // arrow keys are listened for on the document while the lightbox is open.
+  const lightboxOpen = current != null;
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") step(-1);
+      if (e.key === "ArrowRight") step(1);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  });
 
   if (photos.length === 0 && !user) return null;
 
@@ -93,13 +105,7 @@ export function SessionPhotos({ sessionPk }: { sessionPk: string }) {
         className="max-w-3xl"
       >
         {current && (
-          <div
-            className="flex items-center gap-2"
-            onKeyDown={(e) => {
-              if (e.key === "ArrowLeft") step(-1);
-              if (e.key === "ArrowRight") step(1);
-            }}
-          >
+          <div className="flex items-center gap-2">
             {photos.length > 1 && (
               <button type="button" aria-label="Previous photo" onClick={() => step(-1)} className="p-2">
                 <ChevronLeft aria-hidden="true" />

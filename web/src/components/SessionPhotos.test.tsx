@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as api from "../lib/api";
 import { AuthProvider } from "../lib/AuthContext";
@@ -32,7 +32,16 @@ function renderAs(sub: string, role: "admin" | "readonly", items: PhotoItem[]) {
   );
 }
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  // jsdom has no HTMLDialogElement.showModal/close
+  HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) {
+    this.setAttribute("open", "");
+  };
+  HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) {
+    this.removeAttribute("open");
+  };
+});
 
 describe("SessionPhotos", () => {
   it("shows Add photo below the cap", async () => {
@@ -56,5 +65,33 @@ describe("SessionPhotos", () => {
     renderAs("root", "admin", [photo("p1", "alice"), photo("p2", "bob")]);
     await screen.findAllByRole("img");
     expect(screen.getAllByRole("button", { name: /delete photo/i })).toHaveLength(2);
+  });
+
+  describe("lightbox", () => {
+    const three = () => [photo("p1", "alice"), photo("p2", "bob"), photo("p3", "carol")];
+    const shown = () => screen.getByRole("dialog", { hidden: true }).querySelector("img");
+
+    async function openFirst() {
+      renderAs("bob", "readonly", three());
+      const thumbs = await screen.findAllByRole("img");
+      fireEvent.click(thumbs[0].closest("button") as HTMLElement);
+    }
+
+    it("opens the clicked photo", async () => {
+      await openFirst();
+      expect(shown()).toHaveAttribute("src", "/session-photos/p1.webp");
+    });
+
+    it("ArrowRight advances without focusing the nav buttons", async () => {
+      await openFirst();
+      fireEvent.keyDown(document, { key: "ArrowRight" });
+      expect(shown()).toHaveAttribute("src", "/session-photos/p2.webp");
+    });
+
+    it("ArrowLeft from the first photo wraps to the last", async () => {
+      await openFirst();
+      fireEvent.keyDown(document, { key: "ArrowLeft" });
+      expect(shown()).toHaveAttribute("src", "/session-photos/p3.webp");
+    });
   });
 });
