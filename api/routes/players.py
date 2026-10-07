@@ -2,6 +2,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 
+import lib.seasons as seasons_lib
 from lib.achievements import compute_achievements
 from lib.auth import AuthUser, require_auth
 from lib.db.games import list_games
@@ -87,4 +88,7 @@ def get_player_stats(player_id: str, _: Annotated[AuthUser, Depends(require_auth
         "achievements": compute_achievements(player_id, results, games_by_id),
         "perGameStats": per_game_stats,
         "winRateTrend": win_rate_trend,
+        "seasonTitles": seasons_lib.player_season_titles(
+            results, player_id, seasons_lib.today_utc()
+        ),
     }

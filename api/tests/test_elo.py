@@ -1,4 +1,4 @@
-from lib.elo import compute_elo
+from lib.elo import compute_elo, iter_elo, leaders_before
 
 
 def _result(
@@ -63,3 +63,43 @@ def test_single_player_result_skipped():
 def test_winner_not_in_players_skipped():
     bad = _result("ghost", ["p1", "p2"])
     assert compute_elo([bad]) == {}
+
+
+def _pk(result: dict, pk: str) -> dict:
+    return {**result, "pk": pk}
+
+
+def test_iter_elo_snapshot_excludes_newcomers():
+    r1 = _pk(_result("p1", ["p1", "p2"], date="2026-01-01"), "a")
+    r2 = _pk(_result("p3", ["p1", "p3"], date="2026-01-02"), "b")
+    snaps = {r["pk"]: snap for r, snap in iter_elo([r1, r2])}
+    assert snaps["a"] == {}
+    assert set(snaps["b"]) == {"p1", "p2"}  # p3 not yet rated
+    assert round(snaps["b"]["p1"]) == 1016
+
+
+def test_iter_elo_yields_unrated_results_too():
+    unrated = _pk(_result("p1", ["p1"]), "u")  # single player -> unrated
+    assert [r["pk"] for r, _ in iter_elo([unrated])] == ["u"]
+
+
+def test_leaders_before_nobody_rated_is_none():
+    r1 = _pk(_result("p1", ["p1", "p2"]), "a")
+    assert leaders_before([r1]) == {"a": None}
+
+
+def test_leaders_before_sole_leader():
+    r1 = _pk(_result("p1", ["p1", "p2"], date="2026-01-01"), "a")
+    r2 = _pk(_result("p2", ["p1", "p2"], date="2026-01-02"), "b")
+    assert leaders_before([r1, r2])["b"] == "p1"
+
+
+def test_leaders_before_tie_is_none():
+    r1 = _pk(_result("p1", ["p1", "p2"], date="2026-01-01"), "a")
+    r2 = _pk(_result("p3", ["p3", "p4"], date="2026-01-02"), "b")
+    r3 = _pk(_result("p4", ["p1", "p4"], date="2026-01-03"), "c")
+    assert leaders_before([r1, r2, r3])["c"] is None  # p1 and p3 both 1016
+
+
+def test_leaders_before_skips_results_without_pk():
+    assert leaders_before([_result("p1", ["p1", "p2"])]) == {}

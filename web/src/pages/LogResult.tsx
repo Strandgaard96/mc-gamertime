@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { Avatar } from "../components/Avatar";
 import { LogResultDialog, MOODS } from "../components/LogResultDialog";
 import { PageTransition } from "../components/PageTransition";
+import { SessionPhotos } from "../components/SessionPhotos";
 import { SessionReactions } from "../components/SessionReactions";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
@@ -241,27 +242,30 @@ export default function LogResult() {
                                   </Button>
                                 </div>
                               ) : (
-                                <SessionReactions
-                                  sessionPk={r.pk}
-                                  actions={
-                                    linkedPost ? (
-                                      <Link
-                                        to={`/posts/${idFromPk(linkedPost.pk)}`}
-                                        className="text-xs text-primary hover:underline font-medium px-1"
-                                      >
-                                        Read post →
-                                      </Link>
-                                    ) : user?.role === "admin" ? (
-                                      <Link
-                                        to={`/posts/new?session=${r.pk}`}
-                                        className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors"
-                                      >
-                                        <PenLine size={12} aria-hidden="true" />
-                                        Write post
-                                      </Link>
-                                    ) : null
-                                  }
-                                />
+                                <>
+                                  <SessionPhotos sessionPk={r.pk} />
+                                  <SessionReactions
+                                    sessionPk={r.pk}
+                                    actions={
+                                      linkedPost ? (
+                                        <Link
+                                          to={`/posts/${idFromPk(linkedPost.pk)}`}
+                                          className="text-xs text-primary hover:underline font-medium px-1"
+                                        >
+                                          Read post →
+                                        </Link>
+                                      ) : user?.role === "admin" ? (
+                                        <Link
+                                          to={`/posts/new?session=${r.pk}`}
+                                          className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors"
+                                        >
+                                          <PenLine size={12} aria-hidden="true" />
+                                          Write post
+                                        </Link>
+                                      ) : null
+                                    }
+                                  />
+                                </>
                               )}
                             </div>
                           </div>

@@ -8,6 +8,7 @@ import {
   PLACEHOLDER_COLORS,
   pluralize,
   pressable,
+  seasonParam,
 } from "./utils";
 
 describe("cn", () => {
@@ -126,5 +127,17 @@ describe("colorForName", () => {
     };
     for (const hex of PLACEHOLDER_COLORS)
       expect(1.05 / (lum(hex) + 0.05)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe("seasonParam", () => {
+  it("keeps a well-formed season", () => {
+    expect(seasonParam("2026-Q3")).toBe("2026-Q3");
+  });
+
+  it("treats a missing or malformed season as all-time", () => {
+    for (const raw of [null, "", "seasons", "2026-Q5", "2026-Q0", "26-Q1", "2026-q1", "2026-Q1x"]) {
+      expect(seasonParam(raw)).toBeUndefined();
+    }
   });
 });

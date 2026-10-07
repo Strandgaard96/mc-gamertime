@@ -11,6 +11,10 @@ MC GamerTime is a web app for tracking board game nights with friends. Self-host
 
 Wins, losses and an Elo rating for every player across all games, with a podium for the top three, head-to-head records, win streaks, and sessions-per-month charts.
 
+### Seasons
+
+Switch the leaderboard from All-time to Season to see standings for a single calendar quarter. The champion is the top of a finished quarter's leaderboard, and only players with at least 5 games in that quarter qualify. Champions are decided once the quarter ends, and they can change if past results are edited. Profiles show a champion chip for each title won.
+
 ## Game Catalog
 
 ![The game catalog, showing cover art, player counts and play counts](../../assets/screenshot-catalog.webp)
@@ -25,7 +29,11 @@ Record who played, who won, seat positions, player scores, and session mood. Sup
 
 ## Achievements
 
-Awarded automatically when a result is logged — first win, win streaks, games-played milestones, and more. Players see earned achievements on their profile. New achievement definitions are added in code.
+Awarded automatically when a result is logged — first win, win streaks, games-played milestones, and more. Players see earned achievements on their profile. **Giant Slayer** is awarded for winning a game in which the player ranked first on Elo at the time took part and lost. New achievement definitions are added in code.
+
+## Game-night photos
+
+Attach up to 6 photos to a game night. Admins can add them while logging a result, and any logged-in user can add more from the game-night card. Click a photo to open the lightbox and move through them with the arrow keys. The uploader or an admin can delete a photo. Photos are re-encoded in the browser before upload, which strips location data (EXIF/GPS).
 
 ## Player profiles and records
 

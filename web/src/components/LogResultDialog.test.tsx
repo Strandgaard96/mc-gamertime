@@ -1,13 +1,51 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as api from "../lib/api";
 import { AuthProvider } from "../lib/AuthContext";
+import * as photos from "../lib/photos";
+import type { PhotoItem, Result } from "../lib/types";
 import { LogResultDialog } from "./LogResultDialog";
 
 vi.mock("../lib/api");
+vi.mock("../lib/photos", () => ({
+  MAX_PHOTOS: 6,
+  preparePhoto: vi.fn(async () => new Blob(["x"], { type: "image/webp" })),
+  uploadSessionPhoto: vi.fn(),
+}));
+vi.mock("canvas-confetti", () => ({ default: vi.fn() }));
+vi.mock("sonner", () => ({
+  toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() }),
+}));
+
+const created: Result = {
+  pk: "r1",
+  gameId: "g1",
+  gameName: "Catan",
+  date: "2026-10-01",
+  players: [
+    { playerId: "alice", playerName: "Alice" },
+    { playerId: "bob", playerName: "Bob" },
+  ],
+  winnerId: "alice",
+  winnerName: "Alice",
+  createdAt: "2026-10-01T20:00:00Z",
+};
+
+const uploaded: PhotoItem = {
+  pk: "p1",
+  type: "photo",
+  sessionPk: "r1",
+  key: "session-photos/p1.webp",
+  imageUrl: "/session-photos/p1.webp",
+  uploaderId: "admin",
+  uploaderName: "Admin",
+  createdAt: "2026-10-01T20:00:00Z",
+};
 
 beforeEach(() => {
+  vi.clearAllMocks();
   vi.mocked(api.getGames).mockResolvedValue([]);
   vi.mocked(api.getUsers).mockResolvedValue([]);
   vi.mocked(api.getCurrentUser).mockResolvedValue({
@@ -15,7 +53,63 @@ beforeEach(() => {
     role: "readonly",
     displayName: "Bob",
   });
+  // jsdom has no HTMLDialogElement.showModal/close
+  HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) {
+    this.setAttribute("open", "");
+  };
+  HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) {
+    this.removeAttribute("open");
+  };
+  // jsdom has no object URLs
+  let n = 0;
+  URL.createObjectURL = vi.fn(() => `blob:test-${n++}`);
+  URL.revokeObjectURL = vi.fn();
 });
+
+function renderOpen(props: { onClose: () => void; editResult?: Result }) {
+  vi.mocked(api.getCurrentUser).mockResolvedValue({
+    sub: "admin",
+    role: "admin",
+    displayName: "Admin",
+  });
+  vi.mocked(api.getGames).mockResolvedValue([
+    { pk: "g1", name: "Catan", tags: [], createdAt: "2026-01-01T00:00:00Z" },
+  ]);
+  const users = [
+    { username: "alice", displayName: "Alice", role: "admin" as const },
+    { username: "bob", displayName: "Bob", role: "readonly" as const },
+  ];
+  vi.mocked(api.getUsers).mockResolvedValue(users);
+  vi.mocked(api.addResult).mockResolvedValue(created);
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  // Edit mode renders the result's players straight away and looks each one
+  // up in the user list, so it has to be there on first render.
+  qc.setQueryData(["users"], users);
+  return render(
+    <QueryClientProvider client={qc}>
+      <AuthProvider>
+        <LogResultDialog open defaultGameId="g1" {...props} />
+      </AuthProvider>
+    </QueryClientProvider>,
+  );
+}
+
+async function fillValidForm() {
+  // defaultGameId="g1" preselects the game once the games query resolves.
+  await screen.findByRole("option", { name: "Catan" });
+  fireEvent.click(await screen.findByRole("button", { name: "Alice" }));
+  fireEvent.click(screen.getByRole("button", { name: "Bob" }));
+  fireEvent.change(screen.getByDisplayValue("Select winner…"), { target: { value: "alice" } });
+}
+
+function pickPhotos(count: number) {
+  const files = Array.from(
+    { length: count },
+    (_, i) => new File(["x"], `p${i}.jpg`, { type: "image/jpeg" }),
+  );
+  fireEvent.change(screen.getByLabelText(/photos/i), { target: { files } });
+  return files;
+}
 
 describe("LogResultDialog", () => {
   it("does not fetch the admin-only user list while closed", async () => {
@@ -32,5 +126,84 @@ describe("LogResultDialog", () => {
     );
     await vi.waitFor(() => expect(api.getGames).toHaveBeenCalled());
     expect(api.getUsers).not.toHaveBeenCalled();
+  });
+
+  it("uploads picked photos with the new result pk, then closes", async () => {
+    vi.mocked(photos.uploadSessionPhoto).mockResolvedValue(uploaded);
+    const onClose = vi.fn();
+    renderOpen({ onClose });
+    await fillValidForm();
+    pickPhotos(2);
+    await screen.findByAltText("Selected photo 2");
+
+    fireEvent.click(screen.getByRole("button", { name: "Log session" }));
+
+    await vi.waitFor(() => expect(photos.uploadSessionPhoto).toHaveBeenCalledTimes(2));
+    expect(photos.uploadSessionPhoto).toHaveBeenCalledWith("r1", expect.any(Blob));
+    await vi.waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it("ignores close requests while uploading", async () => {
+    let finish!: (p: PhotoItem) => void;
+    vi.mocked(photos.uploadSessionPhoto).mockReturnValue(
+      new Promise<PhotoItem>((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const onClose = vi.fn();
+    renderOpen({ onClose });
+    await fillValidForm();
+    pickPhotos(1);
+    await screen.findByAltText("Selected photo 1");
+
+    fireEvent.click(screen.getByRole("button", { name: "Log session" }));
+    await vi.waitFor(() => expect(photos.uploadSessionPhoto).toHaveBeenCalledTimes(1));
+
+    // Escape, the close button, and a backdrop click are all ignored mid-upload.
+    const dialog = document.querySelector("dialog")!;
+    fireEvent(dialog, new Event("cancel", { cancelable: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    fireEvent.pointerDown(dialog);
+    expect(onClose).not.toHaveBeenCalled();
+
+    finish(uploaded);
+    await vi.waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
+  it("toasts a partial failure after closing", async () => {
+    vi.mocked(photos.uploadSessionPhoto)
+      .mockRejectedValueOnce(new Error("Photo upload failed (500)"))
+      .mockResolvedValueOnce(uploaded);
+    const onClose = vi.fn(() => {
+      // The toast must not fire while the dialog (top layer) is still open.
+      expect(toast.error).not.toHaveBeenCalled();
+    });
+    renderOpen({ onClose });
+    await fillValidForm();
+    pickPhotos(2);
+    await screen.findByAltText("Selected photo 2");
+
+    fireEvent.click(screen.getByRole("button", { name: "Log session" }));
+
+    await vi.waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        "Result saved — 1 photo failed to upload. Add it from the game night card.",
+      ),
+    );
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("hides the photo picker in edit mode", async () => {
+    // Positive control: the same dialog in create mode does show the picker.
+    const createMode = renderOpen({ onClose: vi.fn() });
+    await screen.findByRole("button", { name: "Alice" });
+    expect(screen.getByLabelText(/photos/i)).toBeInTheDocument();
+    createMode.unmount();
+
+    renderOpen({ onClose: vi.fn(), editResult: created });
+    await screen.findByRole("button", { name: "Save changes" });
+    await screen.findByRole("button", { name: "Alice" });
+    expect(screen.queryByLabelText(/photos/i)).not.toBeInTheDocument();
   });
 });

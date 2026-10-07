@@ -1,3 +1,7 @@
+"""Per-session social items, keyed by `sessionPk`: `type` is "reaction",
+"comment" or "photo". Every reader must filter on `type` — never assume a row
+is a reaction just because it lives in this table."""
+
 from __future__ import annotations
 
 import lib.db.base as _db
@@ -31,3 +35,14 @@ def put_reaction(item: dict) -> None:
 
 def delete_reaction(pk: str) -> None:
     _db.tables["reactions"].delete_item(Key={"pk": pk})
+
+
+def list_session_photos(session_pk: str) -> list[dict]:
+    return _db.paginated_scan(
+        _db.tables["reactions"], filters={"type": "photo", "sessionPk": session_pk}
+    )
+
+
+def find_photo_by_key(key: str) -> dict | None:
+    matches = _db.paginated_scan(_db.tables["reactions"], filters={"type": "photo", "key": key})
+    return matches[0] if matches else None

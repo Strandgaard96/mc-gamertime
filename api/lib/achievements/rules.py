@@ -14,6 +14,16 @@ def is_win(ctx: AchievementContext, result: dict) -> bool:
     return result.get("winnerId") == ctx.player_id
 
 
+def beat_the_leader(ctx: AchievementContext, result: dict) -> bool:
+    """Won a game in which the sole #1 ELO player (going in) played and lost."""
+    if not is_win(ctx, result):
+        return False
+    leader = ctx.leader_before.get(result.get("pk", ""))
+    if leader is None or leader == ctx.player_id:
+        return False
+    return any(p.get("playerId") == leader for p in result["players"])
+
+
 def score_at_least(n: float) -> Predicate:
     def pred(ctx: AchievementContext, result: dict) -> bool:
         entry = ctx.my_entry(result)

@@ -1,9 +1,13 @@
+import time
+
 import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
+from ulid import ULID
 
 import routes.storage as storage_module
-from lib.auth import AuthUser
+from lib.auth import AuthUser, _get_secret
+from lib.storage import sign_photo_upload
 from tests.conftest import make_auth_cookie
 
 
@@ -282,3 +286,105 @@ def test_put_object_avatar_own_succeeds(fake_db, monkeypatch):
 
     assert resp.status_code == 200
     assert captured["Key"] == "avatars/testuser.png"
+
+
+class _CapturingS3:
+    def __init__(self):
+        self.captured: dict = {}
+
+    def put_object(self, **kwargs):
+        self.captured.update(kwargs)
+
+
+def _photo_put(monkeypatch, *, query: str, body: bytes = b"RIFFxxxxWEBP", key: str | None = None):
+    s3 = _CapturingS3()
+    monkeypatch.setattr(storage_module, "make_s3_client", lambda: s3)
+    monkeypatch.setattr(storage_module, "_BUCKET", "test-bucket")
+    key = key or f"session-photos/{ULID()!s}.webp"
+    c = TestClient(_make_app(), raise_server_exceptions=False)
+    c.cookies.set("token", make_auth_cookie("readonly")["token"])
+    url = f"/storage/{key}" + (f"?{query}" if query else "")
+    resp = c.put(url, content=body, headers={"content-type": "image/webp"})
+    return resp, s3.captured, key
+
+
+def _token(key: str, length: int, now: int | None = None) -> str:
+    return sign_photo_upload(
+        key, length, secret=_get_secret(), now=int(time.time()) if now is None else now
+    )
+
+
+def test_put_object_session_photo_with_valid_token_allowed_for_readonly(fake_db, monkeypatch):
+    key = f"session-photos/{ULID()!s}.webp"
+    body = b"RIFFxxxxWEBP"
+    resp, captured, _ = _photo_put(monkeypatch, key=key, body=body, query=_token(key, len(body)))
+    assert resp.status_code == 200
+    assert captured["Key"] == key
+    assert captured["ContentType"] == "image/webp"
+
+
+def test_put_object_session_photo_without_token_forbidden(fake_db, monkeypatch):
+    resp, captured, _ = _photo_put(monkeypatch, query="")
+    assert resp.status_code == 403
+    assert captured == {}
+
+
+def test_put_object_session_photo_expired_token_forbidden(fake_db, monkeypatch):
+    key = f"session-photos/{ULID()!s}.webp"
+    body = b"RIFFxxxxWEBP"
+    stale = _token(key, len(body), now=int(time.time()) - 301)
+    resp, captured, _ = _photo_put(monkeypatch, key=key, body=body, query=stale)
+    assert resp.status_code == 403
+    assert captured == {}
+
+
+def test_put_object_session_photo_token_for_other_key_forbidden(fake_db, monkeypatch):
+    body = b"RIFFxxxxWEBP"
+    other = _token(f"session-photos/{ULID()!s}.webp", len(body))
+    resp, captured, _ = _photo_put(monkeypatch, body=body, query=other)
+    assert resp.status_code == 403
+    assert captured == {}
+
+
+def test_put_object_session_photo_length_mismatch_forbidden(fake_db, monkeypatch):
+    key = f"session-photos/{ULID()!s}.webp"
+    body = b"RIFFxxxxWEBP"
+    resp, captured, _ = _photo_put(
+        monkeypatch, key=key, body=body + b"extra", query=_token(key, len(body))
+    )
+    assert resp.status_code == 403
+    assert captured == {}
+
+
+def test_put_object_session_photo_bad_key_forbidden(fake_db):
+    app = _make_app()
+    c = TestClient(app, raise_server_exceptions=False)
+    c.cookies.set("token", make_auth_cookie("readonly")["token"])
+    resp = c.put(
+        "/storage/session-photos/not-a-ulid.webp",
+        content=b"RIFFxxxxWEBP",
+        headers={"content-type": "image/webp"},
+    )
+    assert resp.status_code == 403
+
+
+def test_put_object_session_photo_registered_key_forbidden(fake_db, monkeypatch):
+    # A valid token is not enough once the key is registered: the registered
+    # key is public, so this is what stops overwriting someone else's photo.
+    key = f"session-photos/{ULID()!s}.webp"
+    body = b"RIFFxxxxWEBP"
+    fake_db["reactions"].seed(
+        {
+            "pk": "p1",
+            "type": "photo",
+            "sessionPk": "s1",
+            "key": key,
+            "imageUrl": "/x",
+            "uploaderId": "alice",
+            "uploaderName": "Alice",
+            "createdAt": "2026-06-01T00:00:00Z",
+        }
+    )
+    resp, captured, _ = _photo_put(monkeypatch, key=key, body=body, query=_token(key, len(body)))
+    assert resp.status_code == 403
+    assert captured == {}

@@ -1,11 +1,21 @@
 import os
+import time
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
+from starlette.concurrency import run_in_threadpool
 
-from lib.auth import AuthUser, require_auth
-from lib.storage import EXT_BY_CONTENT_TYPE, make_s3_client
+from lib.auth import AuthUser, _get_secret, require_auth
+from lib.db.reactions import find_photo_by_key
+from lib.storage import (
+    EXT_BY_CONTENT_TYPE,
+    MAX_PHOTO_BYTES,
+    PHOTO_KEY_RE,
+    PHOTO_PREFIX,
+    make_s3_client,
+    verify_photo_upload,
+)
 
 router = APIRouter()
 
@@ -25,16 +35,16 @@ except ImportError:  # pragma: no cover - only true inside the selfhost image
 # (incl. boardsite-users: usernames, roles, bcrypt hashes) to the same bucket,
 # and this route only requires require_auth (not require_admin). Matches the
 # only keys the app ever writes here: "avatars/{username}.png" (routes/users.py),
-# "blog-images/{ulid}.{ext}" (routes/posts.py), and "game-images/{ulid}.{ext}"
-# (routes/games.py).
+# "blog-images/{ulid}.{ext}" (routes/posts.py), "game-images/{ulid}.{ext}"
+# (routes/games.py), and "session-photos/{ulid}.{ext}" (routes/photos.py).
 #
 # Single source for the app side: main.py mounts media_router at each of
 # these. The infra side is local.media_prefixes in infra/main.tf, and
 # tests/test_media_prefixes_sync.py fails if the two lists differ.
-MEDIA_PREFIXES = ("avatars", "blog-images", "game-images")
+MEDIA_PREFIXES = ("avatars", "blog-images", "game-images", "session-photos")
 _ALLOWED_PREFIXES = tuple(f"{p}/" for p in MEDIA_PREFIXES)
 
-_MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+_MAX_UPLOAD_BYTES = MAX_PHOTO_BYTES
 
 
 def _reject_path_traversal(path: str) -> None:
@@ -46,6 +56,14 @@ def _authorize_write(path: str, user: AuthUser) -> None:
     if path.startswith("avatars/"):
         owner = path.removeprefix("avatars/").removesuffix(".png")
         if user.sub != owner and user.role != "admin":
+            raise HTTPException(status_code=403, detail="Forbidden")
+        return
+    if path.startswith(f"{PHOTO_PREFIX}/"):
+        # Any logged-in user may upload a game-night photo, but only to a key
+        # shaped like the ones routes/photos.py issues, and only before it is
+        # registered: a registered photo's key is public (GET /api/reactions),
+        # so without this check anyone could overwrite someone else's photo.
+        if not PHOTO_KEY_RE.match(path) or find_photo_by_key(path):
             raise HTTPException(status_code=403, detail="Forbidden")
         return
     # blog-images/* and game-images/* are admin-authored (posts, games)
@@ -84,7 +102,7 @@ def get_object(path: str, _: Annotated[AuthUser, Depends(require_auth)]):
 
 # Same objects, addressed the way the app links to them: /avatars/alice.png
 # rather than /storage/avatars/alice.png. On the cloud deployment CloudFront
-# routes exactly these three prefixes to the API instead of reading them
+# routes exactly these prefixes to the API instead of reading them
 # straight out of S3, so uploaded media requires a session there too.
 media_router = APIRouter()
 
@@ -100,7 +118,18 @@ async def put_object(path: str, request: Request, user: Annotated[AuthUser, Depe
     _reject_path_traversal(path)
     if not path.startswith(_ALLOWED_PREFIXES):
         raise HTTPException(status_code=403, detail="Forbidden")
-    _authorize_write(path, user)
+    # Photo uploads must carry the token routes/photos.py issued with the URL,
+    # which is what enforces that endpoint's session check, per-session cap and
+    # rate limit here; it also fixes the body size (checked after the read).
+    signed_length: int | None = None
+    if path.startswith(f"{PHOTO_PREFIX}/"):
+        signed_length = verify_photo_upload(
+            path, request.query_params, secret=_get_secret(), now=int(time.time())
+        )
+        if signed_length is None:
+            raise HTTPException(status_code=403, detail="Forbidden")
+    # _authorize_write may scan the reactions table; keep it off the event loop.
+    await run_in_threadpool(_authorize_write, path, user)
 
     content_type = request.headers.get("content-type", "")
     if content_type not in EXT_BY_CONTENT_TYPE:
@@ -122,6 +151,8 @@ async def put_object(path: str, request: Request, user: Annotated[AuthUser, Depe
             status_code=413,
             detail=f"File too large (max {_MAX_UPLOAD_BYTES // (1024 * 1024)} MB)",
         )
+    if signed_length is not None and len(body) != signed_length:
+        raise HTTPException(status_code=403, detail="Forbidden")
 
     s3 = make_s3_client()
     s3.put_object(Bucket=_BUCKET, Key=path, Body=body, ContentType=content_type)

@@ -1,5 +1,10 @@
+import hashlib
+import hmac
 import json
 import os
+import re
+import time
+from collections.abc import Mapping
 from pathlib import Path
 
 from ulid import ULID
@@ -130,11 +135,70 @@ EXT_BY_CONTENT_TYPE = {
 }
 
 
-def build_upload_url(
-    s3_client, bucket: str, object_base_url: str, prefix: str, content_type: str
-) -> tuple[str, str]:
+# Game-night photos: any logged-in user may upload (social write, like comments),
+# so the key shape is validated wherever a client hands one back to us.
+PHOTO_PREFIX = "session-photos"
+PHOTO_CONTENT_TYPES: tuple[str, ...] = ("image/webp", "image/jpeg", "image/png")
+PHOTO_KEY_RE = re.compile(
+    rf"^{PHOTO_PREFIX}/[0-9A-HJKMNP-TV-Z]{{26}}\."
+    rf"({'|'.join(EXT_BY_CONTENT_TYPE[t] for t in PHOTO_CONTENT_TYPES)})\Z"
+)
+
+
+# Largest upload accepted anywhere: the /storage proxy's body cap and the size
+# range a photo upload may request (which the presigned URL / token then binds).
+MAX_PHOTO_BYTES = 10 * 1024 * 1024
+UPLOAD_TOKEN_TTL_SECONDS = 300
+
+
+def _photo_upload_sig(key: str, exp: int, length: int, secret: str) -> str:
+    msg = f"{key}|{exp}|{length}".encode()
+    return hmac.new(secret.encode(), msg, hashlib.sha256).hexdigest()
+
+
+def sign_photo_upload(key: str, length: int, *, secret: str, now: int) -> str:
+    """Query string binding a selfhost /storage photo PUT to this key and size.
+
+    The cloud path gets the same guarantee from S3 itself (presigned URL with
+    ContentLength); the /storage proxy has no S3 in front of it, so it checks
+    this token instead (routes/storage.py)."""
+    exp = now + UPLOAD_TOKEN_TTL_SECONDS
+    return f"exp={exp}&len={length}&sig={_photo_upload_sig(key, exp, length, secret)}"
+
+
+def verify_photo_upload(
+    key: str, params: Mapping[str, str], *, secret: str, now: int
+) -> int | None:
+    """The signed upload length if `params` is a valid, unexpired token for
+    `key`, else None."""
+    try:
+        exp = int(params["exp"])
+        length = int(params["len"])
+        sig = params["sig"]
+    except (KeyError, ValueError):
+        return None
+    if now > exp:
+        return None
+    if not hmac.compare_digest(sig, _photo_upload_sig(key, exp, length, secret)):
+        return None
+    return length
+
+
+def build_upload(
+    s3_client,
+    bucket: str,
+    object_base_url: str,
+    prefix: str,
+    content_type: str,
+    content_length: int | None = None,
+) -> tuple[str, str, str]:
     """Build a presigned-PUT URL (or, in selfhost mode, an authenticated proxy
-    URL) plus the URL the image will be read back from, under `prefix/`.
+    URL), the URL the image will be read back from, and the storage key, all
+    under `prefix/`.
+
+    `content_length`, when given, is bound into the upload: the presigned URL
+    signs ContentLength, and a session-photo proxy URL carries a token
+    (sign_photo_upload) that requires it.
 
     The read URL is authenticated on every deployment — see
     get_object_base_url. Only the upload leg uses a presigned S3 URL."""
@@ -142,11 +206,28 @@ def build_upload_url(
     key = f"{prefix}/{ULID()!s}.{ext}"
     image_url = f"{object_base_url}/{key}"
     if os.environ.get("S3_ENDPOINT_URL") or is_local_storage():
-        return image_url, image_url
-    upload_url = s3_client.generate_presigned_url(
-        "put_object",
-        Params={"Bucket": bucket, "Key": key, "ContentType": content_type},
-        ExpiresIn=300,
+        if prefix != PHOTO_PREFIX:
+            return image_url, image_url, key
+        if content_length is None:
+            raise ValueError("photo uploads require content_length")
+        # Lazy: lib.auth imports the DB layer, which builds its tables at import
+        # time; this module stays importable without one.
+        from lib.auth import _get_secret
+
+        token = sign_photo_upload(key, content_length, secret=_get_secret(), now=int(time.time()))
+        return f"{image_url}?{token}", image_url, key
+    params: dict[str, str | int] = {"Bucket": bucket, "Key": key, "ContentType": content_type}
+    if content_length is not None:
+        params["ContentLength"] = content_length
+    upload_url = s3_client.generate_presigned_url("put_object", Params=params, ExpiresIn=300)
+    return upload_url, image_url, key
+
+
+def build_upload_url(
+    s3_client, bucket: str, object_base_url: str, prefix: str, content_type: str
+) -> tuple[str, str]:
+    upload_url, image_url, _key = build_upload(
+        s3_client, bucket, object_base_url, prefix, content_type
     )
     return upload_url, image_url
 

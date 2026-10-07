@@ -495,6 +495,18 @@ export default function PlayerProfilePage() {
         {playerStats && (
           <section>
             <h2 className="text-lg font-display font-semibold mb-3">Achievements</h2>
+            {playerStats.seasonTitles.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {playerStats.seasonTitles.map((t) => (
+                  <span
+                    key={t.id}
+                    className="inline-flex items-center gap-1 rounded-full border border-yellow-400/40 bg-yellow-400/10 px-2.5 py-1 text-xs font-medium text-yellow-400"
+                  >
+                    🏆 {t.label} Champion
+                  </span>
+                ))}
+              </div>
+            )}
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {playerStats.achievements.map((a) => (
                 <AchievementBadge key={a.id} achievement={a} />

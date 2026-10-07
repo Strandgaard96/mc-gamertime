@@ -7,9 +7,11 @@ import type {
   CommentItem,
   Game,
   NotificationsResponse,
+  PhotoItem,
   Player,
   PlayerStats,
   PlayerVariableInput,
+  SeasonSummary,
   Post,
   PublicSettings,
   ReactionItem,
@@ -207,8 +209,32 @@ export function markNotificationsRead(): Promise<void> {
 }
 
 // Reactions & Comments
-export function getReactions(): Promise<(ReactionItem | CommentItem)[]> {
+export function getReactions(): Promise<(ReactionItem | CommentItem | PhotoItem)[]> {
   return apiFetch("/reactions");
+}
+
+export function requestPhotoUpload(
+  sessionPk: string,
+  contentType: string,
+  contentLength: number,
+): Promise<{ uploadUrl: string; imageUrl: string; key: string }> {
+  return apiFetch("/photos/upload", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionPk, contentType, contentLength }),
+  });
+}
+
+export function createPhoto(sessionPk: string, key: string): Promise<PhotoItem> {
+  return apiFetch("/photos", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionPk, key }),
+  });
+}
+
+export function deletePhoto(id: string): Promise<void> {
+  return apiFetch(`/photos/${id}`, { method: "DELETE" });
 }
 
 export function toggleReaction(
@@ -235,8 +261,12 @@ export function deleteComment(id: string): Promise<void> {
 }
 
 // Stats
-export function getStats(): Promise<StatsResponse> {
-  return apiFetch("/stats");
+export function getStats(season?: string): Promise<StatsResponse> {
+  return apiFetch(season ? `/stats?season=${encodeURIComponent(season)}` : "/stats");
+}
+
+export function getSeasons(): Promise<SeasonSummary[]> {
+  return apiFetch("/stats/seasons");
 }
 
 export function getPlayerStats(playerId: string): Promise<PlayerStats> {
