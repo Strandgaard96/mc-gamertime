@@ -7,7 +7,11 @@ const QUALITY = 0.85;
 
 function toBlob(canvas: HTMLCanvasElement, type: string): Promise<Blob> {
   return new Promise((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Could not encode image"))), type, QUALITY),
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error("Could not encode image"))),
+      type,
+      QUALITY,
+    ),
   );
 }
 

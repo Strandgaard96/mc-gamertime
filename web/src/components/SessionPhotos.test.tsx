@@ -50,7 +50,11 @@ describe("SessionPhotos", () => {
   });
 
   it("hides Add photo at 6", async () => {
-    renderAs("bob", "readonly", ["1", "2", "3", "4", "5", "6"].map((i) => photo(`p${i}`, "alice")));
+    renderAs(
+      "bob",
+      "readonly",
+      ["1", "2", "3", "4", "5", "6"].map((i) => photo(`p${i}`, "alice")),
+    );
     await screen.findAllByRole("img");
     expect(screen.queryByRole("button", { name: /add photo/i })).not.toBeInTheDocument();
   });

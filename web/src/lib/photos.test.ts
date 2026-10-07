@@ -75,9 +75,15 @@ describe("uploadSessionPhoto", () => {
   });
 
   it("throws and does not confirm when the PUT fails", async () => {
-    vi.mocked(api.requestPhotoUpload).mockResolvedValue({ uploadUrl: "/u", imageUrl: "/i", key: "k" });
+    vi.mocked(api.requestPhotoUpload).mockResolvedValue({
+      uploadUrl: "/u",
+      imageUrl: "/i",
+      key: "k",
+    });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 413 }));
-    await expect(uploadSessionPhoto("s1", new Blob(["x"], { type: "image/webp" }))).rejects.toThrow();
+    await expect(
+      uploadSessionPhoto("s1", new Blob(["x"], { type: "image/webp" })),
+    ).rejects.toThrow();
     expect(api.createPhoto).not.toHaveBeenCalled();
   });
 });

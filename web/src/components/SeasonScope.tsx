@@ -21,7 +21,11 @@ export function SeasonScope({ seasons, value, onChange }: Props) {
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <div className="inline-flex rounded-lg border p-0.5" role="group" aria-label="Leaderboard scope">
+      <div
+        className="inline-flex rounded-lg border p-0.5"
+        role="group"
+        aria-label="Leaderboard scope"
+      >
         <button
           type="button"
           aria-pressed={value === undefined}

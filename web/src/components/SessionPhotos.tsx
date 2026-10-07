@@ -32,7 +32,9 @@ export function SessionPhotos({ sessionPk }: { sessionPk: string }) {
   }
 
   function step(delta: number) {
-    setOpen((o) => (o == null || photos.length === 0 ? o : (o + delta + photos.length) % photos.length));
+    setOpen((o) =>
+      o == null || photos.length === 0 ? o : (o + delta + photos.length) % photos.length,
+    );
   }
 
   // showModal() focuses the dialog's close button, outside the image wrapper, so
@@ -87,7 +89,11 @@ export function SessionPhotos({ sessionPk }: { sessionPk: string }) {
           aria-busy={addPhoto.isPending}
           className="grid size-14 cursor-pointer place-items-center rounded-md border border-dashed text-muted-foreground hover:border-primary/40 hover:text-foreground"
         >
-          <ImagePlus size={18} aria-hidden="true" className={addPhoto.isPending ? "animate-pulse" : ""} />
+          <ImagePlus
+            size={18}
+            aria-hidden="true"
+            className={addPhoto.isPending ? "animate-pulse" : ""}
+          />
           <input
             id={inputId}
             type="file"
@@ -107,7 +113,12 @@ export function SessionPhotos({ sessionPk }: { sessionPk: string }) {
         {current && (
           <div className="flex items-center gap-2">
             {photos.length > 1 && (
-              <button type="button" aria-label="Previous photo" onClick={() => step(-1)} className="p-2">
+              <button
+                type="button"
+                aria-label="Previous photo"
+                onClick={() => step(-1)}
+                className="p-2"
+              >
                 <ChevronLeft aria-hidden="true" />
               </button>
             )}
