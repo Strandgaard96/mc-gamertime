@@ -332,8 +332,11 @@ if STATIC_DIR:
         if ".." in path.split("/") or path.startswith("/"):
             return FileResponse(f"{STATIC_DIR}/index.html")
 
-        file_path = os.path.join(static_dir, path)
-        if path and os.path.isfile(file_path):
+        # Containment re-checked on the resolved path (catches symlinks too), in the
+        # realpath + prefix form CodeQL's py/path-injection recognises.
+        static_root = os.path.realpath(static_dir)
+        file_path = os.path.realpath(os.path.join(static_root, path))
+        if path and file_path.startswith(static_root + os.sep) and os.path.isfile(file_path):
             return FileResponse(file_path)
         return FileResponse(f"{STATIC_DIR}/index.html")
 

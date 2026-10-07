@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from lib.storage import LocalFsClient
@@ -66,3 +68,13 @@ def test_put_then_get_still_works_for_valid_key_after_validation(client):
     obj = client.get_object(Bucket="x", Key="avatars/alice.png")
     assert b"".join(obj["Body"].iter_chunks()) == b"\x89PNG"
     assert obj["ContentType"] == "image/png"
+
+
+def test_get_object_rejects_symlink_escaping_root(client, tmp_path):
+    outside = tmp_path.parent / "outside-secret.txt"
+    outside.write_text("secret")
+    root = Path(client._root)
+    (root / "avatars").mkdir(parents=True, exist_ok=True)
+    (root / "avatars" / "evil.png").symlink_to(outside)
+    with pytest.raises(ValueError, match="invalid key"):
+        client.get_object(Bucket="x", Key="avatars/evil.png")

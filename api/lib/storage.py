@@ -43,11 +43,13 @@ class LocalFsClient:
         parts = key.split("/")
         if any(p in ("", ".", "..") for p in parts):
             raise ValueError(f"invalid key: {key}")
-        root = self._root.resolve()
-        full = (root / key).resolve()
-        if root != full and root not in full.parents:
+        # realpath + prefix check (rather than Path.parents) is the containment
+        # form CodeQL's py/path-injection recognises; it also resolves symlinks.
+        root = os.path.realpath(self._root)
+        full = os.path.realpath(os.path.join(root, key))
+        if not full.startswith(root + os.sep):
             raise ValueError(f"invalid key: {key}")
-        return full
+        return Path(full)
 
     def _path(self, key: str) -> Path:
         return self._safe_resolve(key)
