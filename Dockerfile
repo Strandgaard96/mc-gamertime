@@ -6,7 +6,19 @@ RUN npm ci
 COPY web/ .
 RUN npm run build
 
-# --- stage 2: runtime ---
+# --- stage 2: export the selfhost dependency set from uv.lock ---
+# uv.lock is the single source of truth (see api/pyproject.toml): core deps +
+# the `selfhost` group, without boto3/mangum (~100 MB the container never
+# imports). Exported with hashes so stage 3 installs exactly the locked files.
+# uv needs an interpreter to validate the lock, so run it on the same Python
+# base as the runtime stage rather than in the (Python-less) uv image.
+FROM python:3.12-slim@sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016 AS deps
+COPY --from=ghcr.io/astral-sh/uv:0.12.23@sha256:61d393e44e249f2e4b526b6c7ddcecce245946826e608e11c93ad4f5bba55b21 /uv /usr/local/bin/uv
+WORKDIR /api
+COPY api/pyproject.toml api/uv.lock ./
+RUN ["uv", "export", "--locked", "--no-default-groups", "--group", "selfhost", "--format", "requirements-txt", "--quiet", "--output-file", "/requirements.txt"]
+
+# --- stage 3: runtime ---
 FROM python:3.12-slim@sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016 AS app
 WORKDIR /app
 
@@ -28,11 +40,9 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
-# requirements-selfhost.txt is requirements.txt (the Lambda set used by
-# build.sh) minus boto3/mangum, plus uvicorn — the AWS SDK alone is ~100 MB
-# the container never imports. test_requirements_sync.py keeps the two in sync.
-COPY api/requirements-selfhost.txt .
-RUN pip install --no-cache-dir -r requirements-selfhost.txt
+COPY --from=deps /requirements.txt .
+RUN pip install --no-cache-dir --require-hashes --no-deps -r requirements.txt \
+    && rm requirements.txt
 
 COPY api/ .
 COPY --from=web-build /web/dist /app/static

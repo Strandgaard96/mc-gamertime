@@ -352,7 +352,7 @@ if STATIC_DIR:
 
 # Lambda entry point (infra/lambda.tf → `main.handler`). Mangum is imported on
 # first invocation only: it is a Lambda-only dependency and absent from the
-# selfhost image (api/requirements-selfhost.txt).
+# selfhost image (the `aws` dependency group in pyproject.toml).
 _mangum = None
 
 

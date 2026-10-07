@@ -63,7 +63,7 @@ repos:
         name: trivy (dependency vulnerabilities)
         entry: trivy fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --skip-version-check --skip-dirs api/.venv --skip-dirs web/node_modules --skip-dirs docs-site/node_modules --skip-dirs .claude .
         language: system
-        files: "^(api/(requirements\\.txt|pyproject\\.toml|uv\\.lock)|web/package(-lock)?\\.json|docs-site/package(-lock)?\\.json|Dockerfile)$"
+        files: "^(api/(pyproject\\.toml|uv\\.lock)|web/package(-lock)?\\.json|docs-site/package(-lock)?\\.json|Dockerfile)$"
         pass_filenames: false
 
   - repo: https://github.com/rhysd/actionlint

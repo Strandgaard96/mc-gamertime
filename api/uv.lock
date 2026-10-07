@@ -795,17 +795,16 @@ wheels = [
 
 [[package]]
 name = "mc-gamertime-api"
-version = "0.2.1"
+version = "0.2.3"
 source = { virtual = "." }
+default-groups = ["aws", "dev", "selfhost"]
 dependencies = [
     { name = "anyio" },
     { name = "bcrypt" },
-    { name = "boto3" },
     { name = "cryptography" },
     { name = "defusedxml" },
     { name = "fastapi" },
     { name = "httpx" },
-    { name = "mangum" },
     { name = "pillow" },
     { name = "prometheus-client" },
     { name = "pydantic" },
@@ -816,6 +815,10 @@ dependencies = [
 ]
 
 [package.dev-dependencies]
+aws = [
+    { name = "boto3" },
+    { name = "mangum" },
+]
 dev = [
     { name = "moto", extra = ["dynamodb"] },
     { name = "pytest" },
@@ -823,6 +826,8 @@ dev = [
     { name = "pytest-mock" },
     { name = "ruff" },
     { name = "ty" },
+]
+selfhost = [
     { name = "uvicorn" },
 ]
 
@@ -830,12 +835,10 @@ dev = [
 requires-dist = [
     { name = "anyio", specifier = "==4.15.1" },
     { name = "bcrypt", specifier = "==5.0.0" },
-    { name = "boto3", specifier = "==1.43.90" },
     { name = "cryptography", specifier = "==50.0.1" },
     { name = "defusedxml", specifier = "==0.7.1" },
     { name = "fastapi", specifier = "==0.141.1" },
     { name = "httpx", specifier = "==0.28.1" },
-    { name = "mangum", specifier = "==0.22.0" },
     { name = "pillow", specifier = ">=12.3.0" },
     { name = "prometheus-client", specifier = "==0.26.0" },
     { name = "pydantic", specifier = "==2.13.5" },
@@ -846,6 +849,10 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
+aws = [
+    { name = "boto3", specifier = "==1.43.90" },
+    { name = "mangum", specifier = "==0.22.0" },
+]
 dev = [
     { name = "moto", extras = ["dynamodb"], specifier = ">=5.2.3" },
     { name = "pytest" },
@@ -853,8 +860,8 @@ dev = [
     { name = "pytest-mock" },
     { name = "ruff", specifier = ">=0.16.6" },
     { name = "ty", specifier = ">=0.0.79" },
-    { name = "uvicorn", specifier = "==0.52.4" },
 ]
+selfhost = [{ name = "uvicorn", specifier = "==0.52.4" }]
 
 [[package]]
 name = "moto"

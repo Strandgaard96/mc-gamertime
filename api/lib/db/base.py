@@ -5,7 +5,7 @@ import sqlite3
 from decimal import Decimal
 
 # boto3/botocore are imported lazily below: the selfhost image ships without the
-# AWS SDK (api/requirements-selfhost.txt), and this module is imported on every
+# AWS SDK (the `aws` dependency group), and this module is imported on every
 # deployment.
 
 

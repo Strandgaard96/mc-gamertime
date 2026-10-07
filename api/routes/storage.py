@@ -11,7 +11,7 @@ router = APIRouter()
 
 _BUCKET = os.environ.get("S3_BUCKET", "")
 
-# botocore is absent from the selfhost image (api/requirements-selfhost.txt);
+# botocore is absent from the selfhost image (only the `aws` group ships it);
 # LocalFsClient raises FileNotFoundError for a missing key instead.
 try:
     from botocore.exceptions import ClientError
