@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1](https://github.com/Strandgaard96/mc-gamertime/compare/v0.3.0...v0.3.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* **infra:** fit media behaviours in CloudFront free-plan limit ([8a8aed4](https://github.com/Strandgaard96/mc-gamertime/commit/8a8aed43832c8bc42d38109d5ee4b6b78316e682))
+* **infra:** fit media behaviours in CloudFront free-plan limit ([796e7fa](https://github.com/Strandgaard96/mc-gamertime/commit/796e7faae3c9bcf98ce9fa49752cd44bdc8e6260))
+
 ## [0.3.0](https://github.com/Strandgaard96/mc-gamertime/compare/v0.2.3...v0.3.0) (2026-10-07)
 
 
