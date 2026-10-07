@@ -4,9 +4,10 @@ name: Security scan
 # new CVEs get published against dependencies we already have. Blocking (a red
 # run is the signal) and uploaded to the Security tab.
 #   - image: the Docker image built from main (OS packages + Python deps)
-#   - fs:    the lockfiles (api/uv.lock, web/ and docs-site/ package-lock.json),
-#            which covers the npm deps that only exist at build time. This
-#            replaces the old trivy-fs pre-commit hook.
+#   - fs:    the lockfiles (api/uv.lock, web/package-lock.json), which covers
+#            the npm deps that only exist at build time. This replaces the old
+#            trivy-fs pre-commit hook. docs-site/ is skipped: its deps never
+#            ship in the app, so a docs-only devDep CVE shouldn't turn this red.
 # PRs get a non-blocking image scan in ci.yml; publish.yml blocks before push.
 on:
   schedule:
@@ -62,6 +63,7 @@ jobs:
           scan-type: fs
           scan-ref: .
           scanners: vuln
+          skip-dirs: docs-site
           severity: CRITICAL,HIGH
           limit-severities-for-sarif: true
           exit-code: "1"
