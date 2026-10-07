@@ -51,13 +51,19 @@ export function colorForName(name: string): string {
   return PLACEHOLDER_COLORS[Math.abs(hash) % PLACEHOLDER_COLORS.length];
 }
 
-/** Strip HTML tags from a string */
+/** Plain text of an HTML string */
 function stripHtml(html: string): string {
-  // Block-level boundaries become spaces so "<p>a.</p><p>b</p>" reads "a. b", not "a.b".
-  return html
-    .replace(/<\/(p|div|li|h[1-6]|blockquote)>|<br\s*\/?>/gi, " ")
-    .replace(/<[^>]*>/g, "")
-    .replace(/\s+/g, " ");
+  // Parse instead of regex-stripping tags: DOMParser documents are inert (no scripts
+  // run, nothing loads), and a regex like /<[^>]*>/ is incomplete sanitisation
+  // (CodeQL js/incomplete-multi-character-sanitization). Block boundaries become
+  // spaces so "<p>a.</p><p>b</p>" reads "a. b", not "a.b".
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  for (const el of doc.body.querySelectorAll(
+    "p, div, li, h1, h2, h3, h4, h5, h6, blockquote, br",
+  )) {
+    el.after(" ");
+  }
+  return (doc.body.textContent ?? "").replace(/\s+/g, " ");
 }
 
 /** First n characters of plain text from HTML */
