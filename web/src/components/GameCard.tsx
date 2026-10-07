@@ -29,6 +29,11 @@ interface Props {
   lastPlayed?: string;
 }
 
+// Icon buttons floating over the cover: one size so they line up, always visible on touch
+// screens, revealed on hover from `sm` up.
+const overlayButton =
+  "flex h-8 w-8 items-center justify-center rounded-full bg-black/50 hover:bg-black/70 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-all duration-200";
+
 export const GameCard = memo(function GameCard({
   game,
   handleDelete,
@@ -83,21 +88,6 @@ export const GameCard = memo(function GameCard({
       )}
     >
       <div className="relative">
-        <div className="relative">
-          {user && (
-            <button
-              onClick={toggleFavorite}
-              className={`absolute top-2 right-8 z-10 p-1.5 rounded-full bg-black/50 transition-colors ${
-                isFavorited
-                  ? "text-yellow-400 hover:bg-black/70"
-                  : "text-white/70 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-black/70"
-              }`}
-            >
-              <Star size={12} fill={isFavorited ? "currentColor" : "none"} />
-            </button>
-          )}
-        </div>
-
         {playCounts && playCounts > 0 && (
           <Badge
             variant="secondary"
@@ -108,13 +98,10 @@ export const GameCard = memo(function GameCard({
             <span>Played {pluralize(playCounts, "time")}</span>
           </Badge>
         )}
-        {bggUrl ? (
-          <a href={bggUrl} target="_blank" rel="noopener noreferrer">
-            {imageContent}
-          </a>
-        ) : (
-          imageContent
-        )}
+        {/* The cover opens the in-app game page; the BGG link lives in the card body. */}
+        <Link to={`/games/${gameId}`} tabIndex={-1} aria-hidden="true">
+          {imageContent}
+        </Link>
         {game.imageUrl && (
           <div className="absolute inset-x-0 bottom-0 h-12 bg-linear-to-t from-card to-transparent pointer-events-none" />
         )}
@@ -124,34 +111,43 @@ export const GameCard = memo(function GameCard({
               e.stopPropagation();
               setShowDialog(true);
             }}
-            className="absolute top-2 left-2 z-10 p-1.5 rounded-full bg-black/50 text-white/70 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:text-red-400 hover:bg-black/70 transition-all duration-200"
+            className={cn(
+              overlayButton,
+              "absolute top-2 left-2 z-10 text-white/70 hover:text-red-400",
+            )}
             title="Remove game"
+            aria-label={`Remove ${game.name}`}
           >
-            <Trash2 size={12} />
+            <Trash2 size={14} />
           </button>
         )}
 
-        {user?.role === "admin" ? (
-          <Button
-            variant="ghost"
-            className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-black/50 text-white/70 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:text-blue-300 hover:bg-black/70 transition-all duration-200"
-            onClick={() => setShowLogDialog(true)}
-          >
-            <PenLine size={12} />
-          </Button>
-        ) : (
-          <Tooltip text="Only admins can log results">
-            <span>
-              <Button
-                variant="ghost"
-                disabled
-                className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-black/50 text-white/30 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 pointer-events-none transition-all duration-200"
-              >
-                <PenLine size={12} />
-              </Button>
-            </span>
-          </Tooltip>
-        )}
+        <div className="absolute top-2 right-2 z-10 flex gap-1.5">
+          {user && (
+            <button
+              onClick={toggleFavorite}
+              className={cn(
+                overlayButton,
+                isFavorited ? "text-yellow-400 sm:opacity-100" : "text-white/70",
+              )}
+              title={isFavorited ? "Remove from favorites" : "Add to favorites"}
+              aria-label={isFavorited ? `Unfavorite ${game.name}` : `Favorite ${game.name}`}
+              aria-pressed={isFavorited}
+            >
+              <Star size={14} fill={isFavorited ? "currentColor" : "none"} />
+            </button>
+          )}
+          {user?.role === "admin" && (
+            <button
+              onClick={() => setShowLogDialog(true)}
+              className={cn(overlayButton, "text-white/70 hover:text-blue-300")}
+              title="Log a session"
+              aria-label={`Log a session of ${game.name}`}
+            >
+              <PenLine size={14} />
+            </button>
+          )}
+        </div>
       </div>
       <div className="p-3">
         <Link

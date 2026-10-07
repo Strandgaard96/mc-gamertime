@@ -33,7 +33,7 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         // API calls and S3-served user content must never resolve to index.html
-        navigateFallbackDenylist: [/^\/api\//, /^\/(blog-images|avatars|exports)\//],
+        navigateFallbackDenylist: [/^\/api\//, /^\/(blog-images|avatars|game-images|exports)\//],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/cf\.geekdo-images\.com\/.*/i,
@@ -47,7 +47,8 @@ export default defineConfig({
             urlPattern: ({ url, sameOrigin }) =>
               sameOrigin &&
               (url.pathname.startsWith('/blog-images/') ||
-                url.pathname.startsWith('/avatars/')),
+                url.pathname.startsWith('/avatars/') ||
+                url.pathname.startsWith('/game-images/')),
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'user-images',

@@ -9,7 +9,7 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
-import { AnimatePresence } from "motion/react";
+import { AnimatePresence, MotionConfig } from "motion/react";
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { Link, Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
@@ -61,8 +61,15 @@ function ThemePicker() {
     function handleClick(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
     document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+    };
   }, [open]);
 
   function apply(id: string) {
@@ -77,8 +84,11 @@ function ThemePicker() {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
+        className="flex items-center gap-1.5 px-2 py-3 rounded-md text-muted-foreground hover:text-foreground transition-colors"
         title="Switch theme"
+        aria-label={`Switch theme, current: ${current.label}`}
+        aria-haspopup="true"
+        aria-expanded={open}
       >
         <span
           className="w-3.5 h-3.5 rounded-full border border-border"
@@ -88,11 +98,14 @@ function ThemePicker() {
         <Palette size={14} />
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-2 bg-card border rounded-lg p-2 flex gap-1 z-50 shadow-lg">
+        // Phones: pinned to the viewport under the top bar — anchored to the trigger
+        // (~80px from the right edge) the swatch row ran off-screen to the left.
+        <div className="fixed inset-x-4 top-[calc(3.5rem+env(safe-area-inset-top))] lg:absolute lg:inset-x-auto lg:right-0 lg:top-full lg:mt-2 lg:w-96 bg-card border rounded-lg p-2 grid grid-cols-4 auto-rows-fr gap-1 z-50 shadow-lg">
           {THEMES.map((t: Theme) => (
             <button
               key={t.id}
               onClick={() => apply(t.id)}
+              aria-pressed={theme === t.id}
               className={`flex flex-col items-center gap-1 px-3 py-2 rounded-md hover:bg-muted transition-colors text-xs ${theme === t.id ? "text-foreground bg-muted" : "text-muted-foreground"}`}
             >
               <span className="w-4 h-4 rounded-full" style={{ backgroundColor: t.primaryHex }} />
@@ -209,14 +222,15 @@ function AppShell() {
             {label}
           </NavLink>
         ))}
-        <div className="ml-auto flex items-center gap-4">
+        <div className="ml-auto flex items-center gap-1">
           <NotificationBell />
           <ThemePicker />
           {user.role === "admin" && (
             <Link
               to="/admin/settings"
               title="Settings"
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Settings"
+              className="p-3 rounded-md text-muted-foreground hover:text-foreground transition-colors"
             >
               <SettingsIcon size={18} />
             </Link>
@@ -238,14 +252,15 @@ function AppShell() {
           <Dices size={20} className="text-primary" />
           <span className="font-display font-bold text-primary">{displayName}</span>
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center -mr-2">
           <NotificationBell />
           <ThemePicker />
           {user.role === "admin" && (
             <Link
               to="/admin/settings"
               title="Settings"
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Settings"
+              className="p-3 rounded-md text-muted-foreground hover:text-foreground transition-colors"
             >
               <SettingsIcon size={16} />
             </Link>
@@ -324,8 +339,10 @@ function AppShell() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppShell />
-    </AuthProvider>
+    <MotionConfig reducedMotion="user">
+      <AuthProvider>
+        <AppShell />
+      </AuthProvider>
+    </MotionConfig>
   );
 }

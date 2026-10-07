@@ -25,7 +25,10 @@ export function Avatar({ name, imageUrl, size = "md", className = "" }: Props) {
     setImgError(false);
   }, []);
 
-  const color = COLORS[name.charCodeAt(0) % COLORS.length];
+  // Hash the whole name — keying on the first letter gave every "A…" player the same colour.
+  let hash = 0;
+  for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) | 0;
+  const color = COLORS[Math.abs(hash) % COLORS.length];
   const initials = name
     .split(" ")
     .map((p) => p[0])
@@ -47,6 +50,8 @@ export function Avatar({ name, imageUrl, size = "md", className = "" }: Props) {
 
   return (
     <div
+      role="img"
+      aria-label={name}
       className={`${dim} rounded-full flex items-center justify-center font-semibold text-white shrink-0 ${className}`}
       style={{ backgroundColor: color }}
     >

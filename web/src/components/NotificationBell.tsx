@@ -1,5 +1,6 @@
 import { Bell } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useMarkNotificationsRead, useNotifications } from "../hooks/useNotifications";
 import { formatDate } from "../lib/utils";
 
@@ -32,7 +33,7 @@ export function NotificationBell() {
     <div className="relative" ref={ref}>
       <button
         onClick={toggle}
-        className="relative text-muted-foreground hover:text-foreground transition-colors"
+        className="relative p-3 rounded-md text-muted-foreground hover:text-foreground transition-colors"
         title="Notifications"
         aria-label={
           unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications, none unread"
@@ -44,7 +45,7 @@ export function NotificationBell() {
         {unreadCount > 0 && (
           <span
             aria-hidden="true"
-            className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground"
+            className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground"
           >
             {unreadCount}
           </span>
@@ -56,7 +57,12 @@ export function NotificationBell() {
             <p className="text-sm text-muted-foreground p-3">No notifications yet</p>
           ) : (
             notifications.map((n) => (
-              <div key={n.pk} className="flex items-start gap-2 p-2 rounded-md hover:bg-muted/50">
+              <Link
+                key={n.pk}
+                to={`/players/${n.playerId}`}
+                onClick={() => setOpen(false)}
+                className="flex items-start gap-2 p-2 rounded-md hover:bg-muted/50"
+              >
                 <span className="text-xl shrink-0">{n.icon}</span>
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">{n.label}</span>
@@ -65,7 +71,7 @@ export function NotificationBell() {
                     {n.gameName} · {formatDate(n.createdAt)}
                   </span>
                 </div>
-              </div>
+              </Link>
             ))
           )}
         </div>
