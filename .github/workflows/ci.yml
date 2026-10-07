@@ -331,6 +331,17 @@ jobs:
         run: npx oxfmt --check src/
         working-directory: web
 
+      # hadolint and shellcheck run here rather than as pre-commit hooks (hooks
+      # are the fast subset). Both take seconds, so they run on every PR.
+      - name: hadolint
+        uses: hadolint/hadolint-action@06be81baf89a55ffd0e24b8f04a4185738dd3387 # v3.5.0
+        with:
+          dockerfile: Dockerfile
+
+      # shellcheck is preinstalled on ubuntu runners.
+      - name: shellcheck
+        run: git ls-files -z '*.sh' | xargs -0 shellcheck
+
   secrets-scan:
     name: Secrets scan
     runs-on: ubuntu-latest
