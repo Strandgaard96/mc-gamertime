@@ -1,12 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
-import { Check } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Check, ImagePlus, X } from "lucide-react";
 import { useId, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useGames } from "../hooks/useGames";
 import { useAddResult, useUpdateResult } from "../hooks/useResults";
 import { getUsers } from "../lib/api";
+import { MAX_PHOTOS, preparePhoto, uploadSessionPhoto } from "../lib/photos";
 import { ResultFormSchema } from "../lib/schemas";
 import type { Result } from "../lib/types";
-import { idFromPk } from "../lib/utils";
+import { idFromPk, pluralize } from "../lib/utils";
 import { Button } from "./ui/button";
 import { Dialog } from "./ui/dialog";
 import { Input } from "./ui/input";
@@ -159,6 +161,7 @@ export function LogResultDialog({ open, onClose, defaultGameId, editResult }: Pr
   });
   const addResult = useAddResult();
   const updateResultMut = useUpdateResult();
+  const qc = useQueryClient();
 
   const [state, dispatch] = useReducer(
     formReducer,
@@ -166,6 +169,10 @@ export function LogResultDialog({ open, onClose, defaultGameId, editResult }: Pr
     buildInitialState,
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Photo blobs are not serialisable form state: kept out of the reducer.
+  const [photos, setPhotos] = useState<{ blob: Blob; url: string }[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const photoInputId = useId();
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const gameSearchId = useId();
@@ -175,8 +182,39 @@ export function LogResultDialog({ open, onClose, defaultGameId, editResult }: Pr
   }, [open]);
 
   useLayoutEffect(() => {
-    if (open) dispatch({ type: "RESET", init: { defaultGameId, editResult } });
+    if (open) {
+      dispatch({ type: "RESET", init: { defaultGameId, editResult } });
+      setPhotos((prev) => {
+        prev.forEach((p) => URL.revokeObjectURL(p.url));
+        return [];
+      });
+    }
   }, [open, editResult?.pk, editResult, defaultGameId]);
+
+  async function handlePhotoPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []).slice(0, MAX_PHOTOS - photos.length);
+    e.target.value = "";
+    try {
+      const blobs = await Promise.all(files.map(preparePhoto));
+      setPhotos((prev) => [
+        ...prev,
+        ...blobs.map((blob) => ({ blob, url: URL.createObjectURL(blob) })),
+      ]);
+    } catch {
+      setErrors((prev) => ({ ...prev, photos: "Could not read one of those images" }));
+    }
+  }
+
+  function removePhoto(index: number) {
+    setPhotos((prev) => {
+      URL.revokeObjectURL(prev[index].url);
+      return prev.filter((_, i) => i !== index);
+    });
+  }
+
+  const guardedClose = () => {
+    if (!uploading) onClose();
+  };
 
   const filteredGames = useMemo(
     () => games.filter((g) => g.name.toLowerCase().includes(state.gameSearch.toLowerCase())),
@@ -272,6 +310,7 @@ export function LogResultDialog({ open, onClose, defaultGameId, editResult }: Pr
       ...(state.mood != null ? { mood: state.mood } : {}),
     };
 
+    let createdPk: string | undefined;
     try {
       if (editResult) {
         await updateResultMut.mutateAsync({
@@ -280,7 +319,7 @@ export function LogResultDialog({ open, onClose, defaultGameId, editResult }: Pr
           data: { ...payload, mood: state.mood ?? null },
         });
       } else {
-        await addResult.mutateAsync(payload);
+        createdPk = (await addResult.mutateAsync(payload)).pk;
       }
     } catch (err) {
       // The dialog stays open on failure, and it sits in the top layer — a
@@ -288,12 +327,29 @@ export function LogResultDialog({ open, onClose, defaultGameId, editResult }: Pr
       setErrors({ submit: err instanceof Error ? err.message : "Could not save this session" });
       return;
     }
+
+    let failed = 0;
+    if (createdPk && photos.length > 0) {
+      setUploading(true);
+      const outcomes = await Promise.allSettled(
+        photos.map((p) => uploadSessionPhoto(createdPk!, p.blob)),
+      );
+      failed = outcomes.filter((o) => o.status === "rejected").length;
+      setUploading(false);
+      qc.invalidateQueries({ queryKey: ["reactions"] });
+    }
     onClose();
     dispatch({ type: "RESET", init: { defaultGameId, editResult } });
+    if (failed > 0) {
+      // After onClose(): the dialog is gone, so the toast is visible.
+      toast.error(
+        `Result saved — ${pluralize(failed, "photo")} failed to upload. Add ${failed === 1 ? "it" : "them"} from the game night card.`,
+      );
+    }
   };
 
   return (
-    <Dialog open={open} onClose={onClose} title={editResult ? "Edit session" : "Log session"}>
+    <Dialog open={open} onClose={guardedClose} title={editResult ? "Edit session" : "Log session"}>
       <div className="space-y-4">
         <div>
           <label htmlFor={gameSearchId} className="text-sm font-medium">
@@ -525,6 +581,47 @@ export function LogResultDialog({ open, onClose, defaultGameId, editResult }: Pr
             {errors.winnerId && <p className="text-destructive text-xs mt-1">{errors.winnerId}</p>}
           </div>
         )}
+        {!editResult && (
+          <div>
+            <label htmlFor={photoInputId} className="text-sm font-medium">
+              Photos (optional, up to {MAX_PHOTOS})
+            </label>
+            <div className="mt-1 flex flex-wrap gap-2">
+              {photos.map((p, i) => (
+                <div key={p.url} className="relative size-16">
+                  <img
+                    src={p.url}
+                    alt={`Selected photo ${i + 1}`}
+                    className="size-full rounded-md object-cover"
+                  />
+                  <button
+                    type="button"
+                    aria-label={`Remove photo ${i + 1}`}
+                    onClick={() => removePhoto(i)}
+                    className="absolute -right-1.5 -top-1.5 grid size-6 place-items-center rounded-full border bg-card"
+                  >
+                    <X size={12} aria-hidden="true" />
+                  </button>
+                </div>
+              ))}
+              {photos.length < MAX_PHOTOS && (
+                <span className="grid size-16 place-items-center rounded-md border border-dashed text-muted-foreground">
+                  <ImagePlus size={18} aria-hidden="true" />
+                </span>
+              )}
+            </div>
+            <input
+              id={photoInputId}
+              type="file"
+              accept="image/*"
+              multiple
+              disabled={photos.length >= MAX_PHOTOS || uploading}
+              onChange={handlePhotoPick}
+              className="mt-2 block text-sm"
+            />
+            {errors.photos && <p className="text-destructive text-xs mt-1">{errors.photos}</p>}
+          </div>
+        )}
         {errors.submit && (
           <p role="alert" className="text-destructive text-sm">
             {errors.submit}
@@ -532,7 +629,7 @@ export function LogResultDialog({ open, onClose, defaultGameId, editResult }: Pr
         )}
         <Button
           className="w-full"
-          isLoading={editResult ? updateResultMut.isPending : addResult.isPending}
+          isLoading={(editResult ? updateResultMut.isPending : addResult.isPending) || uploading}
           onClick={handleSubmit}
         >
           {editResult ? "Save changes" : "Log session"}
