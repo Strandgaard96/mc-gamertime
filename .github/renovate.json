@@ -18,6 +18,37 @@
       "matchManagers": ["dockerfile", "docker-compose"],
       "groupName": "docker images",
       "enabled": true
+    },
+    {
+      "description": "Default: chore(deps) so tooling bumps (devDependencies, GitHub Actions, pre-commit hook revs, Docker base digests, docs-site) don't cut a release",
+      "matchPackageNames": ["*"],
+      "semanticCommitType": "chore"
+    },
+    {
+      "description": "Runtime web deps change what ships: fix(deps) cuts a release",
+      "matchManagers": ["npm"],
+      "matchFileNames": ["web/package.json"],
+      "matchDepTypes": ["dependencies"],
+      "semanticCommitType": "fix"
+    },
+    {
+      "description": "Runtime API deps ([project.dependencies]) change what ships: fix(deps)",
+      "matchManagers": ["pep621"],
+      "matchFileNames": ["api/pyproject.toml"],
+      "matchDepTypes": ["project.dependencies"],
+      "semanticCommitType": "fix"
+    },
+    {
+      "description": "The aws (Lambda) and selfhost (image) dependency groups ship too; dependency-groups can't be told apart by depType, so match by name",
+      "matchManagers": ["pep621"],
+      "matchFileNames": ["api/pyproject.toml"],
+      "matchPackageNames": ["boto3", "mangum", "uvicorn"],
+      "semanticCommitType": "fix"
+    },
+    {
+      "description": "Weekly lock file refresh is maintenance: chore(deps)",
+      "matchUpdateTypes": ["lockFileMaintenance"],
+      "semanticCommitType": "chore"
     }
   ]
 }
