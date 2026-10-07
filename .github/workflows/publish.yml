@@ -126,5 +126,6 @@ jobs:
           sbom: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Read-only: the scan build above already exported every stage
+          # (mode=max, so PR builds reuse them); a second export is duplicate.
           cache-from: type=gha
-          cache-to: type=gha,mode=max
