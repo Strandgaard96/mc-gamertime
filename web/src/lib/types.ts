@@ -66,6 +66,16 @@ export interface CommentItem {
   text: string;
   createdAt: string;
 }
+export interface PhotoItem {
+  pk: string;
+  type: "photo";
+  sessionPk: string;
+  key: string;
+  imageUrl: string;
+  uploaderId: string;
+  uploaderName: string;
+  createdAt: string;
+}
 export interface BggSearchResult {
   bggId: number;
   name: string;
