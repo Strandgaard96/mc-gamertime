@@ -77,12 +77,8 @@ data "aws_iam_policy_document" "lambda_s3" {
     # GetObject is required because the API now serves uploaded media itself
     # (routes/storage.py media_router) rather than CloudFront reading it from
     # S3 — that path was public to anyone holding the URL.
-    actions = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
-    resources = [
-      "${aws_s3_bucket.web.arn}/blog-images/*",
-      "${aws_s3_bucket.web.arn}/avatars/*",
-      "${aws_s3_bucket.web.arn}/game-images/*"
-    ]
+    actions   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
+    resources = [for p in local.media_prefixes : "${aws_s3_bucket.web.arn}/${p}/*"]
   }
 }
 

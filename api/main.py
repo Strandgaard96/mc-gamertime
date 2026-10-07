@@ -316,8 +316,8 @@ if S3_ENDPOINT_URL or storage_lib.is_local_storage():
 # avatar or a blog image always requires a session. Registered under the exact
 # prefixes the app links to, and before the SPA fallback so those paths resolve
 # here rather than returning index.html.
-for _media_prefix in ("/avatars", "/blog-images", "/game-images"):
-    app.include_router(storage.media_router, prefix=_media_prefix)
+for _media_prefix in storage.MEDIA_PREFIXES:
+    app.include_router(storage.media_router, prefix=f"/{_media_prefix}")
 
 STATIC_DIR = os.environ.get("STATIC_DIR")
 if STATIC_DIR:

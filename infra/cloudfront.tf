@@ -85,7 +85,7 @@ resource "aws_cloudfront_distribution" "web" {
   # so a shared CloudFront cache entry would be served to the wrong viewer.
 
   dynamic "ordered_cache_behavior" {
-    for_each = toset(["/avatars/*", "/blog-images/*", "/game-images/*"])
+    for_each = toset([for p in local.media_prefixes : "/${p}/*"])
 
     content {
       path_pattern           = ordered_cache_behavior.value

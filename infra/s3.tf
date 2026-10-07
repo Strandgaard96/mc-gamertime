@@ -80,17 +80,15 @@ data "aws_iam_policy_document" "s3_cloudfront" {
     }
 
     actions = ["s3:GetObject"]
-    resources = [
+    resources = concat(
       # Table dumps from scripts/export-tables.py — never web-servable.
-      "${aws_s3_bucket.web.arn}/exports/*",
+      ["${aws_s3_bucket.web.arn}/exports/*"],
       # Uploaded media is served by the API behind require_auth. CloudFront
       # routes these prefixes to Lambda, so it has no reason to read them from
       # S3; denying it means a future behaviour change cannot silently make
       # them public again.
-      "${aws_s3_bucket.web.arn}/avatars/*",
-      "${aws_s3_bucket.web.arn}/blog-images/*",
-      "${aws_s3_bucket.web.arn}/game-images/*"
-    ]
+      [for p in local.media_prefixes : "${aws_s3_bucket.web.arn}/${p}/*"],
+    )
   }
 }
 

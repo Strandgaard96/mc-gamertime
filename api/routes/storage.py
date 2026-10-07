@@ -27,7 +27,12 @@ except ImportError:  # pragma: no cover - only true inside the selfhost image
 # only keys the app ever writes here: "avatars/{username}.png" (routes/users.py),
 # "blog-images/{ulid}.{ext}" (routes/posts.py), and "game-images/{ulid}.{ext}"
 # (routes/games.py).
-_ALLOWED_PREFIXES = ("avatars/", "blog-images/", "game-images/")
+#
+# Single source for the app side: main.py mounts media_router at each of
+# these. The infra side is local.media_prefixes in infra/main.tf, and
+# tests/test_media_prefixes_sync.py fails if the two lists differ.
+MEDIA_PREFIXES = ("avatars", "blog-images", "game-images")
+_ALLOWED_PREFIXES = tuple(f"{p}/" for p in MEDIA_PREFIXES)
 
 _MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 
