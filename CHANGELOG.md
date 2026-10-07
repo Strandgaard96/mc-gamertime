@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.2](https://github.com/Strandgaard96/mc-gamertime/compare/v0.2.1...v0.2.2) (2026-10-07)
+
+
+### Bug Fixes
+
+* **api:** path containment checks in CodeQL-recognised form ([61d6233](https://github.com/Strandgaard96/mc-gamertime/commit/61d623358bc6e07fd381ed31e1b267ca60d22d97))
+* **api:** path containment checks in CodeQL-recognised form ([b82085a](https://github.com/Strandgaard96/mc-gamertime/commit/b82085afb04fe05882eeb949098f3a6695914162))
+* **web:** second UI review pass — layout, labels, contrast ([ec65c62](https://github.com/Strandgaard96/mc-gamertime/commit/ec65c62290ed1d2d961e4af8e2dc8366d2f2aaae))
+* **web:** strip HTML via DOMParser instead of regex ([70c447f](https://github.com/Strandgaard96/mc-gamertime/commit/70c447f53bb906aa1047ea14e97997a8dbd5256b))
+
 ## [0.2.1](https://github.com/Strandgaard96/mc-gamertime/compare/v0.2.0...v0.2.1) (2026-10-07)
 
 
