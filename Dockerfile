@@ -59,7 +59,11 @@ RUN useradd -m -u 1000 appuser \
 VOLUME /data
 USER appuser
 
+# Probe /api/health, not just the socket: a failed _initialize() (fresh DB with
+# no ADMIN_* set, missing JWT_SECRET) keeps the port open but 503s every
+# request. Any 5xx or a refused connection is unhealthy; a 4xx (e.g. 403 from
+# an opted-in origin guard) still proves the app is up.
 HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=3 \
-    CMD python3 -c "import socket; socket.create_connection(('localhost', 4263), timeout=1)" || exit 1
+    CMD ["python3", "-c", "import sys, urllib.error, urllib.request\ntry:\n    urllib.request.urlopen('http://127.0.0.1:4263/api/health', timeout=2)\nexcept urllib.error.HTTPError as e:\n    sys.exit(e.code >= 500)"]
 
 ENTRYPOINT ["/entrypoint.sh"]

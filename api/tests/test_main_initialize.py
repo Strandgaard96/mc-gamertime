@@ -163,3 +163,28 @@ def test_bootstrap_admin_partial_config_raises(monkeypatch):
 
     with pytest.raises(RuntimeError):
         main._bootstrap_admin_user()
+
+
+def test_initialize_failure_is_logged_once_and_returns_503(monkeypatch, caplog):
+    """The 503 used to carry no diagnostics at all: the operator saw every
+    request fail and nothing in the logs said why."""
+    import logging
+
+    from fastapi.testclient import TestClient
+
+    import main
+    from tests.conftest import ORIGIN
+
+    monkeypatch.setattr(main, "_initialized", False)
+    monkeypatch.setattr(main, "_init_failure_logged", False, raising=False)
+    monkeypatch.setattr(main, "SECRETS_PROVIDER", "env")
+    monkeypatch.setenv("JWT_SECRET", "")
+
+    c = TestClient(main.app, raise_server_exceptions=False)
+    with caplog.at_level(logging.ERROR, logger="bootstrap"):
+        assert c.get("/api/health", headers=ORIGIN).status_code == 503
+        assert c.get("/api/health", headers=ORIGIN).status_code == 503
+
+    errors = [r for r in caplog.records if r.levelno == logging.ERROR]
+    assert len(errors) == 1
+    assert "JWT_SECRET not configured" in errors[0].getMessage()
