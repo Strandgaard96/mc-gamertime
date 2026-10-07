@@ -8,6 +8,11 @@ import lib.db.settings as settings_db
 
 BGG_API_BASE = "https://boardgamegeek.com/xmlapi2"
 
+
+class BggNotFoundError(ValueError):
+    """BGG answered, but has no game with that id."""
+
+
 _bgg_token: str | None = None
 _bgg_token_fallback: str = ""
 
@@ -65,7 +70,7 @@ def bgg_detail(bgg_id: int) -> dict:
     root = _fetch_xml(f"{BGG_API_BASE}/thing", params={"id": bgg_id, "stats": 1})
     item = root.find("item")
     if item is None:
-        raise ValueError(f"BGG game not found: {bgg_id}")
+        raise BggNotFoundError(f"BGG game not found: {bgg_id}")
 
     primary_name = ""
     for name_el in item.findall("name"):

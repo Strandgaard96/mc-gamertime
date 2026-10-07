@@ -151,6 +151,39 @@ def test_set_operations_on_a_missing_pk_raise(table):
         table.remove_from_set("ghost", "favorites", "alice")
 
 
+# --- partial updates -----------------------------------------------------
+
+
+def test_set_fields_updates_only_the_named_fields(table):
+    table.put_item(Item={"pk": "g1", "name": "Catan", "role": "admin"})
+    table.set_fields("g1", {"name": "Catan 2", "lastReadAt": "2026-01-01T00:00:00Z"})
+    item = table.get_item(Key={"pk": "g1"})["Item"]
+    assert item["name"] == "Catan 2"
+    assert item["lastReadAt"] == "2026-01-01T00:00:00Z"
+    assert item["role"] == "admin"
+
+
+def test_set_fields_stores_none_as_null(table):
+    table.put_item(Item={"pk": "g1", "lastFailureAt": "2026-01-01T00:00:00Z"})
+    table.set_fields("g1", {"lastFailureAt": None})
+    assert table.get_item(Key={"pk": "g1"})["Item"]["lastFailureAt"] is None
+
+
+def test_set_fields_increment_bumps_the_counter_from_absent(table):
+    table.put_item(Item={"pk": "g1", "name": "Catan"})
+    table.set_fields("g1", {}, increment="tokenVersion")
+    table.set_fields("g1", {"name": "x"}, increment="tokenVersion")
+    item = table.get_item(Key={"pk": "g1"})["Item"]
+    assert int(item["tokenVersion"]) == 2
+    assert item["name"] == "x"
+
+
+def test_set_fields_on_a_missing_pk_raises(table):
+    with pytest.raises(ItemNotFoundError):
+        table.set_fields("ghost", {"name": "x"})
+    assert "Item" not in table.get_item(Key={"pk": "ghost"})
+
+
 # --- counters ------------------------------------------------------------
 
 

@@ -148,3 +148,29 @@ def test_spa_fallback_rejects_path_traversal(tmp_path, monkeypatch):
     finally:
         monkeypatch.delenv("STATIC_DIR", raising=False)
         importlib.reload(main)
+
+
+def test_spa_fallback_returns_404_for_unknown_api_paths(tmp_path, monkeypatch):
+    """A typo'd or removed API route must 404, not hand the SPA shell to a
+    fetch() that then fails on JSON.parse with a confusing error."""
+    from fastapi.testclient import TestClient
+
+    static_dir = tmp_path / "static"
+    (static_dir / "assets").mkdir(parents=True)
+    (static_dir / "index.html").write_text("<html>shell</html>")
+
+    monkeypatch.setenv("STATIC_DIR", str(static_dir))
+    monkeypatch.delenv("S3_ENDPOINT_URL", raising=False)
+    import main
+
+    importlib.reload(main)
+    try:
+        monkeypatch.setattr(main, "_origin_token", "test-origin-token")
+        monkeypatch.setattr(main, "_initialized", True)
+        c = TestClient(main.app, raise_server_exceptions=False)
+        resp = c.get("/api/nonexistent", headers={"x-origin-token": "test-origin-token"})
+        assert resp.status_code == 404
+        assert resp.json() == {"detail": "Not Found"}
+    finally:
+        monkeypatch.delenv("STATIC_DIR", raising=False)
+        importlib.reload(main)

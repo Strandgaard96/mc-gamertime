@@ -51,6 +51,10 @@ def main():
 
     if args.password:
         user["passwordHash"] = bcrypt.hashpw(args.password.encode(), bcrypt.gensalt()).decode()
+    # A role change revokes sessions too: the role rides in the JWT, and a
+    # demoted admin must not keep a 7-day token that still says "admin".
+    revoke = bool(args.password or args.role)
+    if revoke:
         user["tokenVersion"] = user.get("tokenVersion", 0) + 1
     if args.display_name:
         user["displayName"] = args.display_name
@@ -60,7 +64,7 @@ def main():
         user["email"] = args.email
 
     put_user(user)
-    suffix = " — sessions revoked" if args.password else ""
+    suffix = " — sessions revoked" if revoke else ""
     print(f"Updated: {args.username} ({updated}){suffix}")
 
 

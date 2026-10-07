@@ -10,7 +10,7 @@ from decimal import Decimal
 
 
 class ItemNotFoundError(Exception):
-    """Raised by add_to_set/remove_from_set/increment_with_timestamp when pk
+    """Raised by add_to_set/remove_from_set/set_fields when pk
     doesn't exist and the operation requires it to (mirrors DynamoDB's
     ConditionExpression=Attr("pk").exists())."""
 
@@ -72,6 +72,40 @@ class DynamoTable:
                 Key={"pk": pk},
                 UpdateExpression=f"DELETE {field} :v",
                 ExpressionAttributeValues={":v": {value}},
+                ConditionExpression=Attr("pk").exists(),
+            )
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                raise ItemNotFoundError(pk) from e
+            raise
+
+    def set_fields(self, pk: str, fields: dict, *, increment: str | None = None) -> None:
+        """Overwrite only `fields` (and atomically +1 `increment`, if given) on
+        an existing item. Unlike get + put_item, a concurrent write to any other
+        field survives."""
+        from boto3.dynamodb.conditions import Attr
+        from botocore.exceptions import ClientError
+
+        names: dict[str, str] = {}
+        values: dict[str, object] = {}
+        sets: list[str] = []
+        for i, (field, value) in enumerate(fields.items()):
+            names[f"#f{i}"] = field
+            values[f":v{i}"] = _floats_to_decimal(value)
+            sets.append(f"#f{i} = :v{i}")
+        expr = f"SET {', '.join(sets)}" if sets else ""
+        if increment is not None:
+            names["#inc"] = increment
+            values[":one"] = 1
+            expr = f"{expr} ADD #inc :one".strip()
+        if not expr:
+            return
+        try:
+            self._table.update_item(
+                Key={"pk": pk},
+                UpdateExpression=expr,
+                ExpressionAttributeNames=names,
+                ExpressionAttributeValues=values,
                 ConditionExpression=Attr("pk").exists(),
             )
         except ClientError as e:

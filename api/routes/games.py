@@ -1,14 +1,18 @@
 import os
 import re
+from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import Annotated
+from typing import Annotated, Any
+from xml.etree.ElementTree import ParseError
 
+import httpx
+from defusedxml import DefusedXmlException
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, field_validator
 from ulid import ULID
 
 from lib.auth import AuthUser, require_admin, require_auth
-from lib.bgg import bgg_detail, bgg_search
+from lib.bgg import BggNotFoundError, bgg_detail, bgg_search
 from lib.db.games import (
     GameNotFoundError,
     add_favourite,
@@ -123,10 +127,24 @@ def search_games(
     bggId: int | None = None,
 ):
     if bggId is not None:
-        return bgg_detail(bggId)
+        return _call_bgg(bgg_detail, bggId)
     if not q:
         raise HTTPException(status_code=400, detail="q or bggId required")
-    return bgg_search(q)
+    return _call_bgg(bgg_search, q)
+
+
+def _call_bgg(fn: Callable[[Any], Any], arg: Any) -> Any:
+    # An upstream failure is a gateway error, not a bug in this app: say so
+    # instead of letting it escape as a bare 500.
+    try:
+        return fn(arg)
+    except BggNotFoundError:
+        raise HTTPException(status_code=404, detail="Game not found on BoardGameGeek") from None
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="BoardGameGeek timed out") from None
+    except (httpx.HTTPError, ParseError, DefusedXmlException, ValueError):
+        # ValueError: a malformed number in an otherwise valid response.
+        raise HTTPException(status_code=502, detail="BoardGameGeek is unavailable") from None
 
 
 @router.post("/upload")

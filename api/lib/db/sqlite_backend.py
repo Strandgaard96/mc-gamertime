@@ -175,6 +175,26 @@ class SqliteTable:
         finally:
             conn.close()
 
+    def set_fields(self, pk: str, fields: dict, *, increment: str | None = None) -> None:
+        conn = _connect(self._db_path)
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(f"SELECT data FROM {self._name} WHERE pk = ?", (pk,)).fetchone()
+            if row is None:
+                conn.execute("ROLLBACK")
+                raise ItemNotFoundError(pk)
+            item = json.loads(row[0])
+            item.update(fields)
+            if increment is not None:
+                item[increment] = item.get(increment, 0) + 1
+            conn.execute(
+                f"UPDATE {self._name} SET data = ? WHERE pk = ?",
+                (json.dumps(item, default=_json_default), pk),
+            )
+            conn.execute("COMMIT")
+        finally:
+            conn.close()
+
     def increment_with_timestamp(
         self, pk: str, counter_field: str, timestamp_field: str, timestamp_value
     ) -> None:

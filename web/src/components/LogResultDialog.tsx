@@ -150,7 +150,13 @@ export function formReducer(state: FormState, action: Action): FormState {
 
 export function LogResultDialog({ open, onClose, defaultGameId, editResult }: Props) {
   const { data: games = [] } = useGames();
-  const { data: users = [] } = useQuery({ queryKey: ["users"], queryFn: getUsers });
+  // Admin-only endpoint, and this dialog is mounted once per game card for
+  // every viewer: only fetch once it is actually opened (by an admin).
+  const { data: users = [] } = useQuery({
+    queryKey: ["users"],
+    queryFn: getUsers,
+    enabled: open,
+  });
   const addResult = useAddResult();
   const updateResultMut = useUpdateResult();
 

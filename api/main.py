@@ -4,7 +4,7 @@ import os
 from datetime import UTC, datetime
 
 import bcrypt
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -106,6 +106,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # ty
 app.add_middleware(SlowAPIMiddleware)
 
 _initialized = False
+_init_failure_logged = False
 _origin_token: str | None = None
 
 # Selfhost is the default deployment: secrets come from the environment unless
@@ -206,9 +207,15 @@ _SECURITY_HEADERS = {
 
 @app.middleware("http")
 async def origin_guard(request: Request, call_next):
+    global _init_failure_logged
     try:
         _initialize()
-    except RuntimeError:
+    except RuntimeError as exc:
+        # Every request 503s until this is fixed, so say why exactly once
+        # rather than on every request (and every healthcheck probe).
+        if not _init_failure_logged:
+            _init_failure_logged = True
+            _boot_log.error("Initialization failed, serving 503 on every request: %s", exc)
         return JSONResponse(status_code=503, content={"detail": "Service unavailable"})
 
     if (
@@ -319,6 +326,8 @@ if STATIC_DIR:
 
     @app.get("/{path:path}")
     def spa_fallback(path: str):
+        if path == "api" or path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not Found")
         # Serve real files at the dist root (favicon, manifest, service
         # worker, PWA icons) as-is; only fall back to index.html for
         # client-side routes that don't correspond to a file on disk.

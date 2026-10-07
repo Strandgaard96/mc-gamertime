@@ -12,7 +12,14 @@ from pydantic import BaseModel, Field, field_validator
 
 from lib.auth import AuthUser, require_admin, require_auth, validate_password_length
 from lib.db.results import list_results
-from lib.db.users import delete_user, get_user, list_users, put_user, update_avatar
+from lib.db.users import (
+    delete_user,
+    get_user,
+    list_users,
+    put_user,
+    set_user_fields,
+    update_avatar,
+)
 from lib.rate_limit import limiter
 from lib.storage import avatar_url, get_object_base_url, make_s3_client
 
@@ -129,19 +136,20 @@ def update_user_route(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    fields: dict = {}
     if body.displayName is not None:
-        user["displayName"] = body.displayName
+        fields["displayName"] = body.displayName
     if body.role is not None:
-        user["role"] = body.role
+        fields["role"] = body.role
     if body.password is not None:
-        user["passwordHash"] = bcrypt.hashpw(
+        fields["passwordHash"] = bcrypt.hashpw(
             body.password.encode(), bcrypt.gensalt(rounds=12)
         ).decode()
 
-    if body.role is not None or body.password is not None:
-        user["tokenVersion"] = user.get("tokenVersion", 0) + 1
-
-    put_user(user)
+    set_user_fields(
+        username, fields, bump_token_version=body.role is not None or body.password is not None
+    )
+    user.update(fields)
     return {
         "username": user["pk"],
         "displayName": user["displayName"],
