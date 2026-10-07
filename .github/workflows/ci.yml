@@ -17,8 +17,9 @@ concurrency:
   cancel-in-progress: true
 
 # Taskfile.yml is the source of truth for check commands: `task check` runs the
-# same ruff / ty / pytest / tsc / oxlint / oxfmt / vitest / terraform commands
-# the jobs below run (CI adds coverage flags). CI calls them directly rather
+# same ruff / ty / pytest --cov / tsc / oxlint / oxfmt / vitest coverage /
+# terraform commands the jobs below run (CI only adds output flags: pytest -v,
+# --tb=short and the XML report for Codecov). CI calls them directly rather
 # than through `task` so each job stays one install + plain steps; when you
 # change a command here, change it in the Taskfile's check:* tasks too.
 jobs:

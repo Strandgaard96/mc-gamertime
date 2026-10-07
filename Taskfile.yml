@@ -23,22 +23,22 @@ tasks:
         fi
 
   check:api:
-    desc: "API: ruff lint + format check, ty, pytest (same commands as CI's API tests / Lint jobs)"
+    desc: "API: ruff lint + format check, ty, pytest with the coverage floor (same commands as CI's API tests / Lint jobs)"
     dir: api
     cmds:
       - uv run --locked ruff check .
       - uv run --locked ruff format --check .
       - uv run --locked ty check
-      - uv run --locked pytest tests/ -q
+      - uv run --locked pytest tests/ -q --cov --cov-report=term
 
   check:web:
-    desc: "Web: typecheck, oxlint, oxfmt check, vitest (same commands as CI's web jobs)"
+    desc: "Web: typecheck, oxlint, oxfmt check, vitest with coverage (same commands as CI's web jobs)"
     dir: web
     cmds:
       - npm run typecheck
       - npx oxlint src/
       - npx oxfmt --check src/
-      - npx vitest run
+      - npm run test:coverage
 
   check:infra:
     desc: "Infra: terraform fmt check + validate (no backend, no AWS credentials needed)"
