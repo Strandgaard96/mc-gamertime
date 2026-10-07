@@ -1,19 +1,20 @@
 import { ChevronDown, ChevronUp, Dices, Flame, Trophy } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Avatar } from "../components/Avatar";
 import { HeadToHead } from "../components/HeadToHead";
 import { LeaderboardTable } from "../components/LeaderboardTable";
 import { MonthlyChart } from "../components/MonthlyChart";
 import { PageTransition } from "../components/PageTransition";
+import { SeasonScope } from "../components/SeasonScope";
 import { Skeleton } from "../components/ui/skeleton";
 import { WinRaceChart } from "../components/WinRaceChart";
 import { usePlayers } from "../hooks/usePlayers";
 import { useResults } from "../hooks/useResults";
-import { useStats } from "../hooks/useStats";
+import { useSeasons, useStats } from "../hooks/useStats";
 import type { GameStat, LeaderboardEntry } from "../lib/types";
-import { pluralize } from "../lib/utils";
+import { pluralize, seasonOf } from "../lib/utils";
 
 const PODIUM = {
   1: {
@@ -224,10 +225,21 @@ function GameStatCard({ gs }: { gs: GameStat }) {
 }
 
 export default function Leaderboard() {
-  const { data: stats, isLoading } = useStats();
-  const { data: results = [] } = useResults();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const season = searchParams.get("season") ?? undefined;
+  const { data: seasons = [] } = useSeasons();
+  const { data: stats, isLoading } = useStats(season);
+  const { data: allResults = [] } = useResults();
+  const results = useMemo(
+    () => (season ? allResults.filter((r) => seasonOf(r.date) === season) : allResults),
+    [allResults, season],
+  );
   const { data: players = [] } = usePlayers();
   const avatarMap = Object.fromEntries(players.map((p) => [p.pk, p.avatarUrl ?? undefined]));
+
+  function setSeason(next: string | undefined) {
+    setSearchParams(next ? { season: next } : {}, { replace: true });
+  }
 
   if (isLoading) {
     return (
@@ -253,6 +265,9 @@ export default function Leaderboard() {
             <Link to="/records" className="text-xs text-primary hover:underline">
               All-time records →
             </Link>
+          </div>
+          <div className="mb-6">
+            <SeasonScope seasons={seasons} value={season} onChange={setSeason} />
           </div>
           {stats.leaderboard.length === 0 ? (
             <div className="text-center py-16 text-muted-foreground">

@@ -216,8 +216,20 @@ export interface NotificationsResponse {
   unreadCount: number;
 }
 
+export interface SeasonSummary {
+  id: string;
+  label: string;
+  finished: boolean;
+  champion: { playerId: string; name: string } | null;
+}
+export interface SeasonTitle {
+  id: string;
+  label: string;
+}
+
 export interface PlayerStats {
   achievements: Achievement[];
+  seasonTitles: SeasonTitle[];
   perGameStats: {
     gameId: string;
     gameName: string;

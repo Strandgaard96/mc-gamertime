@@ -71,3 +71,9 @@ export function excerpt(html: string, length = 150): string {
   const plain = stripHtml(html).trim();
   return plain.length <= length ? plain : `${plain.slice(0, length).trimEnd()}…`;
 }
+
+/** "2026-08-14" -> "2026-Q3". Mirrors api/lib/seasons.py::season_of. */
+export function seasonOf(date: string): string {
+  const month = Number(date.slice(5, 7));
+  return `${date.slice(0, 4)}-Q${Math.floor((month - 1) / 3) + 1}`;
+}

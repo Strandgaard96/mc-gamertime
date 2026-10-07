@@ -10,6 +10,7 @@ import type {
   Player,
   PlayerStats,
   PlayerVariableInput,
+  SeasonSummary,
   Post,
   PublicSettings,
   ReactionItem,
@@ -235,8 +236,12 @@ export function deleteComment(id: string): Promise<void> {
 }
 
 // Stats
-export function getStats(): Promise<StatsResponse> {
-  return apiFetch("/stats");
+export function getStats(season?: string): Promise<StatsResponse> {
+  return apiFetch(season ? `/stats?season=${encodeURIComponent(season)}` : "/stats");
+}
+
+export function getSeasons(): Promise<SeasonSummary[]> {
+  return apiFetch("/stats/seasons");
 }
 
 export function getPlayerStats(playerId: string): Promise<PlayerStats> {
