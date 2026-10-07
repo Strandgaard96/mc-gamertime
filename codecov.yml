@@ -1,0 +1,4 @@
+# Codecov's PR comment arrives from its fallback `codecov-commenter` account with
+# an "install the Codecov app" banner. Coverage is enforced by `fail_under` in
+# api/pyproject.toml and stays visible on app.codecov.io, so skip the comment.
+comment: false
