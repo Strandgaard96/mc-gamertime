@@ -12,6 +12,7 @@ from lib.db.notifications import put_notification
 from lib.db.results import delete_result, get_result, list_results, put_result
 from lib.db.users import get_user
 from lib.elo import leaders_before
+from routes.photos import delete_session_photos
 
 router = APIRouter()
 
@@ -344,3 +345,4 @@ def delete_result_route(result_id: str, _: Annotated[AuthUser, Depends(require_a
     if not existing:
         raise HTTPException(status_code=404, detail="Result not found")
     delete_result(result_id)
+    delete_session_photos(result_id)

@@ -319,3 +319,38 @@ def test_put_object_session_photo_bad_key_forbidden(fake_db):
         headers={"content-type": "image/webp"},
     )
     assert resp.status_code == 403
+
+
+def test_put_object_session_photo_registered_key_forbidden(fake_db, monkeypatch):
+    captured = {}
+
+    class FakeS3:
+        def put_object(self, **kwargs):
+            captured.update(kwargs)
+
+    monkeypatch.setattr(storage_module, "make_s3_client", lambda: FakeS3())
+    monkeypatch.setattr(storage_module, "_BUCKET", "test-bucket")
+
+    key = f"session-photos/{ULID()!s}.webp"
+    fake_db["reactions"].seed(
+        {
+            "pk": "p1",
+            "type": "photo",
+            "sessionPk": "s1",
+            "key": key,
+            "imageUrl": "/x",
+            "uploaderId": "alice",
+            "uploaderName": "Alice",
+            "createdAt": "2026-06-01T00:00:00Z",
+        }
+    )
+    app = _make_app()
+    c = TestClient(app, raise_server_exceptions=False)
+    c.cookies.set("token", make_auth_cookie("readonly")["token"])
+    resp = c.put(
+        f"/storage/{key}",
+        content=b"RIFFxxxxWEBP",
+        headers={"content-type": "image/webp"},
+    )
+    assert resp.status_code == 403
+    assert captured == {}

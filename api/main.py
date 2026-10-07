@@ -21,6 +21,7 @@ from routes import (
     auth,
     games,
     notifications,
+    photos,
     players,
     posts,
     reactions,
@@ -305,6 +306,7 @@ app.include_router(stats.router, prefix="/api/stats")
 app.include_router(users.router, prefix="/api/users")
 app.include_router(reactions.router, prefix="/api/reactions")
 app.include_router(reactions.comments_router, prefix="/api/comments")
+app.include_router(photos.router, prefix="/api/photos")
 app.include_router(notifications.router, prefix="/api/notifications")
 app.include_router(settings.router, prefix="/api/settings")
 

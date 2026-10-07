@@ -137,7 +137,7 @@ PHOTO_PREFIX = "session-photos"
 PHOTO_CONTENT_TYPES: tuple[str, ...] = ("image/webp", "image/jpeg", "image/png")
 PHOTO_KEY_RE = re.compile(
     rf"^{PHOTO_PREFIX}/[0-9A-HJKMNP-TV-Z]{{26}}\."
-    rf"({'|'.join(EXT_BY_CONTENT_TYPE[t] for t in PHOTO_CONTENT_TYPES)})$"
+    rf"({'|'.join(EXT_BY_CONTENT_TYPE[t] for t in PHOTO_CONTENT_TYPES)})\Z"
 )
 
 

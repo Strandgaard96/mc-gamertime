@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from lib.auth import AuthUser, require_auth
+from lib.db.reactions import find_photo_by_key
 from lib.storage import EXT_BY_CONTENT_TYPE, PHOTO_KEY_RE, PHOTO_PREFIX, make_s3_client
 
 router = APIRouter()
@@ -50,8 +51,10 @@ def _authorize_write(path: str, user: AuthUser) -> None:
         return
     if path.startswith(f"{PHOTO_PREFIX}/"):
         # Any logged-in user may upload a game-night photo, but only to a key
-        # shaped like the ones routes/photos.py issues.
-        if not PHOTO_KEY_RE.match(path):
+        # shaped like the ones routes/photos.py issues, and only before it is
+        # registered: a registered photo's key is public (GET /api/reactions),
+        # so without this check anyone could overwrite someone else's photo.
+        if not PHOTO_KEY_RE.match(path) or find_photo_by_key(path):
             raise HTTPException(status_code=403, detail="Forbidden")
         return
     # blog-images/* and game-images/* are admin-authored (posts, games)

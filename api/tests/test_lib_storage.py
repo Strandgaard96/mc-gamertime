@@ -164,6 +164,7 @@ def test_photo_key_re_rejects_bad_keys():
         f"blog-images/{ulid}.png",
         f"session-photos/{ulid}.png/extra",
         "session-photos/short.png",
+        f"session-photos/{ulid}.png\n",
     ):
         assert not PHOTO_KEY_RE.match(key), key
 
