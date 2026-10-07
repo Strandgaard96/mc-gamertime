@@ -1,5 +1,42 @@
 # Changelog
 
+## [0.3.0](https://github.com/Strandgaard96/mc-gamertime/compare/v0.2.3...v0.3.0) (2026-10-07)
+
+
+### Features
+
+* add session-photos media prefix and upload key helpers ([3517db4](https://github.com/Strandgaard96/mc-gamertime/commit/3517db4c0f509f0598be6f3537c4ad519da92677))
+* **api:** add Giant Slayer achievement ([30fcedb](https://github.com/Strandgaard96/mc-gamertime/commit/30fcedb63c81830b98f9346b6dddec8f5d72bd8c))
+* **api:** add quarterly season helpers and champion rule ([7562502](https://github.com/Strandgaard96/mc-gamertime/commit/756250291f94da5143942849fba05060881ea4fc))
+* **api:** game-night photo upload, confirm, delete and cascade ([0e1be62](https://github.com/Strandgaard96/mc-gamertime/commit/0e1be62fa20e42c04c6b029b00e55d296732d437))
+* **api:** season-scoped stats, season list and player season titles ([f0a2be6](https://github.com/Strandgaard96/mc-gamertime/commit/f0a2be69abce978047f96722e79b0c28029b2679))
+* quarterly seasons, Giant Slayer achievement and game-night photos ([27d2dba](https://github.com/Strandgaard96/mc-gamertime/commit/27d2dbac8ef978200e624ea99954dc94f56ec4e7))
+* **web:** attach photos when logging a game night ([0398cfb](https://github.com/Strandgaard96/mc-gamertime/commit/0398cfb4a4a0247c0f8d9b19855af8a3bea6b68e))
+* **web:** game-night photo strip, lightbox and upload ([2861a44](https://github.com/Strandgaard96/mc-gamertime/commit/2861a443e0e3565e3134e3d64ecb030c6b2e6bd1))
+* **web:** season leaderboard scope and champion chips ([5e8cb80](https://github.com/Strandgaard96/mc-gamertime/commit/5e8cb802b424f0d641994ce352bbdfbf38bdd1a8))
+
+
+### Bug Fixes
+
+* **api:** map BoardGameGeek failures to 502/504/404 ([1d0c9e6](https://github.com/Strandgaard96/mc-gamertime/commit/1d0c9e6dc370c8e19c4ee1b7fd1d22777737425f))
+* **api:** stop user writes clobbering concurrent changes; trust DB role ([b9fd0c0](https://github.com/Strandgaard96/mc-gamertime/commit/b9fd0c033f78c701deef817cac74c87377718baf))
+* bind photo uploads to a server-issued size and token ([0a30e62](https://github.com/Strandgaard96/mc-gamertime/commit/0a30e62838a719fd4fe3052d151d978f9f8880e6))
+* defects from maintenance review (API + web) ([0778906](https://github.com/Strandgaard96/mc-gamertime/commit/0778906104c4ea4d0f520b2ec2d73861dc2e98ad))
+* delete session photos before the result ([5893db2](https://github.com/Strandgaard96/mc-gamertime/commit/5893db26fac35d7cd43c0913f6c38b2c9cb5521e))
+* surface startup failures and 404 unknown API paths ([cc4dcc2](https://github.com/Strandgaard96/mc-gamertime/commit/cc4dcc2a454a06776e83575669fb1b0682af870d))
+* **web:** clear the query cache when a session ends ([7cf3cd8](https://github.com/Strandgaard96/mc-gamertime/commit/7cf3cd8b620d39e8d438bb23357b119cc8da60d4))
+* **web:** compute the result-date bound per validation ([b450196](https://github.com/Strandgaard96/mc-gamertime/commit/b45019696e51dc66ce1258f0ac710957c3b9375c))
+* **web:** give every API error a status so 4xx is not retried ([1cb81df](https://github.com/Strandgaard96/mc-gamertime/commit/1cb81df168f7c5c09478b4b0cb3909573f48fb83))
+* **web:** ignore a malformed ?season deep link on the leaderboard ([e18b8e4](https://github.com/Strandgaard96/mc-gamertime/commit/e18b8e4397e7794ef5855c90a3aa66d1a8fa9daf))
+* **web:** keep previous stats while a new season loads ([7f56f0a](https://github.com/Strandgaard96/mc-gamertime/commit/7f56f0a459635545611bfd826846f8cd845f23b4))
+* **web:** lightbox arrow keys work from any focused element ([597e0c5](https://github.com/Strandgaard96/mc-gamertime/commit/597e0c5eae681776c7de6148f2180ac7d2c256ff))
+* **web:** only fetch the admin-only user list when logging a result ([2c4b970](https://github.com/Strandgaard96/mc-gamertime/commit/2c4b970ec5e708a54b8eabf6a196f6551cf7f44c))
+
+
+### Performance
+
+* **api:** reuse one SQLite connection per table ([f2bb917](https://github.com/Strandgaard96/mc-gamertime/commit/f2bb9177fc35fdf39427b4c5b8422cba7dd740a3))
+
 ## [0.2.3](https://github.com/Strandgaard96/mc-gamertime/compare/v0.2.2...v0.2.3) (2026-10-07)
 
 
