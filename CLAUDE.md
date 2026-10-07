@@ -6,6 +6,7 @@ Branch: `main` (pushed to `origin/main`)
 
 ## Commands
 
+`task check` — THE local gate: `check:api` (ruff, ruff format --check, ty, pytest) + `check:web` (tsc, oxlint, oxfmt --check, vitest) + `check:infra` (terraform fmt -check, validate with `-backend=false`), then `prek run --all-files`. Same commands as CI (CI calls them directly, not via `task`; change both together). Run one part with `task check:api|web|infra`
 `cd web && npx tsc --noEmit` — typecheck web (must run from web/ dir)
 `cd api && uv run pytest tests/ -v` — run API tests (coverage floor `fail_under = 90` in `pyproject.toml`)
 `cd api && uv run ty check` — Python type check (ty, Astral); `uv run ruff check .` — lint
@@ -15,7 +16,7 @@ Branch: `main` (pushed to `origin/main`)
 `task init` — `terraform init` (S3 state; `infra/backend.hcl` override if present) + `npm ci`
 `task state:bootstrap` — create the S3 state bucket from `infra/backend.tf` (once per account); `task state:migrate` — move local state into it
 `task plan` — terraform plan (check infra diff before deploy)
-`task deploy` — build + terraform apply + S3 sync + CF invalidation
+`task deploy` — build + terraform apply + S3 sync + CF invalidation. `deploy`/`apply` (prod) refuse to run unless on `main`, clean tree, and HEAD == `origin/main` (no override); `deploy:dev`/`apply:dev` have the same checks, skippable with `DEPLOY_ALLOW_DIRTY=1`
 `task users` / `task users:dev` — list all users (prod / dev table)
 `task create-user -- --username alice --display-name 'Alice' --role readonly --password secret [--env dev]` — create user
 `task update-user -- --username alice --password newsecret [--display-name '...'] [--role admin] [--env dev]` — update password/display name/role
@@ -85,11 +86,16 @@ The project includes a **"Full Stack" VS Code Launch Configuration**:
   Workflow-level `permissions:` stay `contents: read`; grant writes per job. Every `actions/checkout`
   sets `persist-credentials: false` (zizmor `artipacked`, medium severity, fails CI otherwise).
   Dockerfile `FROM` lines are digest-pinned (`image:tag@sha256:…`, Renovate `docker:pinDigests`).
-- OpenSSF Scorecard (`scorecard.yml`, weekly + push to main) is ~6.5 by design: Branch-Protection /
+- OpenSSF Scorecard (`scorecard.yml`, weekly + `workflow_dispatch`, no push trigger) is ~6.5 by design: Branch-Protection /
   Code-Review need a second reviewer, Contributors needs 3 orgs, Fuzzing only detects `fast-check`
   (JS) not `hypothesis`, Signed-Releases needs release assets + `*.intoto.jsonl`, SAST fills in as
   CodeQL (default setup, repo settings) covers the last 30 commits.
-- Git hooks: `prek` (drop-in pre-commit replacement, same config) — `prek run --all-files`.
+- Git hooks: `prek` (drop-in pre-commit replacement, same config) — `prek run --all-files`. Hooks are the
+  fast subset only; hadolint + shellcheck run in CI's `Lint` job, terraform validate in `task check:infra`
+  + the `Terraform` job. Trivy: report-only (SARIF → Security tab) in ci.yml's `Docker build` on PRs,
+  blocking in `publish.yml` before any push, blocking weekly in `security-scan.yml` (image + lockfiles).
+- `Docker build` in ci.yml runs on PRs only: on push to main, `publish.yml` (same path list) builds,
+  Trivy-scans and healthcheck-smoke-tests the image before pushing `:main`. Keep the two smoke tests in sync.
 - `web/.oxlintrc.json` is the ONLY place lint severities live — never pass `--deny=...`/`--warn=...` on
   the CLI (a CLI category flag re-enables rules the config turned off; pre-commit and CI must match).
   `categories.correctness` also enables type-aware rules; `typescript/no-floating-promises` is off on

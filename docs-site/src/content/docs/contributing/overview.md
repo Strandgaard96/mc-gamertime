@@ -5,14 +5,20 @@ sidebar:
   order: 1
 ---
 
-## Running tests
+## Running checks
 
 ```bash
-cd api
-uv run pytest tests/ -v
+task check            # API + web + infra checks, then every git hook on all files
+task check:api        # ruff lint + format check, ty, pytest
+task check:web        # tsc, oxlint, oxfmt check, vitest
+task check:infra      # terraform fmt check + validate
 ```
 
-Requires [uv](https://docs.astral.sh/uv/) installed (`curl -LsSf https://astral.sh/uv/install.sh | sh`). Tests use an in-memory fake table — no AWS credentials or running stack needed. The full suite takes a few minutes.
+`task check` runs the same commands as CI, so it is the local gate before a PR. It needs
+[uv](https://docs.astral.sh/uv/) (`curl -LsSf https://astral.sh/uv/install.sh | sh`),
+[Task](https://taskfile.dev/installation/),
+[Terraform](https://developer.hashicorp.com/terraform/install) and `npm ci` in `web/`. Tests
+use an in-memory fake table, so no AWS credentials or running stack are needed.
 
 ## First-time setup
 
@@ -27,22 +33,20 @@ cd ..
 prek install
 ```
 
-Some hooks need tools on your `PATH`: [trivy](https://trivy.dev/latest/getting-started/installation/)
-and [terraform](https://developer.hashicorp.com/terraform/install); the hadolint and
-shellcheck hooks run in Docker.
-
-The hooks run automatically on `git commit`:
+The hooks are the fast subset and run automatically on `git commit`:
 - **gitleaks** — blocks commits containing secrets
 - **ruff** + **ty** (Python) and **oxlint** / **oxfmt** (TypeScript) — lint, type-check and
   format, auto-fixing where possible
 - **zizmor** — audits the GitHub Actions workflows (unpinned actions, injection, permissions)
-- **trivy-fs** — blocks a HIGH/CRITICAL dependency CVE with a known fix; runs only when a
-  dependency manifest or the `Dockerfile` changes
-- **actionlint**, **terraform_fmt** / **terraform_validate**, **hadolint**, **shellcheck** — lint
-  workflows, Terraform, the Dockerfile, and shell scripts
+- **actionlint**, **terraform_fmt** — lint workflows and format Terraform
 - file hygiene — large files (>500KB), merge-conflict markers, trailing whitespace, YAML/JSON/TOML syntax
 
-To run all hooks manually: `prek run --all-files`
+To run all hooks manually: `prek run --all-files` (`task check` does this too).
+
+Slower checks run in CI instead: hadolint (Dockerfile) and shellcheck in the `Lint` job,
+`terraform validate` in the `Terraform` job (and `task check:infra`), and Trivy. Trivy is
+report-only on PRs (findings go to the Security tab), blocking in `publish.yml` before any
+image is pushed, and blocking in the weekly `security-scan.yml` (image + lockfiles).
 
 ## Running locally
 
@@ -89,6 +93,6 @@ Anything beyond that — a new index, reshaping stored data — is a migration, 
 
 ## Pull requests
 
-- Tests must pass: `cd api && uv run pytest tests/ -v`
+- `task check` must pass
 - Keep scope small — one thing per PR
 - Fill-out the PR template

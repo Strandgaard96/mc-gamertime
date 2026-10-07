@@ -62,18 +62,23 @@ VS Code users: press **F5** and pick **Full Stack** to start both with debuggers
 
 ## Before you open a PR
 
-These are the same checks CI runs, so running them locally avoids a red build:
+One command runs the same checks CI runs, so a green run locally means a green build:
 
 ```bash
-cd api && uv run pytest tests/ -v     # backend tests
-cd api && uv run ruff check . && uv run ruff format --check .
-cd web && npm run test                # frontend tests
-cd web && npm run typecheck           # tsc --noEmit
-cd web && npx oxlint src/
+task check            # everything below, then every git hook on all files
+task check:api        # ruff lint + format check, ty, pytest
+task check:web        # tsc, oxlint, oxfmt check, vitest
+task check:infra      # terraform fmt check + validate (no AWS credentials needed)
 ```
 
-Optionally install the git hooks, which run the linters and type checkers plus a secret
-scan and a dependency-CVE scan on every commit. They are managed by
+It needs [Task](https://taskfile.dev/installation/),
+[Terraform](https://developer.hashicorp.com/terraform/install) and
+[prek](https://prek.j178.dev/) (falls back to `uvx prek` if prek isn't installed), plus
+`npm ci` in `web/` once.
+
+Optionally install the git hooks. They are the fast subset (secret scan, linters, formatters,
+type checker, workflow audit) and run on every commit; the slower checks (Trivy, hadolint,
+shellcheck, terraform validate) run in CI and `task check`. They are managed by
 [prek](https://prek.j178.dev/), a drop-in replacement for pre-commit (same
 `.pre-commit-config.yaml`, single binary, faster); `pre-commit` itself works too:
 
@@ -81,9 +86,6 @@ scan and a dependency-CVE scan on every commit. They are managed by
 uv tool install prek
 prek install
 ```
-
-The CVE hook needs [trivy](https://trivy.dev/latest/getting-started/installation/) on your
-PATH; it only runs when a lockfile or the `Dockerfile` changes.
 
 ## Commit messages
 
