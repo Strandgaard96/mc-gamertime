@@ -59,7 +59,9 @@ def test_export_tables_propagates_lock_error_instead_of_returning_empty(tmp_path
     """
     db_path = str(tmp_path / "test.db")
     # Create the table and seed a row so an empty-list result would be wrong.
-    SqliteTable(db_path, "games").put_item(Item={"pk": "01GAME", "name": "Wingspan"})
+    table = SqliteTable(db_path, "games")
+    table.put_item(Item={"pk": "01GAME", "name": "Wingspan"})
+    table.close()  # the journal-mode switch below needs no other connection open
 
     # SqliteTable leaves the db file in WAL mode, which lets readers proceed
     # even while a writer holds an uncommitted transaction. Force the
