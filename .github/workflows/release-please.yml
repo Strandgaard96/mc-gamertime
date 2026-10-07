@@ -26,6 +26,14 @@ jobs:
       # from the latest GitHub release tag instead of the manifest.
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5
         id: release
+        with:
+          # A PR opened with GITHUB_TOKEN is authored by github-actions[bot], and its CI
+          # runs sit at "action_required" until someone approves them — on every update.
+          # A fine-grained PAT (this repo only; Contents + Pull requests: read/write)
+          # makes the owner the author, so CI starts on its own. Falls back to the
+          # default token when the secret isn't set. publish.yml has no `tags:`
+          # trigger, so PAT-pushed tags don't double-publish the image.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
 
   # Tags created by release-please come from GITHUB_TOKEN, and GitHub does not
   # start workflows for events that token produced — so publish.yml's tag
