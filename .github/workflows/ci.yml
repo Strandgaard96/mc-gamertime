@@ -133,10 +133,13 @@ jobs:
           AWS_DEFAULT_REGION: eu-west-1
         run: uv run --no-project --python 3.12 python -c "import main; import mangum"
 
+  # PRs only: on push to main, publish.yml builds, scans and smoke-tests the
+  # same image (same path list) before pushing it, so running it here too was
+  # duplicate work. Required checks only gate PRs, so skipping on push is safe.
   docker-build:
     name: Docker build
     needs: changes
-    if: needs.changes.outputs.docker == 'true'
+    if: needs.changes.outputs.docker == 'true' && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -159,7 +162,9 @@ jobs:
           load: true
           tags: mc-gamertime:ci
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # mode=min: only the final image's layers. mode=max also cached every
+          # intermediate stage and filled most of the 10 GB Actions cache.
+          cache-to: type=gha,mode=min
 
       # Non-blocking on PRs: a CVE published upstream yesterday shouldn't turn
       # an unrelated PR red. Findings land in the Security tab instead. The
