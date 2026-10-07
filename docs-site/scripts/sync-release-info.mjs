@@ -28,7 +28,7 @@ sidebar:
   order: 8
   badge:
     text: v${version}
-    variant: note
+    variant: default
 ---
 
 <!--
