@@ -1,7 +1,9 @@
 # Fast subset only: everything here runs in seconds on staged files.
 # Slower or rarely-relevant checks live elsewhere: terraform validate in
-# `task check:infra` + CI, hadolint/shellcheck in CI's Lint job, Trivy in CI
-# (Docker build, publish, weekly security-scan.yml). `task check` runs it all.
+# `task check:infra` + CI's Terraform job; hadolint/shellcheck in CI's Lint job
+# only; Trivy in CI only (Docker build, publish, weekly security-scan.yml).
+# `task check` runs these hooks plus terraform validate, not hadolint,
+# shellcheck or Trivy.
 repos:
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.30.0

@@ -9,12 +9,13 @@ sidebar:
 
 ```bash
 task check            # API + web + infra checks, then every git hook on all files
-task check:api        # ruff lint + format check, ty, pytest
-task check:web        # tsc, oxlint, oxfmt check, vitest
+task check:api        # ruff lint + format check, ty, pytest + coverage floor
+task check:web        # tsc, oxlint, oxfmt check, vitest + coverage
 task check:infra      # terraform fmt check + validate
 ```
 
-`task check` runs the same commands as CI, so it is the local gate before a PR. It needs
+`task check` runs the same lint, type-check, test and Terraform commands as CI, so it is
+the local gate before a PR (hadolint, shellcheck and Trivy run in CI only). It needs
 [uv](https://docs.astral.sh/uv/) (`curl -LsSf https://astral.sh/uv/install.sh | sh`),
 [Task](https://taskfile.dev/installation/),
 [Terraform](https://developer.hashicorp.com/terraform/install) and `npm ci` in `web/`. Tests
@@ -43,7 +44,7 @@ The hooks are the fast subset and run automatically on `git commit`:
 
 To run all hooks manually: `prek run --all-files` (`task check` does this too).
 
-Slower checks run in CI instead: hadolint (Dockerfile) and shellcheck in the `Lint` job,
+Slower checks run in CI only: hadolint (Dockerfile) and shellcheck in the `Lint` job,
 `terraform validate` in the `Terraform` job (and `task check:infra`), and Trivy. Trivy is
 report-only on PRs (findings go to the Security tab), blocking in `publish.yml` before any
 image is pushed, and blocking in the weekly `security-scan.yml` (image + lockfiles).

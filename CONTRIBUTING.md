@@ -62,12 +62,13 @@ VS Code users: press **F5** and pick **Full Stack** to start both with debuggers
 
 ## Before you open a PR
 
-One command runs the same checks CI runs, so a green run locally means a green build:
+One command runs the same lint, type-check, test (with coverage floor) and Terraform
+checks CI runs. hadolint, shellcheck and Trivy run in CI only.
 
 ```bash
 task check            # everything below, then every git hook on all files
-task check:api        # ruff lint + format check, ty, pytest
-task check:web        # tsc, oxlint, oxfmt check, vitest
+task check:api        # ruff lint + format check, ty, pytest + coverage floor
+task check:web        # tsc, oxlint, oxfmt check, vitest + coverage
 task check:infra      # terraform fmt check + validate (no AWS credentials needed)
 ```
 
@@ -77,8 +78,8 @@ It needs [Task](https://taskfile.dev/installation/),
 `npm ci` in `web/` once.
 
 Optionally install the git hooks. They are the fast subset (secret scan, linters, formatters,
-type checker, workflow audit) and run on every commit; the slower checks (Trivy, hadolint,
-shellcheck, terraform validate) run in CI and `task check`. They are managed by
+type checker, workflow audit) and run on every commit. terraform validate runs in CI and
+`task check:infra`; hadolint, shellcheck and Trivy run in CI only. The hooks are managed by
 [prek](https://prek.j178.dev/), a drop-in replacement for pre-commit (same
 `.pre-commit-config.yaml`, single binary, faster); `pre-commit` itself works too:
 

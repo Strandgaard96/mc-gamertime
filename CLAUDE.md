@@ -6,7 +6,7 @@ Branch: `main` (pushed to `origin/main`)
 
 ## Commands
 
-`task check` — THE local gate: `check:api` (ruff, ruff format --check, ty, pytest) + `check:web` (tsc, oxlint, oxfmt --check, vitest) + `check:infra` (terraform fmt -check, validate with `-backend=false`), then `prek run --all-files`. Same commands as CI (CI calls them directly, not via `task`; change both together). Run one part with `task check:api|web|infra`
+`task check` — THE local gate: `check:api` (ruff, ruff format --check, ty, pytest --cov with the `fail_under` floor) + `check:web` (tsc, oxlint, oxfmt --check, `npm run test:coverage`) + `check:infra` (terraform fmt -check, validate with `-backend=false`), then `prek run --all-files`. Same commands as CI (CI calls them directly, not via `task`; change both together). Run one part with `task check:api|web|infra`. Not covered locally (CI only): hadolint, shellcheck, Trivy
 `cd web && npx tsc --noEmit` — typecheck web (must run from web/ dir)
 `cd api && uv run pytest tests/ -v` — run API tests (coverage floor `fail_under = 90` in `pyproject.toml`)
 `cd api && uv run ty check` — Python type check (ty, Astral); `uv run ruff check .` — lint
@@ -91,8 +91,8 @@ The project includes a **"Full Stack" VS Code Launch Configuration**:
   (JS) not `hypothesis`, Signed-Releases needs release assets + `*.intoto.jsonl`, SAST fills in as
   CodeQL (default setup, repo settings) covers the last 30 commits.
 - Git hooks: `prek` (drop-in pre-commit replacement, same config) — `prek run --all-files`. Hooks are the
-  fast subset only; hadolint + shellcheck run in CI's `Lint` job, terraform validate in `task check:infra`
-  + the `Terraform` job. Trivy: report-only (SARIF → Security tab) in ci.yml's `Docker build` on PRs,
+  fast subset only; hadolint + shellcheck run only in CI's `Lint` job, terraform validate in `task check:infra`
+  + the `Terraform` job. Trivy (CI only): report-only (SARIF → Security tab) in ci.yml's `Docker build` on PRs,
   blocking in `publish.yml` before any push, blocking weekly in `security-scan.yml` (image + lockfiles).
 - `Docker build` in ci.yml runs on PRs only: on push to main, `publish.yml` (same path list) builds,
   Trivy-scans and healthcheck-smoke-tests the image before pushing `:main`. Keep the two smoke tests in sync.
