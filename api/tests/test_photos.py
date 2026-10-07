@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from ulid import ULID
 
 import routes.photos as photos_module
+import routes.results as results_module
 from lib.storage import MAX_PHOTO_BYTES
 from main import app
 from tests.conftest import ORIGIN, make_auth_cookie
@@ -250,3 +251,17 @@ def test_result_delete_cascades_photos(authed_client, fake_db, fake_s3):
     assert c.delete("/api/results/s1", headers=ORIGIN).status_code == 204
     assert sorted(fake_s3.deleted) == sorted([k1, k2])
     assert fake_db["reactions"].get_item(Key={"pk": "p3"}).get("Item") is not None
+
+
+def test_result_delete_cascade_failure_leaves_result(authed_client, fake_db, monkeypatch):
+    # Photos go first: if the cascade fails the result is still there, so the
+    # admin can retry the delete instead of being left with orphaned photos.
+    _seed_session(fake_db)
+
+    def boom(_session_pk):
+        raise RuntimeError("cascade failed")
+
+    monkeypatch.setattr(results_module, "delete_session_photos", boom)
+    resp = authed_client("admin").delete("/api/results/s1", headers=ORIGIN)
+    assert resp.status_code == 500
+    assert fake_db["results"].get_item(Key={"pk": "s1"}).get("Item") is not None

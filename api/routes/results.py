@@ -344,5 +344,7 @@ def delete_result_route(result_id: str, _: Annotated[AuthUser, Depends(require_a
     existing = get_result(result_id)
     if not existing:
         raise HTTPException(status_code=404, detail="Result not found")
-    delete_result(result_id)
+    # Photos first: if the cascade fails the result is still there and the
+    # delete can be retried, rather than leaving orphaned photo rows behind.
     delete_session_photos(result_id)
+    delete_result(result_id)
