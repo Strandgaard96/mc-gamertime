@@ -48,23 +48,33 @@ The project includes a **"Full Stack" VS Code Launch Configuration**:
 
 - DynamoDB `type` is reserved word → use `ExpressionAttributeNames: {'#t': 'type'}` in all queries
 - DynamoDB rejects Python floats → `db_put` auto-converts via `_floats_to_decimal()` in `lib/dynamo.py`
-- DynamoDB GSI `type-index` requires BOTH `type` AND `createdAt` on items — missing `createdAt` silently excludes item from index; all new items must include `createdAt`
 - DynamoDB `update_item` calls are never written directly in `lib/db/*.py` — use
-  `add_to_set`/`remove_from_set`/`increment_with_timestamp` on the table object
+  `add_to_set`/`remove_from_set`/`increment_with_timestamp`/`set_fields` on the table object
   (`lib/db/base.py::DynamoTable`, mirrored by `lib/db/sqlite_backend.py::SqliteTable`) so both
-  backends stay in sync.
+  backends stay in sync. Partial updates go through `set_fields` (users: `set_user_fields`), never
+  get + `put_item` of the whole record — that undoes concurrent writes (role change, logout).
+- `SqliteTable` holds one long-lived, lock-guarded connection (WAL, `synchronous=NORMAL`). The
+  connection sits in a reference cycle, so a dropped table keeps the file open until GC —
+  throwaway instances (tests, scripts) call `.close()`; the `fake_db` fixture does.
 - BGG search: `GET /api/games/search?q=`, detail: `GET /api/games/search?bggId=`
 - BGG API requires `Authorization: Bearer <token>` — token in SSM `/boardsite/bgg-token`, fetched at cold start
 - `apiFetch` handles 204: `if (res.status === 204) return undefined as T` before `.json()`
 - `formatDate` uses `en-US` locale → "May 21, 2026" format
 - `pluralize(count, singular, plural?)` in `web/src/lib/utils.ts` returns `"${count} ${word}"` (count already included) — call as `{pluralize(n, "session")}`, never `` `${n} ${pluralize(n, "session")}` `` (double-counts)
 - Python deps managed via uv + `pyproject.toml` in `api/` — run pytest as `cd api && uv run pytest`; never activate venv manually
-- **`build.sh` packages Lambda deps from `api/requirements.txt`, NOT `pyproject.toml`/`uv.lock`** — adding a package needs `uv add <pkg>` (tests) AND a pinned line in `requirements.txt` (Lambda) AND the same line in `requirements-selfhost.txt` (Docker image; = requirements.txt minus `boto3`/`mangum` plus `uvicorn`, enforced by `tests/test_requirements_sync.py`). Miss the second → `Runtime.ImportModuleError: No module named '<pkg>'` crashes EVERY route at cold start (tests stay green, since they run in the uv venv where the dep exists). Verify before deploying: `cd api && ./build.sh && ls dist/ | grep <pkg>`
-- **`boto3`/`botocore`/`mangum` are imported lazily** (inside the DynamoDB/S3/SSM branches and `main.handler`) because the selfhost image doesn't ship them. Never add a module-level `import boto3` to code that runs on the selfhost path — tests can't catch it (the uv venv has boto3); only the Docker build would.
+- **`uv.lock` is the only dependency list.** `build.sh` (Lambda) and the Dockerfile (selfhost) both
+  `uv export --locked` from it with hashes: Lambda = `[project.dependencies]` + the `aws` group
+  (boto3, mangum), image = `[project.dependencies]` + the `selfhost` group (uvicorn). `uv add <pkg>`
+  for both; `uv add --group aws|selfhost <pkg>` for one. All groups are `default-groups`, so the
+  local venv/tests have everything. CI's `API tests` job builds the zip and imports it under
+  Python 3.12, so a missing dep fails there, not as a prod cold-start `ImportModuleError`. Local uv
+  older than the lock's writer rewrites `uv.lock` on `uv run`: use `--frozen`, or `uvx uv@latest lock`.
+- **`boto3`/`botocore`/`mangum` are imported lazily** (inside the DynamoDB/S3/SSM branches and `main.handler`) because the selfhost image doesn't ship them. Never add a module-level `import boto3` to code that runs on the selfhost path — tests can't catch it (the uv venv has boto3); CI's `Docker build` job does: it runs the image and waits for `healthy`.
 - Image tags on GHCR: `main` = every push to main (edge); `X.Y.Z`/`X.Y`/`latest` = releases only, published by the `publish-image` job in `release-please.yml` calling `publish.yml` via `workflow_call` (a tag pushed by release-please's `GITHUB_TOKEN` never triggers a `tags:` workflow on its own).
 - CI (`.github/workflows/ci.yml`) is path-scoped via a `Detect changes` job (`dorny/paths-filter`):
   `API tests` need `api/**`, `TypeScript typecheck`/`Frontend tests` need `web/**`, `Docker build`
-  needs those or `Dockerfile`/`docker/**`, the `zizmor` step in `Lint` needs `.github/workflows/**`;
+  needs those or `Dockerfile`/`docker/**`, `Terraform` (fmt + validate, `-backend=false`, not a
+  required check) needs `infra/**`, the `zizmor` step in `Lint` needs `.github/workflows/**`;
   `Lint` and `Secrets scan` always run. Skipped jobs still
   satisfy the required checks on `main` — never add a workflow-level `paths:` filter to `ci.yml`,
   that leaves required checks stuck at "Expected". Editing `ci.yml` itself re-runs everything.
@@ -78,8 +88,7 @@ The project includes a **"Full Stack" VS Code Launch Configuration**:
 - OpenSSF Scorecard (`scorecard.yml`, weekly + push to main) is ~6.5 by design: Branch-Protection /
   Code-Review need a second reviewer, Contributors needs 3 orgs, Fuzzing only detects `fast-check`
   (JS) not `hypothesis`, Signed-Releases needs release assets + `*.intoto.jsonl`, SAST fills in as
-  CodeQL (default setup, repo settings) covers the last 30 commits. Accepted deduction: `pip install`
-  in the Dockerfile without `--require-hashes` (would fight the hand-maintained requirements split).
+  CodeQL (default setup, repo settings) covers the last 30 commits.
 - Git hooks: `prek` (drop-in pre-commit replacement, same config) — `prek run --all-files`.
 - `web/.oxlintrc.json` is the ONLY place lint severities live — never pass `--deny=...`/`--warn=...` on
   the CLI (a CLI category flag re-enables rules the config turned off; pre-commit and CI must match).
@@ -126,6 +135,7 @@ The project includes a **"Full Stack" VS Code Launch Configuration**:
 - `api/lib/rate_limit.py`'s `Limiter(..., headers_enabled=True)` requires every
   `@limiter.limit(...)`-decorated route to declare a `response: Response` parameter (even if
   unused in the body) — slowapi throws trying to inject rate-limit headers otherwise.
+  `tests/test_rate_limited_routes.py` enforces it.
 - API test fixtures: `authed_client()` returns a factory — call as `authed_client("admin")` or `authed_client("readonly")`; pass `headers=ORIGIN` (`{"x-origin-token": "test-origin-token"}`) on every request
 - PUT/edit routes (`posts.py`, `recommended.py`, `results.py`) use `body.model_dump(exclude_unset=True)` merge semantics: omitted field → unchanged, explicit `null` → clears the field. Validators for nullable fields must accept `| None` and short-circuit on `None`.
 - `api/lib/achievements/` package (`defs.py` rule defs, `engine.py` exposes `compute_achievements(player_id, results, games_by_id) -> [{id, label, description, icon, earnedAt}]`, re-exported via `__init__.py`). New achievement = 1 def entry + rule + tests in `test_achievements.py`.
@@ -134,14 +144,11 @@ The project includes a **"Full Stack" VS Code Launch Configuration**:
 - Per-player notification inbox: `api/lib/db/notifications.py` (`put_notification`, `list_notifications_for_player`); `GET /api/notifications` → `{notifications, unreadCount}` (unread = `createdAt > user.lastReadAt`); `POST /api/notifications/read` → `set_last_read_at` in `api/lib/db/users.py`.
 - Optional result fields handle `None` differently: top-level (`mood`) is popped from the dict before `put_result` (attribute absent); nested `ResultPlayer.score: None` is stored as DynamoDB NULL via `_floats_to_decimal`. Match the existing field's pattern, don't assume they're interchangeable.
 - `playerVariables[].id` is server-derived (slugified label via `_assign_variable_ids` in `api/routes/games.py`) and **changes if the label is edited** — `_validate_player_config` in `api/routes/results.py` requires the `variables` dict's keys to be EXACTLY the current `playerVariables[].id` set (422 on any mismatch, including stale ids). Frontend forms (`LogResultDialog`) must reset `variables`/`seats` state on game switch and build the payload from the *current* `playerVariables` list, not from stale per-player state — otherwise edits after a label rename 422.
-- Storage proxy (`api/routes/storage.py`) has its own hardcoded `_ALLOWED_PREFIXES` tuple,
-  independent of any upload endpoint's S3 key prefix — adding a new image-upload feature (new
-  prefix) needs this allowlist updated too, or every upload/read 403s. It now gates **both**
-  deployments: `media_router` is mounted at `/avatars`, `/blog-images` and `/game-images` on
-  every deployment, and `infra/cloudfront.tf` routes those three prefixes to Lambda instead of
-  S3. A new prefix therefore needs the tuple, a `media_router` mount, a CloudFront behaviour,
-  the Lambda IAM resource list, and the `Deny` in `infra/s3.tf` — miss the last two and it is
-  either unreadable or world-readable.
+- Uploaded-media prefixes (`avatars`, `blog-images`, `game-images`) live in exactly two places:
+  `MEDIA_PREFIXES` in `api/routes/storage.py` (proxy allowlist + the `media_router` mounts in
+  `main.py`) and `local.media_prefixes` in `infra/main.tf` (CloudFront behaviours, Lambda S3 IAM,
+  the S3 `Deny`). A new image-upload feature adds its prefix to both;
+  `tests/test_media_prefixes_sync.py` fails if they differ.
 - PUT/edit routes' `exclude_unset` merge (above) has a frontend-side trap: `JSON.stringify` drops `undefined` values, so a form that sends `undefined` for a blanked field gets treated as "field unchanged," not "field cleared." To actually clear an optional field, send explicit `null`.
 
 ## Infra Notes
@@ -244,9 +251,10 @@ additive, does not affect `infra/`/`task build`/`task deploy`.
 - `scripts/create-user.py` run with zero args on a real TTY prompts interactively instead of
   erroring on missing flags; any args, or no TTY (piped/`exec -T`), keeps the old argparse
   behavior unchanged.
-- New self-host env var/feature → update ALL 4 surfaces or docs silently diverge: `.env.example`,
-  `docker-compose.yml` (`mc-gamertime.environment:` passthrough — vars not listed there never reach the
-  container), `docs-site/.../self-hosting/configuration.mdx`, and this section.
+- New self-host env var → add it to `.env.example` and as `NAME: ${NAME:-}` under
+  `mc-gamertime.environment:` in `docker-compose.yml` (vars not listed there never reach the
+  container; `tests/test_selfhost_env_sync.py` checks the two agree). The docs page
+  `configuration.mdx` embeds `.env.example` verbatim; describe the var there if it needs prose.
 - `create-user.py`'s interactive wizard uses `getpass.getpass()`, which opens `/dev/tty` directly
   and ignores redirected stdin — can't be driven by a heredoc/pipe in a non-interactive shell or
   by a subagent; only testable by a human at a real terminal.

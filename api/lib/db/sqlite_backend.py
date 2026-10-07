@@ -7,8 +7,11 @@ needs reshaping when switching backends.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import sqlite3
+import threading
+from collections.abc import Iterator
 from decimal import Decimal
 from typing import Any
 
@@ -67,9 +70,14 @@ _INDEXED_FIELDS: dict[str, tuple[str, ...]] = {
 
 
 def _connect(db_path: str) -> sqlite3.Connection:
-    conn = sqlite3.connect(db_path, timeout=30, isolation_level=None)
+    # check_same_thread=False: the connection is shared by FastAPI's threadpool
+    # and serialised by SqliteTable's lock, not confined to one thread.
+    conn = sqlite3.connect(db_path, timeout=30, isolation_level=None, check_same_thread=False)
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA busy_timeout=30000")
+    # Durable at every checkpoint, not every commit: under WAL a power cut can
+    # lose the last few commits but never corrupts the file.
+    conn.execute("PRAGMA synchronous=NORMAL")
     return conn
 
 
@@ -77,8 +85,11 @@ class SqliteTable:
     def __init__(self, db_path: str, name: str):
         self._db_path = db_path
         self._name = name
-        conn = _connect(db_path)
-        try:
+        # One long-lived connection per table. Opening one per operation (plus
+        # its PRAGMAs) cost ~10 ms each, i.e. most of every selfhost request.
+        self._conn: sqlite3.Connection | None = None
+        self._lock = threading.Lock()
+        with self._connection() as conn:
             conn.execute(
                 f"CREATE TABLE IF NOT EXISTS {name} (pk TEXT PRIMARY KEY, data TEXT NOT NULL)"
             )
@@ -87,36 +98,49 @@ class SqliteTable:
                     f"CREATE INDEX IF NOT EXISTS idx_{name}_{field} "
                     f"ON {name} ({_field_expr(field)})"
                 )
-        finally:
-            conn.close()
+
+    @contextlib.contextmanager
+    def _connection(self) -> Iterator[sqlite3.Connection]:
+        with self._lock:
+            if self._conn is None:
+                self._conn = _connect(self._db_path)
+            try:
+                yield self._conn
+            except BaseException:
+                # The connection outlives this call: never leave a half-done
+                # BEGIN IMMEDIATE open on it for the next caller.
+                if self._conn.in_transaction:
+                    self._conn.execute("ROLLBACK")
+                raise
+
+    def close(self) -> None:
+        """Release the connection now. A sqlite3.Connection sits in a reference
+        cycle, so dropping the table alone keeps the file open until the next
+        GC pass. The app's tables live for the whole process and never need
+        this; throwaway instances (tests, scripts) should call it."""
+        with self._lock:
+            if self._conn is not None:
+                self._conn.close()
+                self._conn = None
 
     def get_item(self, *, Key: dict) -> dict:
-        conn = _connect(self._db_path)
-        try:
+        with self._connection() as conn:
             row = conn.execute(
                 f"SELECT data FROM {self._name} WHERE pk = ?", (Key["pk"],)
             ).fetchone()
-        finally:
-            conn.close()
         return {"Item": json.loads(row[0])} if row else {}
 
     def put_item(self, *, Item: dict) -> None:
-        conn = _connect(self._db_path)
-        try:
+        with self._connection() as conn:
             conn.execute(
                 f"INSERT INTO {self._name} (pk, data) VALUES (?, ?) "
                 "ON CONFLICT(pk) DO UPDATE SET data = excluded.data",
                 (Item["pk"], json.dumps(Item, default=_json_default)),
             )
-        finally:
-            conn.close()
 
     def delete_item(self, *, Key: dict) -> None:
-        conn = _connect(self._db_path)
-        try:
+        with self._connection() as conn:
             conn.execute(f"DELETE FROM {self._name} WHERE pk = ?", (Key["pk"],))
-        finally:
-            conn.close()
 
     def scan(self, **kwargs) -> dict:
         filters = kwargs.pop("Filters", None) or {}
@@ -128,16 +152,12 @@ class SqliteTable:
                 clauses.append(f"{_field_expr(field)} = ?")
                 params.append(_bind(value))
             where = " WHERE " + " AND ".join(clauses)
-        conn = _connect(self._db_path)
-        try:
+        with self._connection() as conn:
             rows = conn.execute(f"SELECT data FROM {self._name}{where}", params).fetchall()
-        finally:
-            conn.close()
         return {"Items": [json.loads(r[0]) for r in rows]}
 
     def add_to_set(self, pk: str, field: str, value) -> None:
-        conn = _connect(self._db_path)
-        try:
+        with self._connection() as conn:
             conn.execute("BEGIN IMMEDIATE")
             row = conn.execute(f"SELECT data FROM {self._name} WHERE pk = ?", (pk,)).fetchone()
             if row is None:
@@ -152,12 +172,9 @@ class SqliteTable:
                 (json.dumps(item, default=_json_default), pk),
             )
             conn.execute("COMMIT")
-        finally:
-            conn.close()
 
     def remove_from_set(self, pk: str, field: str, value) -> None:
-        conn = _connect(self._db_path)
-        try:
+        with self._connection() as conn:
             conn.execute("BEGIN IMMEDIATE")
             row = conn.execute(f"SELECT data FROM {self._name} WHERE pk = ?", (pk,)).fetchone()
             if row is None:
@@ -172,12 +189,9 @@ class SqliteTable:
                 (json.dumps(item, default=_json_default), pk),
             )
             conn.execute("COMMIT")
-        finally:
-            conn.close()
 
     def set_fields(self, pk: str, fields: dict, *, increment: str | None = None) -> None:
-        conn = _connect(self._db_path)
-        try:
+        with self._connection() as conn:
             conn.execute("BEGIN IMMEDIATE")
             row = conn.execute(f"SELECT data FROM {self._name} WHERE pk = ?", (pk,)).fetchone()
             if row is None:
@@ -192,14 +206,11 @@ class SqliteTable:
                 (json.dumps(item, default=_json_default), pk),
             )
             conn.execute("COMMIT")
-        finally:
-            conn.close()
 
     def increment_with_timestamp(
         self, pk: str, counter_field: str, timestamp_field: str, timestamp_value
     ) -> None:
-        conn = _connect(self._db_path)
-        try:
+        with self._connection() as conn:
             conn.execute("BEGIN IMMEDIATE")
             row = conn.execute(f"SELECT data FROM {self._name} WHERE pk = ?", (pk,)).fetchone()
             item: dict[str, Any] = json.loads(row[0]) if row else {"pk": pk}
@@ -211,8 +222,6 @@ class SqliteTable:
                 (pk, json.dumps(item, default=_json_default)),
             )
             conn.execute("COMMIT")
-        finally:
-            conn.close()
 
 
 def make_sqlite_tables(db_path: str) -> dict:

@@ -33,6 +33,7 @@ jobs:
       api: ${{ steps.filter.outputs.api }}
       web: ${{ steps.filter.outputs.web }}
       docker: ${{ steps.filter.outputs.docker }}
+      infra: ${{ steps.filter.outputs.infra }}
       workflows: ${{ steps.filter.outputs.workflows }}
 
     steps:
@@ -60,6 +61,9 @@ jobs:
               - "docker/**"
               - *api
               - *web
+            infra:
+              - "infra/**"
+              - *ci
             workflows:
               - ".github/workflows/**"
 
@@ -84,8 +88,11 @@ jobs:
           version: "latest"
           enable-cache: true
 
+      # --locked: fail if pyproject.toml changed without a re-lock. uv.lock is
+      # what build.sh and the Dockerfile export from, so a stale one would ship
+      # different dependencies than the ones tested here.
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --locked
         working-directory: api
 
       - name: Run tests
@@ -102,6 +109,24 @@ jobs:
           disable_search: true
           flags: api
           fail_ci_if_error: false
+
+      # Tests run in the uv venv, where every dependency exists. The Lambda zip
+      # is a different artefact (exported from the `aws` group, Python 3.12,
+      # manylinux wheels), and a dep missing from it is a cold-start
+      # ImportModuleError on every route. Build it and import it the way
+      # Lambda does.
+      - name: Build Lambda bundle
+        run: ./build.sh
+        working-directory: api
+
+      - name: Import Lambda bundle
+        working-directory: api/dist
+        env:
+          DB_BACKEND: dynamodb
+          STORAGE_BACKEND: s3
+          SECRETS_PROVIDER: ssm
+          AWS_DEFAULT_REGION: eu-west-1
+        run: uv run --no-project --python 3.12 python -c "import main; import mangum"
 
   docker-build:
     name: Docker build
@@ -135,6 +160,50 @@ jobs:
           severity: CRITICAL,HIGH
           exit-code: "1"
           ignore-unfixed: true
+
+      # The image built, but does it serve? The HEALTHCHECK probes
+      # /api/health, which 503s if startup failed, so "healthy" means the app
+      # initialised, migrated a fresh SQLite DB and bootstrapped an admin.
+      - name: Smoke-test the container
+        run: |
+          docker run -d --name smoke \
+            -e ADMIN_USERNAME=smoke -e ADMIN_PASSWORD=smoke-test-password \
+            mc-gamertime:ci
+          for _ in $(seq 30); do
+            status=$(docker inspect -f '{{.State.Health.Status}}' smoke)
+            [ "$status" = healthy ] && exit 0
+            [ "$status" = unhealthy ] && break
+            sleep 2
+          done
+          docker inspect -f '{{.State.Health.Status}}' smoke
+          docker logs smoke
+          exit 1
+
+  terraform:
+    name: Terraform
+    needs: changes
+    if: needs.changes.outputs.infra == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+
+      - name: terraform fmt
+        run: terraform fmt -check -recursive
+        working-directory: infra
+
+      # -backend=false: no AWS credentials or state access. validate checks
+      # syntax, references and provider schemas only; it never plans.
+      - name: terraform validate
+        run: |
+          terraform init -backend=false -input=false
+          terraform validate
+        working-directory: infra
 
   typecheck:
     name: TypeScript typecheck

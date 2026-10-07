@@ -122,3 +122,39 @@ def test_make_sqlite_tables_returns_all_seven_logical_tables(tmp_path):
         "settings",
     }
     assert isinstance(tables["games"], SqliteTable)
+
+
+def test_concurrent_writers_from_threads_lose_no_updates(tmp_path):
+    """FastAPI runs sync routes in a threadpool, so one SqliteTable is used
+    from many threads at once. Atomic updates must stay atomic under that."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    table = SqliteTable(str(tmp_path / "threads.db"), "users")
+    table.put_item(Item={"pk": "alice", "tokenVersion": 0})
+
+    def work(i: int) -> None:
+        table.increment_with_timestamp("alice", "failedAttempts", "lastFailureAt", str(i))
+        table.set_fields("alice", {f"f{i}": i}, increment="tokenVersion")
+        table.put_item(Item={"pk": f"u{i}", "n": i})
+        assert table.get_item(Key={"pk": f"u{i}"})["Item"]["n"] == i
+
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        list(pool.map(work, range(200)))
+
+    item = table.get_item(Key={"pk": "alice"})["Item"]
+    assert item["failedAttempts"] == 200
+    assert item["tokenVersion"] == 200
+    assert all(item[f"f{i}"] == i for i in range(200))
+    assert len(table.scan()["Items"]) == 201
+
+
+def test_a_failed_transaction_does_not_poison_the_shared_connection(tmp_path):
+    table = SqliteTable(str(tmp_path / "rollback.db"), "users")
+    table.put_item(Item={"pk": "alice"})
+
+    with pytest.raises(TypeError):
+        # Fails inside BEGIN IMMEDIATE, at json.dumps.
+        table.set_fields("alice", {"bad": object()})
+
+    table.set_fields("alice", {"ok": 1})
+    assert table.get_item(Key={"pk": "alice"})["Item"] == {"pk": "alice", "ok": 1}

@@ -4,8 +4,6 @@ version = "0.2.3"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi==0.141.1",
-    "mangum==0.22.0",
-    "boto3==1.43.90",
     "bcrypt==5.0.0",
     "httpx==0.28.1",
     "python-ulid==4.0.1",
@@ -20,9 +18,21 @@ dependencies = [
     "pyjwt==2.15.1",
 ]
 
+# uv.lock is the single source of truth for every deployable dependency set;
+# build.sh (Lambda) and the Dockerfile (selfhost) `uv export` from it:
+#   Lambda   = [project.dependencies] + aws
+#   selfhost = [project.dependencies] + selfhost
+# A dep both need goes in [project.dependencies] (`uv add <pkg>`); an AWS-only
+# or container-only one goes in its group (`uv add --group aws <pkg>`).
 [dependency-groups]
-dev = [
+aws = [
+    "boto3==1.43.90",
+    "mangum==0.22.0",
+]
+selfhost = [
     "uvicorn==0.52.4",
+]
+dev = [
     "pytest",
     "pytest-mock",
     "ruff>=0.16.6",
@@ -30,6 +40,11 @@ dev = [
     "pytest-cov>=7.1.0",
     "ty>=0.0.79",
 ]
+
+[tool.uv]
+# Local dev and tests get every runtime set: tests import boto3 (moto) and the
+# dev server runs uvicorn.
+default-groups = ["dev", "aws", "selfhost"]
 
 [tool.ruff]
 target-version = "py311"
@@ -55,7 +70,7 @@ ignore = ["E501", "RUF001"]
 
 [tool.coverage.run]
 source = ["."]
-omit = ["tests/*", "scripts/*", "dist/*", ".venv/*", "handlers/*"]
+omit = ["tests/*", "scripts/*", "dist/*", ".venv/*"]
 
 [tool.coverage.report]
 skip_covered = true

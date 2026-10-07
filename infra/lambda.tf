@@ -77,12 +77,8 @@ data "aws_iam_policy_document" "lambda_s3" {
     # GetObject is required because the API now serves uploaded media itself
     # (routes/storage.py media_router) rather than CloudFront reading it from
     # S3 — that path was public to anyone holding the URL.
-    actions = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
-    resources = [
-      "${aws_s3_bucket.web.arn}/blog-images/*",
-      "${aws_s3_bucket.web.arn}/avatars/*",
-      "${aws_s3_bucket.web.arn}/game-images/*"
-    ]
+    actions   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
+    resources = [for p in local.media_prefixes : "${aws_s3_bucket.web.arn}/${p}/*"]
   }
 }
 
@@ -200,60 +196,4 @@ resource "aws_lambda_permission" "apigw" {
   function_name = aws_lambda_function.api.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.api.execution_arn}/*/*"
-}
-
-# ─── Stream Lambda ────────────────────────────────────────────────────────────
-
-data "aws_iam_policy_document" "lambda_streams" {
-  statement {
-    sid    = "DynamoDBStreamRead"
-    effect = "Allow"
-
-    actions = [
-      "dynamodb:GetRecords",
-      "dynamodb:GetShardIterator",
-      "dynamodb:DescribeStream",
-      "dynamodb:ListStreams",
-    ]
-
-    resources = [aws_dynamodb_table.tables["results"].stream_arn]
-  }
-}
-
-resource "aws_iam_role_policy" "lambda_streams" {
-  name   = "${local.name_prefix}-streams"
-  role   = aws_iam_role.lambda.id
-  policy = data.aws_iam_policy_document.lambda_streams.json
-}
-
-resource "aws_lambda_function" "stream" {
-  function_name = "${local.name_prefix}-stream"
-  role          = aws_iam_role.lambda.arn
-
-  runtime  = "python3.12"
-  handler  = "handlers.stream_processor.process_stream_handler"
-  filename = var.lambda_zip_path
-
-  source_code_hash = try(filebase64sha256(var.lambda_zip_path), null)
-
-  memory_size = 128
-  timeout     = 60
-
-  depends_on = [aws_cloudwatch_log_group.stream]
-
-  environment {
-    variables = {
-      GAMES_TABLE = "${var.games_table_name}${local.env_suffix}"
-    }
-  }
-
-  tags = {
-    Project = var.project_name
-  }
-}
-
-resource "aws_lambda_event_source_mapping" "stream" {
-  event_source_arn  = aws_dynamodb_table.tables["results"].stream_arn
-  function_name     = aws_lambda_function.stream.arn
-  starting_position = "LATEST"
 }

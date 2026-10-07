@@ -72,7 +72,9 @@ def fake_db(monkeypatch, tmp_path):
         def __getitem__(self, table_name: str) -> SeedableTable:
             return new_tables[table_name]
 
-    return TestDB()
+    yield TestDB()
+    for table in new_tables.values():
+        table.close()
 
 
 @pytest.fixture(autouse=True)

@@ -183,7 +183,7 @@ uv add some-package       # adds to pyproject.toml and syncs .venv
 
 Then commit both `pyproject.toml` and `uv.lock`.
 
-> **Note:** Also add the package to `requirements.txt` (used by `build.sh` for the Lambda zip) and to `requirements-selfhost.txt` (used by the `Dockerfile`; it is `requirements.txt` minus `boto3`/`mangum` plus `uvicorn`, and `tests/test_requirements_sync.py` fails if the two drift). `pyproject.toml` is local dev only.
+> **Note:** `uv.lock` is the single source of truth for every deployment. `build.sh` (Lambda zip) and the `Dockerfile` (selfhost image) both `uv export` from it, so there is no second list to update. A dependency only one of them needs goes in a group instead: `uv add --group aws <pkg>` for the Lambda (like `boto3`, `mangum`), `uv add --group selfhost <pkg>` for the container (like `uvicorn`).
 
 ---
 

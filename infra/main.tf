@@ -26,4 +26,10 @@ locals {
   env_suffix  = terraform.workspace == "default" ? "" : "-${terraform.workspace}"
   fqdn        = terraform.workspace == "default" ? "${var.subdomain}.${var.domain}" : "games-dev.${var.domain}"
   name_prefix = "${var.resource_prefix}${local.env_suffix}"
+
+  # Uploaded-media key prefixes in the web bucket. Each is routed by CloudFront
+  # to the API (served behind require_auth), writable by the Lambda, and denied
+  # to CloudFront's direct S3 read. Must equal MEDIA_PREFIXES in
+  # api/routes/storage.py — api/tests/test_media_prefixes_sync.py checks it.
+  media_prefixes = ["avatars", "blog-images", "game-images"]
 }

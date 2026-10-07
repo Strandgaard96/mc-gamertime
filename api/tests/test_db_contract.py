@@ -6,8 +6,8 @@ methods on it. Nothing enforced that. These tests are the enforcement — each o
 runs twice, once per backend, so a behavioural difference fails here rather than
 in production on whichever deployment nobody tested.
 
-The DynamoDB side runs against moto (a dev-only dependency, deliberately absent
-from requirements.txt so the Lambda bundle never sees it).
+The DynamoDB side runs against moto (in the `dev` dependency group, so the
+Lambda bundle, exported from the `aws` group, never sees it).
 """
 
 from __future__ import annotations
