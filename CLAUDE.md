@@ -118,6 +118,7 @@ The project includes a **"Full Stack" VS Code Launch Configuration**:
 - Parallel Bash tool calls share one working directory and race on `cd` — use absolute paths in
   every command (a `docs-site/` edit once landed in `web/package.json`).
 - release-please: `docs:`/`ci:`/`chore:` are hidden changelog sections → they do NOT cut a release on their own; `feat:`/`fix:`/`perf:` do. `web/package.json` and `api/pyproject.toml` versions are bumped by `extra-files` in `release-please-config.json`.
+  `api/uv.lock`'s root `mc-gamertime-api` `[[package]]` version is bumped the same way (filter uses `@.name.value` — release-please's toml parser wraps strings as `{value,start,end}`), because `--locked` consumers (CI `uv sync`, Dockerfile, `build.sh`) reject a pyproject/lock version mismatch.
 - Starlette 1.0.1 deprecated per-request cookies — use `client.cookies.set()` on TestClient instead
 - FastAPI `redirect_slashes=False` — all routes use `""` not `"/"` to avoid 307 leaking API Gateway URL
 - `task build && task apply` deploys Lambda via `source_code_hash` — no manual AWS CLI needed

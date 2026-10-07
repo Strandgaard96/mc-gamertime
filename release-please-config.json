@@ -13,6 +13,11 @@
           "type": "toml",
           "path": "api/pyproject.toml",
           "jsonpath": "$.project.version"
+        },
+        {
+          "type": "toml",
+          "path": "api/uv.lock",
+          "jsonpath": "$.package[?(@.name.value=='mc-gamertime-api')].version"
         }
       ]
     }
