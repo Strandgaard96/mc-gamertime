@@ -73,7 +73,7 @@ def test_require_admin_admin_passes(fake_db):
 
 def test_require_admin_rejects_demoted_admin_from_db(fake_db):
     # S-2: token still says admin, but the DB role was changed to readonly →
-    # require_admin must re-read and reject.
+    # the require_auth → require_admin chain must follow the DB and reject.
     import lib.db.base as db_base
 
     db_base.tables["users"].seed(
@@ -85,9 +85,9 @@ def test_require_admin_rejects_demoted_admin_from_db(fake_db):
             "createdAt": "2026-01-01T00:00:00Z",
         }
     )
-    user = AuthUser(sub="alice", role="admin", displayName="Alice")
+    token = sign_token(AuthUser(sub="alice", role="admin", displayName="Alice"))
     with pytest.raises(HTTPException) as exc_info:
-        require_admin(user=user)
+        require_admin(user=require_auth(token=token))
     assert exc_info.value.status_code == 403
 
 

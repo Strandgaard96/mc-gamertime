@@ -303,12 +303,12 @@ def test_failed_login_does_not_put_full_item(fake_db, monkeypatch):
         }
     )
     calls = []
-    monkeypatch.setattr(auth_routes, "put_user", lambda item: calls.append(item))
+    monkeypatch.setattr(fake_db["users"], "put_item", lambda **kw: calls.append(kw))
     resp = client.post(
         "/api/auth/login", json={"username": "alice", "password": "wrong"}, headers=ORIGIN
     )
     assert resp.status_code == 401
-    assert calls == []  # failure path must use the atomic update, not put_user
+    assert calls == []  # failure path must use the atomic update, not a whole-item put
 
 
 def test_forgot_password_sends_email_when_user_has_email(fake_db, mocker, monkeypatch):

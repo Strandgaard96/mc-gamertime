@@ -17,7 +17,7 @@ from lib.auth import (
     validate_password_length,
 )
 from lib.db.settings import get_settings
-from lib.db.users import get_user, put_user, record_failed_login
+from lib.db.users import get_user, record_failed_login, set_user_fields
 from lib.mailer import send_email
 from lib.rate_limit import client_ip, limiter
 from lib.security_log import log_security_event
@@ -121,7 +121,7 @@ def login(request: Request, body: LoginBody, response: Response):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     if user.get("failedAttempts"):
-        put_user({**user, "failedAttempts": 0, "lastFailureAt": None})
+        set_user_fields(user["pk"], {"failedAttempts": 0, "lastFailureAt": None})
 
     auth_user = AuthUser(
         sub=body.username,
@@ -152,10 +152,7 @@ def me(user: Annotated[AuthUser, Depends(require_auth)]):
 # device, not just the current one. Intentional: simple revocation > per-session jti.
 @router.post("/logout", status_code=204)
 def logout(request: Request, response: Response, user: Annotated[AuthUser, Depends(require_auth)]):
-    current = get_user(user.sub)
-    if current is not None:
-        current["tokenVersion"] = current.get("tokenVersion", 0) + 1
-        put_user(current)
+    set_user_fields(user.sub, {}, bump_token_version=True)
     # Attributes must match the ones the cookie was set with, or the browser
     # keeps it (the session is dead either way — tokenVersion was bumped — but
     # a stale cookie left behind is untidy and confusing to debug).
@@ -225,8 +222,5 @@ def reset_password(request: Request, response: Response, body: ResetPasswordBody
         # "session revoked since this link was issued".
         raise HTTPException(status_code=400, detail="Invalid or expired reset link")
 
-    user["passwordHash"] = bcrypt.hashpw(
-        body.newPassword.encode(), bcrypt.gensalt(rounds=12)
-    ).decode()
-    user["tokenVersion"] = token_version + 1
-    put_user(user)
+    password_hash = bcrypt.hashpw(body.newPassword.encode(), bcrypt.gensalt(rounds=12)).decode()
+    set_user_fields(username, {"passwordHash": password_hash}, bump_token_version=True)

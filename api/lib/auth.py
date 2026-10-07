@@ -88,16 +88,15 @@ def require_auth(token: Annotated[str | None, Cookie()] = None) -> AuthUser:
     user = get_user(auth_user.sub)
     if user is None or user.get("tokenVersion", 0) != auth_user.tokenVersion:
         raise HTTPException(status_code=401, detail="Unauthorized")
+    # The role claim is only as fresh as the last token mint (7 days). Take it
+    # from the record we just fetched, so a demoted admin loses every
+    # role-gated power immediately, not only the require_admin routes.
+    auth_user.role = user.get("role", auth_user.role)
     return auth_user
 
 
 def require_admin(user: Annotated[AuthUser, Depends(require_auth)]) -> AuthUser:
-    # Re-read the role from the user record rather than trusting the JWT claim,
-    # so a demoted admin loses access immediately even if their 7-day token still
-    # says "admin". (require_auth already fetched+validated tokenVersion, but the
-    # role claim itself is only as fresh as the last token mint.)
-    current = get_user(user.sub)
-    if current is None or current.get("role") != "admin":
+    if user.role != "admin":
         raise HTTPException(status_code=403, detail="Forbidden")
     return user
 
