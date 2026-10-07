@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from ulid import ULID
 
 from lib.auth import AuthUser, require_auth
@@ -18,6 +18,7 @@ from lib.db.reactions import (
 from lib.db.results import get_result
 from lib.rate_limit import limiter
 from lib.storage import (
+    MAX_PHOTO_BYTES,
     PHOTO_CONTENT_TYPES,
     PHOTO_KEY_RE,
     PHOTO_PREFIX,
@@ -39,6 +40,9 @@ _OBJECT_BASE_URL = get_object_base_url()
 class UploadPhotoBody(BaseModel):
     sessionPk: str
     contentType: str
+    # Bound into the upload URL (S3 ContentLength / the /storage proxy token),
+    # so the PUT must send exactly this many bytes.
+    contentLength: int = Field(ge=1, le=MAX_PHOTO_BYTES)
 
 
 class CreatePhotoBody(BaseModel):
@@ -82,7 +86,7 @@ def request_photo_upload(
         raise HTTPException(status_code=422, detail="Unsupported content type")
     _require_session_with_room(body.sessionPk)
     upload_url, image_url, key = build_upload(
-        _s3, _BUCKET, _OBJECT_BASE_URL, PHOTO_PREFIX, body.contentType
+        _s3, _BUCKET, _OBJECT_BASE_URL, PHOTO_PREFIX, body.contentType, body.contentLength
     )
     return {"uploadUrl": upload_url, "imageUrl": image_url, "key": key}
 

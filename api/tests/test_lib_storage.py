@@ -1,8 +1,12 @@
+import time
+
 import boto3
+import pytest
 from ulid import ULID
 
 import lib.storage as storage
-from lib.storage import PHOTO_KEY_RE, build_upload
+from lib.auth import _get_secret
+from lib.storage import PHOTO_KEY_RE, build_upload, sign_photo_upload, verify_photo_upload
 
 
 def test_make_s3_client_uses_real_aws_on_s3_backend(monkeypatch):
@@ -124,6 +128,7 @@ def test_build_upload_url_presigns_with_prefix(monkeypatch):
         def generate_presigned_url(self, op, Params, ExpiresIn):
             captured["key"] = Params["Key"]
             captured["bucket"] = Params["Bucket"]
+            captured["has_length"] = "ContentLength" in Params
             return "https://example.com/presigned"
 
     upload_url, image_url = storage.build_upload_url(
@@ -135,6 +140,7 @@ def test_build_upload_url_presigns_with_prefix(monkeypatch):
     assert captured["key"].startswith("game-images/")
     assert captured["key"].endswith(".png")
     assert image_url == f"https://cdn.example.com/{captured['key']}"
+    assert captured["has_length"] is False  # only photo uploads bind a size
 
 
 def test_build_upload_url_selfhost_returns_same_url_for_both(monkeypatch):
@@ -172,8 +178,94 @@ def test_photo_key_re_rejects_bad_keys():
 def test_build_upload_returns_key_matching_urls(monkeypatch):
     monkeypatch.setenv("STORAGE_BACKEND", "local")
     upload_url, image_url, key = build_upload(
-        None, "bucket", "/storage", "session-photos", "image/webp"
+        None, "bucket", "/storage", "game-images", "image/webp"
     )
     assert image_url == f"/storage/{key}"
     assert upload_url == image_url
+    assert key.startswith("game-images/")
+
+
+# --- photo upload tokens (selfhost /storage proxy) ---
+
+_KEY = f"session-photos/{ULID()!s}.webp"
+
+
+def _params(query: str) -> dict[str, str]:
+    return dict(pair.split("=", 1) for pair in query.split("&"))
+
+
+def test_upload_token_round_trip():
+    q = sign_photo_upload(_KEY, 1234, secret="s3cret", now=1000)
+    params = _params(q)
+    assert set(params) == {"exp", "len", "sig"}
+    assert params["exp"] == str(1000 + 300)
+    assert params["len"] == "1234"
+    assert verify_photo_upload(_KEY, params, secret="s3cret", now=1000) == 1234
+    assert verify_photo_upload(_KEY, params, secret="s3cret", now=1300) == 1234
+
+
+def test_upload_token_expired():
+    params = _params(sign_photo_upload(_KEY, 1234, secret="s3cret", now=1000))
+    assert verify_photo_upload(_KEY, params, secret="s3cret", now=1301) is None
+
+
+def test_upload_token_tampered_fields_rejected():
+    params = _params(sign_photo_upload(_KEY, 1234, secret="s3cret", now=1000))
+    other_key = f"session-photos/{ULID()!s}.webp"
+    assert verify_photo_upload(other_key, params, secret="s3cret", now=1000) is None
+    for field, value in (("len", "99999"), ("exp", "999999"), ("sig", "0" * 64)):
+        bad = {**params, field: value}
+        assert verify_photo_upload(_KEY, bad, secret="s3cret", now=1000) is None, field
+
+
+def test_upload_token_wrong_secret_rejected():
+    params = _params(sign_photo_upload(_KEY, 1234, secret="s3cret", now=1000))
+    assert verify_photo_upload(_KEY, params, secret="other", now=1000) is None
+
+
+def test_upload_token_missing_or_malformed_rejected():
+    params = _params(sign_photo_upload(_KEY, 1234, secret="s3cret", now=1000))
+    for field in ("exp", "len", "sig"):
+        partial = {k: v for k, v in params.items() if k != field}
+        assert verify_photo_upload(_KEY, partial, secret="s3cret", now=1000) is None, field
+    assert verify_photo_upload(_KEY, {**params, "len": "abc"}, secret="s3cret", now=1000) is None
+
+
+def test_build_upload_photo_selfhost_url_carries_token(monkeypatch):
+    monkeypatch.setenv("STORAGE_BACKEND", "local")
+    monkeypatch.delenv("S3_ENDPOINT_URL", raising=False)
+    upload_url, image_url, key = build_upload(
+        None, "bucket", "/storage", "session-photos", "image/webp", content_length=4321
+    )
     assert PHOTO_KEY_RE.match(key)
+    assert image_url == f"/storage/{key}"
+    path, query = upload_url.split("?", 1)
+    assert path == image_url
+    params = _params(query)
+    assert params["len"] == "4321"
+    assert verify_photo_upload(key, params, secret=_get_secret(), now=int(time.time())) == 4321
+
+
+def test_build_upload_cloud_presign_binds_content_length(monkeypatch):
+    monkeypatch.delenv("S3_ENDPOINT_URL", raising=False)
+    monkeypatch.setenv("STORAGE_BACKEND", "s3")
+    captured = {}
+
+    class FakeS3:
+        def generate_presigned_url(self, op, Params, ExpiresIn):
+            captured.update(Params)
+            return "https://example.com/upload"
+
+    upload_url, _image_url, key = build_upload(
+        FakeS3(), "bucket", "", "session-photos", "image/webp", content_length=4321
+    )
+    assert upload_url == "https://example.com/upload"
+    assert captured["ContentLength"] == 4321
+    assert captured["Key"] == key
+
+
+def test_build_upload_photo_selfhost_requires_length(monkeypatch):
+    monkeypatch.setenv("STORAGE_BACKEND", "local")
+    monkeypatch.delenv("S3_ENDPOINT_URL", raising=False)
+    with pytest.raises(ValueError, match="content_length"):
+        build_upload(None, "bucket", "/storage", "session-photos", "image/webp")

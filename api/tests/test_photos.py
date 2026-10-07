@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from ulid import ULID
 
 import routes.photos as photos_module
+from lib.storage import MAX_PHOTO_BYTES
 from main import app
 from tests.conftest import ORIGIN, make_auth_cookie
 
@@ -66,7 +67,9 @@ def test_readonly_can_request_upload_and_confirm(authed_client, fake_db):
     _seed_session(fake_db)
     c = authed_client("readonly")
     up = c.post(
-        "/api/photos/upload", json={"sessionPk": "s1", "contentType": "image/webp"}, headers=ORIGIN
+        "/api/photos/upload",
+        json={"sessionPk": "s1", "contentType": "image/webp", "contentLength": 1234},
+        headers=ORIGIN,
     )
     assert up.status_code == 200
     body = up.json()
@@ -81,11 +84,69 @@ def test_readonly_can_request_upload_and_confirm(authed_client, fake_db):
     assert row["imageUrl"].endswith(body["key"])  # server-derived from key
 
 
+def _upload_body(**overrides):
+    return {"sessionPk": "s1", "contentType": "image/webp", "contentLength": 1234, **overrides}
+
+
+@pytest.mark.parametrize("length", [None, 0, -1, MAX_PHOTO_BYTES + 1])
+def test_upload_content_length_out_of_range_422(authed_client, fake_db, length):
+    _seed_session(fake_db)
+    body = _upload_body(contentLength=length)
+    if length is None:
+        del body["contentLength"]
+    resp = authed_client("readonly").post("/api/photos/upload", json=body, headers=ORIGIN)
+    assert resp.status_code == 422
+
+
+def test_upload_content_length_at_cap_allowed(authed_client, fake_db):
+    _seed_session(fake_db)
+    resp = authed_client("readonly").post(
+        "/api/photos/upload", json=_upload_body(contentLength=MAX_PHOTO_BYTES), headers=ORIGIN
+    )
+    assert resp.status_code == 200
+
+
+def test_upload_selfhost_url_carries_signed_token(authed_client, fake_db, monkeypatch):
+    monkeypatch.setenv("STORAGE_BACKEND", "local")
+    monkeypatch.delenv("S3_ENDPOINT_URL", raising=False)
+    _seed_session(fake_db)
+    resp = authed_client("readonly").post("/api/photos/upload", json=_upload_body(), headers=ORIGIN)
+    assert resp.status_code == 200
+    body = resp.json()
+    path, query = body["uploadUrl"].split("?", 1)
+    assert path == body["imageUrl"]
+    assert "?" not in body["imageUrl"]
+    params = dict(pair.split("=", 1) for pair in query.split("&"))
+    assert set(params) == {"exp", "len", "sig"}
+    assert params["len"] == "1234"
+
+
+def test_upload_cloud_presign_binds_content_length(authed_client, fake_db, monkeypatch):
+    monkeypatch.delenv("S3_ENDPOINT_URL", raising=False)
+    monkeypatch.setenv("STORAGE_BACKEND", "s3")
+    captured = {}
+
+    class PresignS3:
+        def generate_presigned_url(self, op, Params, ExpiresIn):
+            captured.update(Params)
+            return "https://example.com/upload"
+
+    monkeypatch.setattr(photos_module, "_s3", PresignS3())
+    _seed_session(fake_db)
+    resp = authed_client("readonly").post("/api/photos/upload", json=_upload_body(), headers=ORIGIN)
+    assert resp.status_code == 200
+    assert resp.json()["uploadUrl"] == "https://example.com/upload"
+    assert captured["ContentLength"] == 1234
+    assert captured["ContentType"] == "image/webp"
+
+
 def test_upload_unsupported_type_422(authed_client, fake_db):
     _seed_session(fake_db)
     c = authed_client("readonly")
     resp = c.post(
-        "/api/photos/upload", json={"sessionPk": "s1", "contentType": "image/gif"}, headers=ORIGIN
+        "/api/photos/upload",
+        json={"sessionPk": "s1", "contentType": "image/gif", "contentLength": 1234},
+        headers=ORIGIN,
     )
     assert resp.status_code == 422
 
@@ -94,7 +155,7 @@ def test_upload_unknown_session_404(authed_client, fake_db):
     c = authed_client("readonly")
     resp = c.post(
         "/api/photos/upload",
-        json={"sessionPk": "nope", "contentType": "image/webp"},
+        json={"sessionPk": "nope", "contentType": "image/webp", "contentLength": 1234},
         headers=ORIGIN,
     )
     assert resp.status_code == 404
@@ -106,7 +167,9 @@ def test_upload_and_confirm_capped_at_six(authed_client, fake_db):
         _seed_photo(fake_db, f"p{i}")
     c = authed_client("readonly")
     up = c.post(
-        "/api/photos/upload", json={"sessionPk": "s1", "contentType": "image/webp"}, headers=ORIGIN
+        "/api/photos/upload",
+        json={"sessionPk": "s1", "contentType": "image/webp", "contentLength": 1234},
+        headers=ORIGIN,
     )
     assert up.status_code == 409
     confirm = c.post("/api/photos", json={"sessionPk": "s1", "key": _key()}, headers=ORIGIN)

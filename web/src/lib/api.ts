@@ -216,11 +216,12 @@ export function getReactions(): Promise<(ReactionItem | CommentItem | PhotoItem)
 export function requestPhotoUpload(
   sessionPk: string,
   contentType: string,
+  contentLength: number,
 ): Promise<{ uploadUrl: string; imageUrl: string; key: string }> {
   return apiFetch("/photos/upload", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sessionPk, contentType }),
+    body: JSON.stringify({ sessionPk, contentType, contentLength }),
   });
 }
 

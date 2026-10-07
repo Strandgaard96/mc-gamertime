@@ -1,12 +1,21 @@
 import os
+import time
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
+from starlette.concurrency import run_in_threadpool
 
-from lib.auth import AuthUser, require_auth
+from lib.auth import AuthUser, _get_secret, require_auth
 from lib.db.reactions import find_photo_by_key
-from lib.storage import EXT_BY_CONTENT_TYPE, PHOTO_KEY_RE, PHOTO_PREFIX, make_s3_client
+from lib.storage import (
+    EXT_BY_CONTENT_TYPE,
+    MAX_PHOTO_BYTES,
+    PHOTO_KEY_RE,
+    PHOTO_PREFIX,
+    make_s3_client,
+    verify_photo_upload,
+)
 
 router = APIRouter()
 
@@ -35,7 +44,7 @@ except ImportError:  # pragma: no cover - only true inside the selfhost image
 MEDIA_PREFIXES = ("avatars", "blog-images", "game-images", "session-photos")
 _ALLOWED_PREFIXES = tuple(f"{p}/" for p in MEDIA_PREFIXES)
 
-_MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+_MAX_UPLOAD_BYTES = MAX_PHOTO_BYTES
 
 
 def _reject_path_traversal(path: str) -> None:
@@ -109,7 +118,18 @@ async def put_object(path: str, request: Request, user: Annotated[AuthUser, Depe
     _reject_path_traversal(path)
     if not path.startswith(_ALLOWED_PREFIXES):
         raise HTTPException(status_code=403, detail="Forbidden")
-    _authorize_write(path, user)
+    # Photo uploads must carry the token routes/photos.py issued with the URL,
+    # which is what enforces that endpoint's session check, per-session cap and
+    # rate limit here; it also fixes the body size (checked after the read).
+    signed_length: int | None = None
+    if path.startswith(f"{PHOTO_PREFIX}/"):
+        signed_length = verify_photo_upload(
+            path, request.query_params, secret=_get_secret(), now=int(time.time())
+        )
+        if signed_length is None:
+            raise HTTPException(status_code=403, detail="Forbidden")
+    # _authorize_write may scan the reactions table; keep it off the event loop.
+    await run_in_threadpool(_authorize_write, path, user)
 
     content_type = request.headers.get("content-type", "")
     if content_type not in EXT_BY_CONTENT_TYPE:
@@ -131,6 +151,8 @@ async def put_object(path: str, request: Request, user: Annotated[AuthUser, Depe
             status_code=413,
             detail=f"File too large (max {_MAX_UPLOAD_BYTES // (1024 * 1024)} MB)",
         )
+    if signed_length is not None and len(body) != signed_length:
+        raise HTTPException(status_code=403, detail="Forbidden")
 
     s3 = make_s3_client()
     s3.put_object(Bucket=_BUCKET, Key=path, Body=body, ContentType=content_type)

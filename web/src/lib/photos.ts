@@ -35,7 +35,9 @@ export async function preparePhoto(file: File): Promise<Blob> {
 }
 
 export async function uploadSessionPhoto(sessionPk: string, blob: Blob): Promise<PhotoItem> {
-  const { uploadUrl, key } = await requestPhotoUpload(sessionPk, blob.type);
+  // The upload URL is bound to this exact size. Don't set Content-Length on the
+  // PUT: the browser derives it from the Blob.
+  const { uploadUrl, key } = await requestPhotoUpload(sessionPk, blob.type, blob.size);
   const res = await fetch(uploadUrl, {
     method: "PUT",
     body: blob,

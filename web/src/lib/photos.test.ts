@@ -65,7 +65,7 @@ describe("uploadSessionPhoto", () => {
     vi.stubGlobal("fetch", fetchMock);
     const blob = new Blob(["x"], { type: "image/jpeg" });
     await uploadSessionPhoto("s1", blob);
-    expect(api.requestPhotoUpload).toHaveBeenCalledWith("s1", "image/jpeg");
+    expect(api.requestPhotoUpload).toHaveBeenCalledWith("s1", "image/jpeg", blob.size);
     expect(fetchMock).toHaveBeenCalledWith("/u", {
       method: "PUT",
       body: blob,
