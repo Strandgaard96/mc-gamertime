@@ -14,7 +14,7 @@ import { usePlayers } from "../hooks/usePlayers";
 import { useResults } from "../hooks/useResults";
 import { useSeasons, useStats } from "../hooks/useStats";
 import type { GameStat, LeaderboardEntry } from "../lib/types";
-import { pluralize, seasonOf } from "../lib/utils";
+import { pluralize, seasonOf, seasonParam } from "../lib/utils";
 
 const PODIUM = {
   1: {
@@ -226,7 +226,7 @@ function GameStatCard({ gs }: { gs: GameStat }) {
 
 export default function Leaderboard() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const season = searchParams.get("season") ?? undefined;
+  const season = seasonParam(searchParams.get("season"));
   const { data: seasons = [] } = useSeasons();
   const { data: stats, isLoading } = useStats(season);
   const { data: allResults = [] } = useResults();

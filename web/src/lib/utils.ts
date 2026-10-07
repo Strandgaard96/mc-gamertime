@@ -77,3 +77,11 @@ export function seasonOf(date: string): string {
   const month = Number(date.slice(5, 7));
   return `${date.slice(0, 4)}-Q${Math.floor((month - 1) / 3) + 1}`;
 }
+
+/**
+ * The `?season=` deep-link value, or undefined (all-time) unless it is a real
+ * "YYYY-Qn" season — a junk value would 422 the stats call and blank the page.
+ */
+export function seasonParam(raw: string | null): string | undefined {
+  return raw && /^\d{4}-Q[1-4]$/.test(raw) ? raw : undefined;
+}
