@@ -139,6 +139,9 @@ jobs:
     if: needs.changes.outputs.docker == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write # Trivy SARIF upload to the Security tab
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -158,13 +161,30 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # Non-blocking on PRs: a CVE published upstream yesterday shouldn't turn
+      # an unrelated PR red. Findings land in the Security tab instead. The
+      # gate is publish.yml (blocks before pushing any image) and the weekly
+      # security-scan.yml.
       - name: Scan image for vulnerabilities
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: mc-gamertime:ci
           severity: CRITICAL,HIGH
-          exit-code: "1"
+          limit-severities-for-sarif: true
+          exit-code: "0"
           ignore-unfixed: true
+          format: sarif
+          output: trivy-image.sarif
+
+      # Fork PRs get a read-only token, so the upload can fail there; that must
+      # not fail the required check.
+      - name: Upload Trivy results
+        if: always() && hashFiles('trivy-image.sarif') != ''
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
+        with:
+          sarif_file: trivy-image.sarif
+          category: trivy-image
 
       # The image built, but does it serve? The HEALTHCHECK probes
       # /api/health, which 503s if startup failed, so "healthy" means the app
