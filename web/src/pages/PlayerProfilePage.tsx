@@ -35,7 +35,7 @@ import { useStats } from "../hooks/useStats";
 import { useAuth } from "../lib/AuthContext";
 import { deleteAvatar, uploadAvatar } from "../lib/api";
 import type { Player } from "../lib/types";
-import { formatDate, idFromPk, pluralize } from "../lib/utils";
+import { colorForName, formatDate, idFromPk, pluralize } from "../lib/utils";
 
 export default function PlayerProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -574,18 +574,6 @@ export default function PlayerProfilePage() {
               );
               playCounts[key] = (playCounts[key] ?? 0) + 1;
             }
-            const STAMP_COLORS = [
-              "#e11d48",
-              "#7c3aed",
-              "#2563eb",
-              "#059669",
-              "#d97706",
-              "#c2410c",
-              "#0891b2",
-              "#be185d",
-            ];
-            const colorFor = (name: string) =>
-              STAMP_COLORS[name.charCodeAt(0) % STAMP_COLORS.length];
             return (
               <section>
                 <h2 className="text-lg font-display font-semibold mb-1">Game Passport</h2>
@@ -603,12 +591,13 @@ export default function PlayerProfilePage() {
                       ) : (
                         <div
                           className="w-full h-full flex items-center justify-center font-display font-bold text-white text-xl"
-                          style={{ backgroundColor: colorFor(g.name) }}
+                          style={{ backgroundColor: colorForName(g.name) }}
                         >
-                          {g.name[0]?.toUpperCase()}
+                          {/* Phones show the name overlay instead, so the letter would clash. */}
+                          <span className="hidden sm:inline">{g.name[0]?.toUpperCase()}</span>
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-1">
+                      <div className="absolute inset-0 bg-black/60 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-1">
                         <span className="text-white text-[10px] font-medium text-center leading-tight line-clamp-2">
                           {g.name}
                         </span>

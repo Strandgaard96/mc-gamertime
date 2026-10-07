@@ -9,17 +9,7 @@ import { Skeleton } from "../components/ui/skeleton";
 import { useRecommendedDetail } from "../hooks/useRecommended";
 import { useDisplayName } from "../hooks/useSettings";
 import { useAuth } from "../lib/AuthContext";
-
-const COLORS = [
-  "#e11d48",
-  "#7c3aed",
-  "#2563eb",
-  "#0891b2",
-  "#059669",
-  "#d97706",
-  "#c2410c",
-  "#be185d",
-];
+import { colorForName } from "../lib/utils";
 
 function WeightDots({ weight }: { weight: number }) {
   const filled = Math.round(weight);
@@ -50,7 +40,7 @@ export default function RecDetailPage() {
     };
   }, [rec?.gameName, rec, displayName]);
 
-  const color = rec ? COLORS[rec.gameName.charCodeAt(0) % COLORS.length] : "#7c3aed";
+  const color = rec ? colorForName(rec.gameName) : "#7c3aed";
 
   return (
     <PageTransition>

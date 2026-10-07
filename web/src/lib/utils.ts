@@ -29,9 +29,35 @@ export function idFromPk(pk: string): string {
   return pk.includes("#") ? pk.split("#")[1] : pk;
 }
 
+/**
+ * Fills for letter placeholders (avatars, game stamps). Every entry keeps white text
+ * at ≥ 4.7:1 — the old amber/emerald/cyan -600 shades were 3.2–3.8:1.
+ */
+export const PLACEHOLDER_COLORS = [
+  "#e11d48",
+  "#7c3aed",
+  "#2563eb",
+  "#0e7490",
+  "#047857",
+  "#b45309",
+  "#c2410c",
+  "#be185d",
+];
+
+/** Stable placeholder colour for a name — hashes the whole string, not just its first letter. */
+export function colorForName(name: string): string {
+  let hash = 0;
+  for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) | 0;
+  return PLACEHOLDER_COLORS[Math.abs(hash) % PLACEHOLDER_COLORS.length];
+}
+
 /** Strip HTML tags from a string */
 function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, "");
+  // Block-level boundaries become spaces so "<p>a.</p><p>b</p>" reads "a. b", not "a.b".
+  return html
+    .replace(/<\/(p|div|li|h[1-6]|blockquote)>|<br\s*\/?>/gi, " ")
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ");
 }
 
 /** First n characters of plain text from HTML */

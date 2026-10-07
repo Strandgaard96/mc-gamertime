@@ -91,6 +91,7 @@ export function GamePicker({ onSelect, onDelete }: Props) {
     <div>
       <div className="space-y-2 mb-4">
         <Input
+          aria-label="Search games"
           placeholder="Search games…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -98,6 +99,7 @@ export function GamePicker({ onSelect, onDelete }: Props) {
         />
         <div className="flex items-center gap-2">
           <select
+            aria-label="Sort games"
             value={sort}
             onChange={(e) => setSort(e.target.value as SortKey)}
             className="h-8 px-2 text-sm rounded-md border border-input bg-background flex-1 sm:flex-none"
