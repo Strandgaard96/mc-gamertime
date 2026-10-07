@@ -2,7 +2,6 @@ import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 import sitemap from "@astrojs/sitemap";
 import mermaid from "astro-mermaid";
-import starlightCatppuccin from "@catppuccin/starlight";
 import starlightLinksValidator from "starlight-links-validator";
 import starlightLlmsTxt from "starlight-llms-txt";
 
@@ -23,30 +22,18 @@ export default defineConfig({
       title: "MC GamerTime",
       description: "Track board game nights — catalog, results, leaderboard, achievements.",
       plugins: [
-        starlightCatppuccin({
-          // Peach is the closest Catppuccin accent to the app's amber primary.
-          dark: { flavor: "mocha", accent: "peach" },
-          light: { flavor: "latte", accent: "peach" },
-        }),
         starlightLinksValidator(),
         starlightLlmsTxt(),
       ],
       lastUpdated: true,
-      // VitePress' code blocks are 8px-rounded and flat; Expressive Code
-      // defaults to a tighter radius plus a drop shadow.
       expressiveCode: {
-        styleOverrides: {
-          borderRadius: "0.5rem",
-          frames: {
-            shadowColor: "transparent",
-          },
-        },
+        styleOverrides: { borderRadius: "0.625rem" },
       },
       social: [
         { icon: "github", label: "GitHub", href: "https://github.com/Strandgaard96/mc-gamertime" },
       ],
       favicon: "/favicon.svg",
-      customCss: ["./src/styles/custom.css"],
+      customCss: ["@fontsource-variable/space-grotesk", "./src/styles/custom.css"],
       head: [
         // Link previews (Discord, Slack, Reddit, X). og:image must be an
         // absolute URL — relative paths are ignored by every scraper.
