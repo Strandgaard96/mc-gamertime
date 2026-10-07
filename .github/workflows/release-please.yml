@@ -20,12 +20,30 @@ jobs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
+      # A PR opened with GITHUB_TOKEN is authored by github-actions[bot], and its CI
+      # runs sit at "action_required" until someone approves them — on every update.
+      # A GitHub App token makes the app the author, so CI starts on its own. The
+      # token is minted per run (~1h) and scoped to contents + pull-requests; the
+      # long-lived credential is the app's private key secret, limited to this repo.
+      # Skipped, falling back to the default token, until the app is configured.
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: app-token
+        if: ${{ vars.RELEASE_APP_CLIENT_ID != '' }}
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
       # No `release-type` input on purpose: passing one puts the action in
       # legacy non-manifest mode, which ignores release-please-config.json
       # (including its changelog-sections) and derives the current version
       # from the latest GitHub release tag instead of the manifest.
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5
         id: release
+        with:
+          # publish.yml has no `tags:` trigger, so app-pushed release tags don't
+          # double-publish the image; publish-image below stays the only path.
+          token: ${{ steps.app-token.outputs.token || github.token }}
 
   # Tags created by release-please come from GITHUB_TOKEN, and GitHub does not
   # start workflows for events that token produced — so publish.yml's tag
