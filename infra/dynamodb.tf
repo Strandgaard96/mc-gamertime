@@ -28,11 +28,6 @@ resource "aws_dynamodb_table" "tables" {
     enabled = true
   }
 
-  # Enable streams only if the map key is "results"
-  stream_enabled = each.key == "results" ? true : false
-  # stream_view_type is required if stream_enabled is true
-  stream_view_type = each.key == "results" ? "NEW_IMAGE" : null
-
   deletion_protection_enabled = true
 
   tags = {

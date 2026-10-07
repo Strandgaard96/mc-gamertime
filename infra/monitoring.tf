@@ -12,11 +12,6 @@ resource "aws_cloudwatch_log_group" "api" {
   retention_in_days = 30
 }
 
-resource "aws_cloudwatch_log_group" "stream" {
-  name              = "/aws/lambda/${local.name_prefix}-stream"
-  retention_in_days = 30
-}
-
 # L-4 — API Gateway access-log destination (wired into the stage in lambda.tf)
 resource "aws_cloudwatch_log_group" "apigw" {
   name              = "/aws/apigw/${local.name_prefix}"

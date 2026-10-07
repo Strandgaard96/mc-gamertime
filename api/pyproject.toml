@@ -55,7 +55,7 @@ ignore = ["E501", "RUF001"]
 
 [tool.coverage.run]
 source = ["."]
-omit = ["tests/*", "scripts/*", "dist/*", ".venv/*", "handlers/*"]
+omit = ["tests/*", "scripts/*", "dist/*", ".venv/*"]
 
 [tool.coverage.report]
 skip_covered = true
