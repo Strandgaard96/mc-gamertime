@@ -1,0 +1,4 @@
+# Read by both the CI hadolint step (ci.yml Lint) and a local `hadolint Dockerfile`.
+# Fail on warnings and errors; info/style findings (e.g. DL3066 on `USER appuser`)
+# are advice, not build breakers.
+failure-threshold: warning
