@@ -96,7 +96,8 @@ tasks:
           ! -path '*/__pycache__/*' \
           | sort | xargs sha256sum | sha256sum | cut -d' ' -f1)
         STORED_HASH=$(cat .api-build-hash 2>/dev/null || echo "")
-        if [ "$CURRENT_HASH" = "$STORED_HASH" ]; then
+        # Hash match alone isn't enough: the zip may have been deleted since.
+        if [ "$CURRENT_HASH" = "$STORED_HASH" ] && [ -f api/lambda.zip ]; then
           echo "API source unchanged — skipping Lambda build"
           exit 0
         fi
@@ -129,6 +130,15 @@ tasks:
   apply:
     desc: "Terraform apply (prod / default workspace)"
     dir: infra
+    # Prod only ships what's on origin/main: on main, clean tree, up to date.
+    # No escape hatch on purpose.
+    preconditions: &prod_preconditions
+      - sh: '[ "$(git rev-parse --abbrev-ref HEAD)" = main ]'
+        msg: "Prod deploys only from the main branch (git switch main)"
+      - sh: '[ -z "$(git status --porcelain)" ]'
+        msg: "Working tree is not clean: commit or stash changes (git status) before deploying"
+      - sh: 'git fetch -q origin main && [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ]'
+        msg: "HEAD is not origin/main: pull or push first so prod matches main"
     cmds:
       - terraform workspace select default
       - terraform apply
@@ -142,8 +152,15 @@ tasks:
       - terraform plan
 
   apply:dev:
-    desc: "Terraform apply (dev workspace)"
+    desc: "Terraform apply (dev workspace; DEPLOY_ALLOW_DIRTY=1 skips the main/clean/up-to-date checks)"
     dir: infra
+    preconditions: &dev_preconditions
+      - sh: '[ "${DEPLOY_ALLOW_DIRTY:-}" = 1 ] || [ "$(git rev-parse --abbrev-ref HEAD)" = main ]'
+        msg: "Not on main. Switch to main, or set DEPLOY_ALLOW_DIRTY=1 to deploy this branch to dev"
+      - sh: '[ "${DEPLOY_ALLOW_DIRTY:-}" = 1 ] || [ -z "$(git status --porcelain)" ]'
+        msg: "Working tree is not clean. Commit/stash, or set DEPLOY_ALLOW_DIRTY=1 to deploy it to dev anyway"
+      - sh: '[ "${DEPLOY_ALLOW_DIRTY:-}" = 1 ] || { git fetch -q origin main && [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ]; }'
+        msg: "HEAD is not origin/main. Pull/push, or set DEPLOY_ALLOW_DIRTY=1 to deploy it to dev anyway"
     cmds:
       - terraform workspace select dev
       - defer: terraform workspace select default
@@ -152,6 +169,7 @@ tasks:
   deploy:
     desc: "Build, apply Terraform, sync web assets to S3, invalidate CloudFront,
       print URL"
+    preconditions: *prod_preconditions
     cmds:
       - task: test
       - task: build
@@ -171,7 +189,8 @@ tasks:
         echo "Deployed to: https://$(cd infra && terraform output -raw cloudfront_url)"
 
   deploy:dev:
-    desc: "Build, apply Terraform (dev workspace), sync web assets, invalidate CloudFront"
+    desc: "Build, apply Terraform (dev workspace), sync web assets, invalidate CloudFront (DEPLOY_ALLOW_DIRTY=1 skips the main/clean/up-to-date checks)"
+    preconditions: *dev_preconditions
     cmds:
       - task: test
       - task: build
