@@ -89,7 +89,10 @@ export default function PostViewPage() {
             </div>
           </div>
         )}
-        <SafeHtml html={post.content} className="prose prose-sm prose-invert max-w-none [--tw-prose-invert-body:var(--color-foreground)]" />
+        <SafeHtml
+          html={post.content}
+          className="prose prose-sm prose-invert max-w-none [--tw-prose-invert-body:var(--color-foreground)]"
+        />
         {user?.role === "admin" && (
           <div className="flex gap-2 pt-4 border-t">
             <Button asChild variant="outline" size="sm">
