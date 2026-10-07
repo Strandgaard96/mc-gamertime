@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.2](https://github.com/Strandgaard96/mc-gamertime/compare/v0.3.1...v0.3.2) (2026-10-07)
+
+
+### Bug Fixes
+
+* **web:** render post text in the theme foreground colour ([f513ecc](https://github.com/Strandgaard96/mc-gamertime/commit/f513ecc622661bb8bf6af7b432b5a4a4367a0a6a))
+* **web:** render post text in the theme foreground colour ([fc68420](https://github.com/Strandgaard96/mc-gamertime/commit/fc6842025d38f1066f46053e880e674beb016c2b))
+
 ## [0.3.1](https://github.com/Strandgaard96/mc-gamertime/compare/v0.3.0...v0.3.1) (2026-10-07)
 
 
