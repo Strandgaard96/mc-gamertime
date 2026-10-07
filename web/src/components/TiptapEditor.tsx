@@ -176,7 +176,7 @@ export function TiptapEditor({ content, onChange }: Props) {
       </div>
       <EditorContent
         editor={editor}
-        className="prose prose-sm dark:prose-invert max-w-none p-4 min-h-48 focus-within:outline-hidden"
+        className="prose prose-sm dark:prose-invert max-w-none [--tw-prose-invert-body:var(--color-foreground)] p-4 min-h-48 focus-within:outline-hidden"
       />
     </div>
   );
