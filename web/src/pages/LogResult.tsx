@@ -118,7 +118,7 @@ export default function LogResult() {
                 <div key={key}>
                   {/* Month divider */}
                   <div className="flex items-center gap-4 mb-5">
-                    <h3 className="text-2xl font-display font-bold text-foreground/20 whitespace-nowrap">
+                    <h3 className="text-2xl font-display font-bold text-muted-foreground whitespace-nowrap">
                       {label}
                     </h3>
                     <div className="flex-1 h-px bg-border" />
@@ -182,50 +182,57 @@ export default function LogResult() {
                                   {user?.role === "admin" && !isConfirming && (
                                     <button
                                       onClick={() => setEditTarget(r)}
-                                      className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
+                                      className="text-muted-foreground hover:text-foreground transition-colors p-2 -my-1.5 rounded-md hover:bg-muted/60"
                                       aria-label="Edit result"
                                     >
-                                      <Pencil size={12} />
+                                      <Pencil size={14} />
                                     </button>
                                   )}
                                   {user?.role === "admin" && !isConfirming && (
                                     <button
                                       onClick={() => setConfirmDelete(r.pk)}
-                                      className="text-muted-foreground hover:text-destructive transition-colors p-0.5"
+                                      className="text-muted-foreground hover:text-destructive transition-colors p-2 -my-1.5 rounded-md hover:bg-muted/60"
                                       aria-label="Delete result"
                                     >
-                                      <Trash2 size={12} />
+                                      <Trash2 size={14} />
                                     </button>
                                   )}
                                 </div>
                               </div>
 
-                              {/* Winner */}
-                              <p className="text-xs flex items-center gap-1 mt-0.5">
-                                <Trophy size={10} className="text-primary shrink-0" />
-                                <span className="font-medium">{r.winnerName}</span>
-                              </p>
-
-                              {/* Player avatars */}
-                              <div className="flex items-center gap-1 mt-1.5">
-                                {r.players.map((p) => (
-                                  <Link key={p.playerId} to={`/players/${p.playerId}`}>
-                                    <Avatar
-                                      name={p.playerName}
-                                      size="sm"
-                                      className={
-                                        p.playerId === r.winnerId
-                                          ? "ring-2 ring-primary ring-offset-1 ring-offset-card"
-                                          : ""
-                                      }
-                                    />
-                                  </Link>
-                                ))}
+                              {/* Players: name + score, winner first-class */}
+                              <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                                {r.players.map((p) => {
+                                  const isWinner = p.playerId === r.winnerId;
+                                  return (
+                                    <Link
+                                      key={p.playerId}
+                                      to={`/players/${p.playerId}`}
+                                      className={`inline-flex items-center gap-1 rounded-full border py-0.5 pl-0.5 pr-2 text-xs transition-colors hover:border-primary/40 ${
+                                        isWinner
+                                          ? "border-primary/40 bg-primary/10 text-foreground"
+                                          : "bg-muted/40 text-muted-foreground"
+                                      }`}
+                                    >
+                                      <span aria-hidden="true">
+                                        <Avatar name={p.playerName} size="sm" />
+                                      </span>
+                                      {isWinner && (
+                                        <Trophy
+                                          size={10}
+                                          className="text-primary shrink-0"
+                                          aria-label="Winner"
+                                        />
+                                      )}
+                                      <span className="font-medium">{p.playerName}</span>
+                                      {p.score != null && (
+                                        <span className="tabular-nums opacity-80">{p.score}</span>
+                                      )}
+                                    </Link>
+                                  );
+                                })}
                               </div>
 
-                              <SessionReactions sessionPk={r.pk} />
-
-                              {/* Delete confirm / post link */}
                               {isConfirming ? (
                                 <div className="mt-2 flex items-center gap-2 text-xs">
                                   <span className="text-muted-foreground">Delete?</span>
@@ -246,24 +253,27 @@ export default function LogResult() {
                                   </Button>
                                 </div>
                               ) : (
-                                <div className="mt-1.5">
-                                  {linkedPost ? (
-                                    <Link
-                                      to={`/posts/${idFromPk(linkedPost.pk)}`}
-                                      className="text-xs text-primary hover:underline font-medium"
-                                    >
-                                      Read post →
-                                    </Link>
-                                  ) : user?.role === "admin" ? (
-                                    <Link
-                                      to={`/posts/new?session=${r.pk}`}
-                                      className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors"
-                                    >
-                                      <PenLine size={12} aria-hidden="true" />
-                                      Write post
-                                    </Link>
-                                  ) : null}
-                                </div>
+                                <SessionReactions
+                                  sessionPk={r.pk}
+                                  actions={
+                                    linkedPost ? (
+                                      <Link
+                                        to={`/posts/${idFromPk(linkedPost.pk)}`}
+                                        className="text-xs text-primary hover:underline font-medium px-1"
+                                      >
+                                        Read post →
+                                      </Link>
+                                    ) : user?.role === "admin" ? (
+                                      <Link
+                                        to={`/posts/new?session=${r.pk}`}
+                                        className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors"
+                                      >
+                                        <PenLine size={12} aria-hidden="true" />
+                                        Write post
+                                      </Link>
+                                    ) : null
+                                  }
+                                />
                               )}
                             </div>
                           </div>

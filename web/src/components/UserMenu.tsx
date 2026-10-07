@@ -70,7 +70,7 @@ export function UserMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         className={cn(
-          "flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors",
+          "flex items-center gap-2 p-2 rounded-md text-sm text-muted-foreground hover:text-foreground transition-colors",
         )}
       >
         <Avatar name={displayName} imageUrl={avatarUrl} size="sm" />

@@ -1,5 +1,5 @@
 import { SmilePlus, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import {
   useAddComment,
   useDeleteComment,
@@ -16,9 +16,11 @@ const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "🎉", "🔥"];
 
 interface Props {
   sessionPk: string;
+  /** Extra controls rendered on the same row as the reaction/comment buttons. */
+  actions?: ReactNode;
 }
 
-export function SessionReactions({ sessionPk }: Props) {
+export function SessionReactions({ sessionPk, actions }: Props) {
   const { user } = useAuth();
   const { data: items = [] } = useReactions();
   const toggleReaction = useToggleReaction();
@@ -83,9 +85,9 @@ export function SessionReactions({ sessionPk }: Props) {
         <button
           onClick={() => setPickerOpen((o) => !o)}
           aria-label="Add reaction"
-          className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-full hover:bg-muted/60"
+          className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-full hover:bg-muted/60"
         >
-          <SmilePlus size={14} />
+          <SmilePlus size={16} />
         </button>
         {pickerOpen && (
           <div
@@ -104,18 +106,18 @@ export function SessionReactions({ sessionPk }: Props) {
             ))}
           </div>
         )}
+        <button
+          type="button"
+          onClick={() => setCommentsOpen((o) => !o)}
+          aria-expanded={commentsOpen}
+          className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors"
+        >
+          {comments.length > 0
+            ? `💬 ${comments.length} comment${comments.length === 1 ? "" : "s"}`
+            : "Add comment"}
+        </button>
+        {actions}
       </div>
-
-      <button
-        type="button"
-        onClick={() => setCommentsOpen((o) => !o)}
-        aria-expanded={commentsOpen}
-        className="inline-flex items-center gap-1 self-start rounded-md border px-2 py-1 text-xs text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors"
-      >
-        {comments.length > 0
-          ? `💬 ${comments.length} comment${comments.length === 1 ? "" : "s"}`
-          : "Add comment"}
-      </button>
 
       {commentsOpen && (
         <div className="space-y-1.5 pl-2 border-l border-border">
