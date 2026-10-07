@@ -25,15 +25,26 @@ import type {
 // In production: CloudFront routes these to the Lambda function
 const BASE = "/api";
 
-export interface RateLimitError extends Error {
+/** Every non-OK response. `status` lets callers (and the query retry
+ *  predicate) tell a 4xx answer from a 5xx/network blip. */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+export interface RateLimitError extends ApiError {
   status: 429;
   retryAfter: number | null;
 }
 
-class AuthError extends Error {
-  readonly status = 401;
+class AuthError extends ApiError {
   constructor() {
-    super("Unauthorized");
+    super("Unauthorized", 401);
   }
 }
 
@@ -57,13 +68,13 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     }
     if (res.status === 429) {
       const retryAfterRaw = Number.parseInt(res.headers.get("Retry-After") ?? "", 10);
-      const err: RateLimitError = Object.assign(new Error(msg), {
+      const err: RateLimitError = Object.assign(new ApiError(msg, 429), {
         status: 429 as const,
         retryAfter: Number.isNaN(retryAfterRaw) ? null : retryAfterRaw,
       });
       throw err;
     }
-    throw new Error(msg);
+    throw new ApiError(msg, res.status);
   }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
