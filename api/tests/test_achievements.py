@@ -51,6 +51,7 @@ def test_all_achievement_ids_present_in_empty_results():
         "heavyweight",
         "party_winner",
         "harkonnen_5",
+        "giant_slayer",
     }
     assert ids == expected
 
@@ -305,3 +306,50 @@ def test_harkonnen_5_not_earned_with_different_faction():
     results = [_dune_result("p1", f"2026-01-{i + 1:02d}", "Atreides") for i in range(5)]
     achievements = {a["id"]: a for a in compute_achievements("p1", results, games_by_id)}
     assert achievements["harkonnen_5"]["earnedAt"] is None
+
+
+def _slayer(player_id: str, results: list[dict]) -> str | None:
+    by_id = {a["id"]: a for a in compute_achievements(player_id, results, {})}
+    return by_id["giant_slayer"]["earnedAt"]
+
+
+A, B, C, D = ("p1", "Alice"), ("p2", "Bob"), ("p3", "Carol"), ("p4", "Dave")
+# Alice beats Bob twice -> Alice is sole #1 going into 2026-01-03.
+LEAD = [_r("p1", [A, B], "2026-01-01"), _r("p1", [A, B], "2026-01-02")]
+
+
+def test_giant_slayer_earned_when_beating_the_leader():
+    rs = [*LEAD, _r("p3", [C, A], "2026-01-03")]
+    assert _slayer("p3", rs) == "2026-01-03"
+
+
+def test_giant_slayer_not_when_leader_absent():
+    rs = [*LEAD, _r("p3", [C, B], "2026-01-03")]
+    assert _slayer("p3", rs) is None
+
+
+def test_giant_slayer_not_when_player_is_the_leader():
+    rs = [*LEAD, _r("p1", [A, C], "2026-01-03")]
+    assert _slayer("p1", rs) is None
+
+
+def test_giant_slayer_not_when_leader_won():
+    rs = [*LEAD, _r("p1", [A, C], "2026-01-03")]
+    assert _slayer("p3", rs) is None
+
+
+def test_giant_slayer_not_when_top_is_tied():
+    rs = [
+        _r("p1", [A, B], "2026-01-01"),
+        _r("p3", [C, D], "2026-01-02"),  # Alice and Carol both 1016
+        _r("p2", [B, A], "2026-01-03"),
+    ]
+    assert _slayer("p2", rs) is None
+
+
+def test_giant_slayer_accepts_precomputed_leader_map():
+    rs = [*LEAD, _r("p3", [C, B], "2026-01-03")]
+    # Force Bob as "leader" via the explicit map: Carol beat him -> earned.
+    forced: dict[str, str | None] = {"result-2026-01-03": "p2"}
+    by_id = {a["id"]: a for a in compute_achievements("p3", rs, {}, leader_before=forced)}
+    assert by_id["giant_slayer"]["earnedAt"] == "2026-01-03"

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from .rules import (
     all_of,
+    beat_the_leader,
     counter_threshold,
     distinct_count_threshold,
     game_has_tag,
@@ -119,5 +120,12 @@ ACHIEVEMENT_DEFS: list[dict] = [
             all_of(is_win, game_name_is("Dune: Imperium"), variable_equals("Faction", "Harkonnen")),
             5,
         ),
+    },
+    {
+        "id": "giant_slayer",
+        "label": "Giant Slayer",
+        "icon": "🗡️",
+        "description": "Beat the #1 ranked player",
+        "evaluate": counter_threshold(beat_the_leader, 1),
     },
 ]

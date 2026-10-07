@@ -11,6 +11,7 @@ from lib.db.games import get_game, list_games
 from lib.db.notifications import put_notification
 from lib.db.results import delete_result, get_result, list_results, put_result
 from lib.db.users import get_user
+from lib.elo import leaders_before
 
 router = APIRouter()
 
@@ -208,14 +209,18 @@ def _detect_new_achievements(
     result: dict,
 ) -> list[dict]:
     games_by_id = {g["pk"]: g for g in list_games()}
+    before_leaders = leaders_before(before_results)
+    after_leaders = leaders_before(after_results)
     new_achievements = []
     for player in players:
         before_ids = {
             a["id"]
-            for a in compute_achievements(player.playerId, before_results, games_by_id)
+            for a in compute_achievements(
+                player.playerId, before_results, games_by_id, before_leaders
+            )
             if a["earnedAt"] is not None
         }
-        for a in compute_achievements(player.playerId, after_results, games_by_id):
+        for a in compute_achievements(player.playerId, after_results, games_by_id, after_leaders):
             if a["earnedAt"] is None or a["id"] in before_ids:
                 continue
             put_notification(
