@@ -1,15 +1,5 @@
 import { useEffect, useState } from "react";
-
-const COLORS = [
-  "#e11d48",
-  "#7c3aed",
-  "#2563eb",
-  "#0891b2",
-  "#059669",
-  "#d97706",
-  "#c2410c",
-  "#be185d",
-];
+import { colorForName } from "../lib/utils";
 
 interface Props {
   name: string;
@@ -25,10 +15,7 @@ export function Avatar({ name, imageUrl, size = "md", className = "" }: Props) {
     setImgError(false);
   }, []);
 
-  // Hash the whole name — keying on the first letter gave every "A…" player the same colour.
-  let hash = 0;
-  for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) | 0;
-  const color = COLORS[Math.abs(hash) % COLORS.length];
+  const color = colorForName(name);
   const initials = name
     .split(" ")
     .map((p) => p[0])

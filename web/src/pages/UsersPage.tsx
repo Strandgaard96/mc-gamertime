@@ -167,13 +167,19 @@ export default function UsersPage() {
               </Link>
               <div className="flex items-center gap-2 shrink-0 ml-2">
                 <Badge variant={u.role === "admin" ? "default" : "secondary"}>{u.role}</Badge>
-                <Button variant="ghost" size="sm" onClick={() => openEdit(u)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label={`Edit ${u.displayName}`}
+                  onClick={() => openEdit(u)}
+                >
                   <Pencil size={14} />
                 </Button>
                 {u.username !== currentUser?.sub && (
                   <Button
                     variant="ghost"
                     size="sm"
+                    aria-label={`Delete ${u.displayName}`}
                     onClick={() => handleDelete(u)}
                     disabled={deleteMutation.isPending}
                   >

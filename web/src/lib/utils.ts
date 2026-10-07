@@ -29,9 +29,41 @@ export function idFromPk(pk: string): string {
   return pk.includes("#") ? pk.split("#")[1] : pk;
 }
 
-/** Strip HTML tags from a string */
+/**
+ * Fills for letter placeholders (avatars, game stamps). Every entry keeps white text
+ * at ≥ 4.7:1 — the old amber/emerald/cyan -600 shades were 3.2–3.8:1.
+ */
+export const PLACEHOLDER_COLORS = [
+  "#e11d48",
+  "#7c3aed",
+  "#2563eb",
+  "#0e7490",
+  "#047857",
+  "#b45309",
+  "#c2410c",
+  "#be185d",
+];
+
+/** Stable placeholder colour for a name — hashes the whole string, not just its first letter. */
+export function colorForName(name: string): string {
+  let hash = 0;
+  for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) | 0;
+  return PLACEHOLDER_COLORS[Math.abs(hash) % PLACEHOLDER_COLORS.length];
+}
+
+/** Plain text of an HTML string */
 function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, "");
+  // Parse instead of regex-stripping tags: DOMParser documents are inert (no scripts
+  // run, nothing loads), and a regex like /<[^>]*>/ is incomplete sanitisation
+  // (CodeQL js/incomplete-multi-character-sanitization). Block boundaries become
+  // spaces so "<p>a.</p><p>b</p>" reads "a. b", not "a.b".
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  for (const el of doc.body.querySelectorAll(
+    "p, div, li, h1, h2, h3, h4, h5, h6, blockquote, br",
+  )) {
+    el.after(" ");
+  }
+  return (doc.body.textContent ?? "").replace(/\s+/g, " ");
 }
 
 /** First n characters of plain text from HTML */

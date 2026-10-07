@@ -14,19 +14,7 @@ import { usePosts } from "../hooks/usePosts";
 import { useDeleteResult, useResults } from "../hooks/useResults";
 import { useAuth } from "../lib/AuthContext";
 import type { Result } from "../lib/types";
-import { formatDate, idFromPk } from "../lib/utils";
-
-const STAMP_COLORS = [
-  "#e11d48",
-  "#7c3aed",
-  "#2563eb",
-  "#059669",
-  "#d97706",
-  "#c2410c",
-  "#0891b2",
-  "#be185d",
-];
-const colorFor = (name: string) => STAMP_COLORS[name.charCodeAt(0) % STAMP_COLORS.length];
+import { colorForName, formatDate, idFromPk } from "../lib/utils";
 
 export default function LogResult() {
   const [open, setOpen] = useState(false);
@@ -157,7 +145,7 @@ export default function LogResult() {
                               ) : (
                                 <div
                                   className="w-full h-full flex items-center justify-center font-display font-bold text-white text-xl"
-                                  style={{ backgroundColor: colorFor(r.gameName) }}
+                                  style={{ backgroundColor: colorForName(r.gameName) }}
                                 >
                                   {r.gameName[0]?.toUpperCase()}
                                 </div>
@@ -226,7 +214,7 @@ export default function LogResult() {
                                       )}
                                       <span className="font-medium">{p.playerName}</span>
                                       {p.score != null && (
-                                        <span className="tabular-nums opacity-80">{p.score}</span>
+                                        <span className="tabular-nums">{p.score}</span>
                                       )}
                                     </Link>
                                   );

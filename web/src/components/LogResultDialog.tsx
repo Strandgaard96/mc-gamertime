@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Check } from "lucide-react";
-import { useLayoutEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useId, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useGames } from "../hooks/useGames";
 import { useAddResult, useUpdateResult } from "../hooks/useResults";
 import { getUsers } from "../lib/api";
@@ -162,6 +162,7 @@ export function LogResultDialog({ open, onClose, defaultGameId, editResult }: Pr
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const gameSearchId = useId();
 
   useLayoutEffect(() => {
     if (open) searchInputRef.current?.focus();
@@ -289,8 +290,11 @@ export function LogResultDialog({ open, onClose, defaultGameId, editResult }: Pr
     <Dialog open={open} onClose={onClose} title={editResult ? "Edit session" : "Log session"}>
       <div className="space-y-4">
         <div>
-          <label className="text-sm font-medium">Game</label>
+          <label htmlFor={gameSearchId} className="text-sm font-medium">
+            Game
+          </label>
           <Input
+            id={gameSearchId}
             ref={searchInputRef}
             placeholder="Search games…"
             value={state.gameSearch}

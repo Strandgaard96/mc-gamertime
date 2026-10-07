@@ -9,20 +9,10 @@ import { Skeleton } from "../components/ui/skeleton";
 import { useRecommended } from "../hooks/useRecommended";
 import { useDisplayName } from "../hooks/useSettings";
 import { useAuth } from "../lib/AuthContext";
-
-const COLORS = [
-  "#e11d48",
-  "#7c3aed",
-  "#2563eb",
-  "#0891b2",
-  "#059669",
-  "#d97706",
-  "#c2410c",
-  "#be185d",
-];
+import { colorForName } from "../lib/utils";
 
 function GameImagePlaceholder({ name, className = "" }: { name: string; className?: string }) {
-  const color = COLORS[name.charCodeAt(0) % COLORS.length];
+  const color = colorForName(name);
   return (
     <div
       className={`flex items-center justify-center font-display font-bold text-white ${className}`}

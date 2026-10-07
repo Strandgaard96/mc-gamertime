@@ -169,8 +169,11 @@ export default function PostEditorPage() {
         )}
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="text-sm font-medium mb-1.5 block">Session *</label>
+            <label htmlFor="post-session" className="text-sm font-medium mb-1.5 block">
+              Session *
+            </label>
             <select
+              id="post-session"
               value={sessionPk}
               onChange={(e) => setSessionPk(e.target.value)}
               className="w-full h-9 px-3 text-sm rounded-md border border-input bg-background"
@@ -184,8 +187,11 @@ export default function PostEditorPage() {
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium mb-1.5 block">Title *</label>
+            <label htmlFor="post-title" className="text-sm font-medium mb-1.5 block">
+              Title *
+            </label>
             <Input
+              id="post-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Post title…"

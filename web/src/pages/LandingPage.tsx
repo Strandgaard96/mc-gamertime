@@ -7,17 +7,7 @@ import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { useRecommended } from "../hooks/useRecommended";
 import { useDisplayName, usePublicSettings } from "../hooks/useSettings";
-
-const COLORS = [
-  "#e11d48",
-  "#7c3aed",
-  "#2563eb",
-  "#0891b2",
-  "#059669",
-  "#d97706",
-  "#c2410c",
-  "#be185d",
-];
+import { colorForName } from "../lib/utils";
 
 const INSTALL = `curl -fsSLO https://raw.githubusercontent.com/Strandgaard96/mc-gamertime/main/docker-compose.yml
 printf 'ADMIN_USERNAME=admin\\nADMIN_PASSWORD=<your-password>\\n' > .env
@@ -265,7 +255,7 @@ export default function LandingPage() {
             ) : featured.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {featured.map((r, i) => {
-                  const color = COLORS[r.gameName.charCodeAt(0) % COLORS.length];
+                  const color = colorForName(r.gameName);
                   const sharedClass =
                     "rounded-xl border bg-card overflow-hidden transition-all hover:border-primary/40 hover:shadow-md";
 

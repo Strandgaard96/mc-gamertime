@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { cn, excerpt, formatDate, idFromPk, pluralize, pressable } from "./utils";
+import {
+  cn,
+  colorForName,
+  excerpt,
+  formatDate,
+  idFromPk,
+  PLACEHOLDER_COLORS,
+  pluralize,
+  pressable,
+} from "./utils";
 
 describe("cn", () => {
   it("joins class names and drops falsy values", () => {
@@ -74,6 +83,13 @@ describe("excerpt", () => {
     expect(excerpt("<p>  Hello <strong>world</strong>  </p>")).toBe("Hello world");
   });
 
+  it("keeps a space between paragraphs and line breaks", () => {
+    expect(excerpt("<p>What a night.</p><p>Next week: Wingspan.</p>")).toBe(
+      "What a night. Next week: Wingspan.",
+    );
+    expect(excerpt("line one<br>line two<br/>three")).toBe("line one line two three");
+  });
+
   it("returns short text without an ellipsis", () => {
     expect(excerpt("<p>short</p>", 10)).toBe("short");
   });
@@ -91,5 +107,24 @@ describe("excerpt", () => {
     const long = "x".repeat(200);
     expect(excerpt(long)).toBe(`${"x".repeat(150)}…`);
     expect(excerpt("x".repeat(150))).toBe("x".repeat(150));
+  });
+});
+
+describe("colorForName", () => {
+  it("is stable and drawn from the palette", () => {
+    expect(colorForName("Alice")).toBe(colorForName("Alice"));
+    expect(PLACEHOLDER_COLORS).toContain(colorForName("Bob"));
+  });
+
+  it("keeps white text at WCAG AA (4.5:1) on every palette colour", () => {
+    const lum = (hex: string) => {
+      const [r, g, b] = [1, 3, 5].map((i) => {
+        const c = Number.parseInt(hex.slice(i, i + 2), 16) / 255;
+        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    for (const hex of PLACEHOLDER_COLORS)
+      expect(1.05 / (lum(hex) + 0.05)).toBeGreaterThanOrEqual(4.5);
   });
 });

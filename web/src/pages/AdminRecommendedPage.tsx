@@ -134,7 +134,7 @@ export default function AdminRecommendedPage() {
             <Star size={24} className="text-primary" />
             Recommended Games
           </h1>
-          <Button onClick={openCreate} className="gap-1.5">
+          <Button onClick={openCreate} className="gap-1.5 shrink-0">
             <Plus size={16} />
             Add Game
           </Button>
@@ -149,7 +149,7 @@ export default function AdminRecommendedPage() {
             {sorted.map((rec, idx) => (
               <div
                 key={rec.pk}
-                className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:border-primary/20 transition-colors"
+                className="flex flex-wrap items-center gap-3 p-3 rounded-lg border bg-card hover:border-primary/20 transition-colors"
               >
                 {rec.imageUrl ? (
                   <img
@@ -162,14 +162,16 @@ export default function AdminRecommendedPage() {
                     {rec.gameName[0]?.toUpperCase()}
                   </div>
                 )}
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-40">
                   <p className="font-medium truncate">{rec.gameName}</p>
                   <p className="text-xs text-muted-foreground truncate">{rec.blurb}</p>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
+                {/* Wraps under the name on phones instead of squeezing it to nothing. */}
+                <div className="flex flex-wrap items-center justify-end gap-1 w-full sm:w-auto">
                   <Button
                     variant="ghost"
                     size="sm"
+                    aria-label={`Move ${rec.gameName} up`}
                     onClick={() => moveUp(rec, idx)}
                     disabled={idx === 0 || updateRec.isPending}
                   >
@@ -178,6 +180,7 @@ export default function AdminRecommendedPage() {
                   <Button
                     variant="ghost"
                     size="sm"
+                    aria-label={`Move ${rec.gameName} down`}
                     onClick={() => moveDown(rec, idx)}
                     disabled={idx === sorted.length - 1 || updateRec.isPending}
                   >
@@ -229,6 +232,7 @@ export default function AdminRecommendedPage() {
                 return (
                   <div className="space-y-1">
                     <Input
+                      aria-label="Search games"
                       value={gameSearch}
                       onChange={(e) => {
                         setGameSearch(e.target.value);
