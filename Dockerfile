@@ -52,6 +52,9 @@ COPY --from=web-build /web/dist /app/static
 # by SQLite and local-filesystem storage. docker-compose.yml still sets these
 # explicitly so the compose file documents its own behaviour, and the AWS path
 # overrides them in infra/lambda.tf.
+# DL3064 flags SECRETS_PROVIDER by name; its value only selects where secrets
+# are read from ("env"), it is not a secret itself.
+# hadolint ignore=DL3064
 ENV STATIC_DIR=/app/static \
     DB_BACKEND=sqlite \
     STORAGE_BACKEND=local \

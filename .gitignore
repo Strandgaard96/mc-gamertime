@@ -11,6 +11,11 @@ exports/
 .superpowers/
 superpowers/
 
+# Python bytecode (repo-level so `task deploy`'s clean-tree check doesn't rely on
+# a personal global gitignore; .venv/.pytest_cache/.ruff_cache self-ignore)
+__pycache__/
+*.py[cod]
+
 # Lambda artifact
 lambda.zip
 

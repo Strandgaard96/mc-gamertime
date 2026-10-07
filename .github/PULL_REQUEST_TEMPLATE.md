@@ -8,7 +8,7 @@
 <!-- What does this PR do and why? -->
 
 ## Test plan
-- [ ] Tests pass (`cd api && uv run pytest tests/ -v`)
+- [ ] `task check` passes
 - [ ] Tested locally
 
 ## Breaking change?

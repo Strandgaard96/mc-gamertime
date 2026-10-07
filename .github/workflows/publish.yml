@@ -86,6 +86,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # Blocking: no image with a fixable HIGH/CRITICAL CVE reaches GHCR.
+      # (ci.yml's PR scan is report-only; this is the gate.)
       - name: Scan image for vulnerabilities
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -93,6 +95,25 @@ jobs:
           severity: CRITICAL,HIGH
           exit-code: "1"
           ignore-unfixed: true
+
+      # Same smoke test as ci.yml's Docker build (which runs on PRs only and
+      # relies on this one for pushes to main). The HEALTHCHECK probes
+      # /api/health, which 503s if startup failed, so "healthy" means the app
+      # initialised, migrated a fresh SQLite DB and bootstrapped an admin.
+      - name: Smoke-test the container
+        run: |
+          docker run -d --name smoke \
+            -e ADMIN_USERNAME=smoke -e ADMIN_PASSWORD=smoke-test-password \
+            mc-gamertime:publish-scan
+          for _ in $(seq 30); do
+            status=$(docker inspect -f '{{.State.Health.Status}}' smoke)
+            [ "$status" = healthy ] && exit 0
+            [ "$status" = unhealthy ] && break
+            sleep 2
+          done
+          docker inspect -f '{{.State.Health.Status}}' smoke
+          docker logs smoke
+          exit 1
 
       - name: Build and push
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
@@ -105,5 +126,6 @@ jobs:
           sbom: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Read-only: the scan build above already exported every stage
+          # (mode=max, so PR builds reuse them); a second export is duplicate.
           cache-from: type=gha
-          cache-to: type=gha,mode=max

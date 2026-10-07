@@ -16,6 +16,12 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Taskfile.yml is the source of truth for check commands: `task check` runs the
+# same ruff / ty / pytest --cov / tsc / oxlint / oxfmt / vitest coverage /
+# terraform commands the jobs below run (CI only adds output flags: pytest -v,
+# --tb=short and the XML report for Codecov). CI calls them directly rather
+# than through `task` so each job stays one install + plain steps; when you
+# change a command here, change it in the Taskfile's check:* tasks too.
 jobs:
   # Path filter so a docs-only or README-only PR doesn't run the full matrix.
   # The jobs below stay defined on every run and are *skipped* rather than
@@ -96,7 +102,7 @@ jobs:
         working-directory: api
 
       - name: Run tests
-        run: uv run pytest tests/ -v --tb=short --cov --cov-report=term --cov-report=xml
+        run: uv run --locked pytest tests/ -v --tb=short --cov --cov-report=term --cov-report=xml
         working-directory: api
 
       # Feeds the README coverage badge. Never fails the job: the floor is
@@ -128,12 +134,18 @@ jobs:
           AWS_DEFAULT_REGION: eu-west-1
         run: uv run --no-project --python 3.12 python -c "import main; import mangum"
 
+  # PRs only: on push to main, publish.yml builds, scans and smoke-tests the
+  # same image (same path list) before pushing it, so running it here too was
+  # duplicate work. Required checks only gate PRs, so skipping on push is safe.
   docker-build:
     name: Docker build
     needs: changes
-    if: needs.changes.outputs.docker == 'true'
+    if: needs.changes.outputs.docker == 'true' && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write # Trivy SARIF upload to the Security tab
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -151,15 +163,34 @@ jobs:
           load: true
           tags: mc-gamertime:ci
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # mode=min: only the final image's layers. mode=max also cached every
+          # intermediate stage and filled most of the 10 GB Actions cache.
+          cache-to: type=gha,mode=min
 
+      # Non-blocking on PRs: a CVE published upstream yesterday shouldn't turn
+      # an unrelated PR red. Findings land in the Security tab instead. The
+      # gate is publish.yml (blocks before pushing any image) and the weekly
+      # security-scan.yml.
       - name: Scan image for vulnerabilities
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: mc-gamertime:ci
           severity: CRITICAL,HIGH
-          exit-code: "1"
+          limit-severities-for-sarif: true
+          exit-code: "0"
           ignore-unfixed: true
+          format: sarif
+          output: trivy-image.sarif
+
+      # Fork PRs get a read-only token, so the upload can fail there; that must
+      # not fail the required check.
+      - name: Upload Trivy results
+        if: always() && hashFiles('trivy-image.sarif') != ''
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
+        with:
+          sarif_file: trivy-image.sarif
+          category: trivy-image
 
       # The image built, but does it serve? The HEALTHCHECK probes
       # /api/health, which 503s if startup failed, so "healthy" means the app
@@ -277,22 +308,22 @@ jobs:
 
       - name: Install Python dependencies
         if: needs.changes.outputs.api == 'true'
-        run: uv sync
+        run: uv sync --locked
         working-directory: api
 
       - name: Ruff lint
         if: needs.changes.outputs.api == 'true'
-        run: uv run ruff check .
+        run: uv run --locked ruff check .
         working-directory: api
 
       - name: Ruff format check
         if: needs.changes.outputs.api == 'true'
-        run: uv run ruff format --check .
+        run: uv run --locked ruff format --check .
         working-directory: api
 
       - name: ty type check
         if: needs.changes.outputs.api == 'true'
-        run: uv run ty check
+        run: uv run --locked ty check
         working-directory: api
 
       # Audits the workflow files themselves (unpinned actions, template
@@ -325,6 +356,19 @@ jobs:
         if: needs.changes.outputs.web == 'true'
         run: npx oxfmt --check src/
         working-directory: web
+
+      # hadolint and shellcheck run here rather than as pre-commit hooks (hooks
+      # are the fast subset). Both take seconds, so they run on every PR.
+      - name: hadolint
+        uses: hadolint/hadolint-action@06be81baf89a55ffd0e24b8f04a4185738dd3387 # v3.5.0
+        with:
+          dockerfile: Dockerfile
+          # The action's input defaults to "info" and overrides .hadolint.yaml.
+          failure-threshold: warning
+
+      # shellcheck is preinstalled on ubuntu runners.
+      - name: shellcheck
+        run: git ls-files -z '*.sh' | xargs -0 shellcheck
 
   secrets-scan:
     name: Secrets scan

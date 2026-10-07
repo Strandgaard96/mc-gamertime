@@ -1,3 +1,9 @@
+# Fast subset only: everything here runs in seconds on staged files.
+# Slower or rarely-relevant checks live elsewhere: terraform validate in
+# `task check:infra` + CI's Terraform job; hadolint/shellcheck in CI's Lint job
+# only; Trivy in CI only (Docker build, publish, weekly security-scan.yml).
+# `task check` runs these hooks plus terraform validate, not hadolint,
+# shellcheck or Trivy.
 repos:
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.30.0
@@ -59,12 +65,6 @@ repos:
         language: system
         files: "^web/src/.*\\.(tsx?|jsx?|json)$"
         pass_filenames: false
-      - id: trivy-fs
-        name: trivy (dependency vulnerabilities)
-        entry: trivy fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --skip-version-check --skip-dirs api/.venv --skip-dirs web/node_modules --skip-dirs docs-site/node_modules --skip-dirs .claude .
-        language: system
-        files: "^(api/(pyproject\\.toml|uv\\.lock)|web/package(-lock)?\\.json|docs-site/package(-lock)?\\.json|Dockerfile)$"
-        pass_filenames: false
 
   - repo: https://github.com/rhysd/actionlint
     rev: v1.7.12
@@ -75,16 +75,3 @@ repos:
     rev: v1.106.0
     hooks:
       - id: terraform_fmt
-      - id: terraform_validate
-        args: ["--args=-json"]
-        files: "^infra/"
-
-  - repo: https://github.com/hadolint/hadolint
-    rev: v2.14.0
-    hooks:
-      - id: hadolint-docker
-
-  - repo: https://github.com/koalaman/shellcheck-precommit
-    rev: v0.11.0
-    hooks:
-      - id: shellcheck
