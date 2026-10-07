@@ -1,3 +1,6 @@
+from datetime import date
+
+import lib.seasons as seasons_lib
 from tests.conftest import ORIGIN
 
 
@@ -267,3 +270,28 @@ def test_get_stats_removed_user_with_results_returns_200(authed_client, fake_db)
     assert data["perGameStats"][0]["played"] == 1
     assert len(data["winRateTrend"]) == 1
     assert data["winRateTrend"][0]["winRate"] == 1.0
+
+
+def test_player_stats_include_season_titles(authed_client, fake_db, monkeypatch):
+    monkeypatch.setattr(seasons_lib, "today_utc", lambda: date(2026, 10, 7))
+    for i in range(5):
+        fake_db["results"].seed(
+            {
+                "pk": f"st{i}",
+                "gameId": "g1",
+                "gameName": "Catan",
+                "date": f"2026-05-0{i + 1}",
+                "players": [
+                    {"playerId": "alice", "playerName": "Alice"},
+                    {"playerId": "bob", "playerName": "Bob"},
+                ],
+                "winnerId": "alice",
+                "winnerName": "Alice",
+                "createdAt": f"2026-05-0{i + 1}T00:00:00Z",
+            }
+        )
+    c = authed_client("readonly")
+    alice = c.get("/api/players/alice/stats", headers=ORIGIN).json()
+    bob = c.get("/api/players/bob/stats", headers=ORIGIN).json()
+    assert alice["seasonTitles"] == [{"id": "2026-Q2", "label": "Q2 2026"}]
+    assert bob["seasonTitles"] == []

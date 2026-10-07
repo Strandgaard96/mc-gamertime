@@ -1,5 +1,8 @@
+from datetime import date
+
 from fastapi.testclient import TestClient
 
+import lib.seasons as seasons_lib
 from main import app
 from tests.conftest import ORIGIN
 
@@ -99,3 +102,54 @@ def test_get_stats_includes_variable_stats_for_configured_game(authed_client, fa
     white = next(b for b in gs["variableStats"]["color"]["breakdown"] if b["value"] == "White")
     assert white["picks"] == 1
     assert white["wins"] == 1
+
+
+def _seed_result(fake_db, pk: str, date_: str, winner: str, loser: str):
+    fake_db["results"].seed(
+        {
+            "pk": pk,
+            "gameId": "01GAME",
+            "gameName": "Catan",
+            "date": date_,
+            "players": [
+                {"playerId": winner, "playerName": winner.title()},
+                {"playerId": loser, "playerName": loser.title()},
+            ],
+            "winnerId": winner,
+            "winnerName": winner.title(),
+            "createdAt": f"{date_}T00:00:00Z",
+        }
+    )
+
+
+def test_stats_season_filters_results(authed_client, fake_db):
+    _seed_result(fake_db, "r1", "2026-05-01", "alice", "bob")
+    _seed_result(fake_db, "r2", "2026-08-01", "bob", "alice")
+    c = authed_client("readonly")
+    data = c.get("/api/stats?season=2026-Q3", headers=ORIGIN).json()
+    by_id = {e["playerId"]: e for e in data["leaderboard"]}
+    assert by_id["bob"]["wins"] == 1
+    assert by_id["alice"]["wins"] == 0
+
+
+def test_stats_season_empty_returns_empty_shape(authed_client, fake_db):
+    c = authed_client("readonly")
+    resp = c.get("/api/stats?season=2020-Q1", headers=ORIGIN)
+    assert resp.status_code == 200
+    assert resp.json()["leaderboard"] == []
+
+
+def test_stats_season_bad_format_422(authed_client, fake_db):
+    c = authed_client("readonly")
+    assert c.get("/api/stats?season=2026Q3", headers=ORIGIN).status_code == 422
+    assert c.get("/api/stats?season=2026-Q5", headers=ORIGIN).status_code == 422
+
+
+def test_stats_seasons_lists_current_and_champion(authed_client, fake_db, monkeypatch):
+    monkeypatch.setattr(seasons_lib, "today_utc", lambda: date(2026, 10, 7))
+    for i in range(5):
+        _seed_result(fake_db, f"r{i}", f"2026-05-0{i + 1}", "alice", "bob")
+    c = authed_client("readonly")
+    seasons = c.get("/api/stats/seasons", headers=ORIGIN).json()
+    assert [s["id"] for s in seasons] == ["2026-Q4", "2026-Q2"]
+    assert seasons[1]["champion"] == {"playerId": "alice", "name": "Alice"}
