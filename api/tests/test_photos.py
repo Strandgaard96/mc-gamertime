@@ -40,7 +40,7 @@ def _seed_session(fake_db, pk="s1"):
 
 
 def _key(ext="webp") -> str:
-    return f"session-photos/{ULID()!s}.{ext}"
+    return f"session-images/{ULID()!s}.{ext}"
 
 
 def _seed_photo(fake_db, pk, session="s1", uploader="testuser", key=None):
@@ -74,7 +74,7 @@ def test_readonly_can_request_upload_and_confirm(authed_client, fake_db):
     )
     assert up.status_code == 200
     body = up.json()
-    assert body["key"].startswith("session-photos/")
+    assert body["key"].startswith("session-images/")
     assert body["key"].endswith(".webp")
 
     created = c.post("/api/photos", json={"sessionPk": "s1", "key": body["key"]}, headers=ORIGIN)
@@ -180,7 +180,7 @@ def test_upload_and_confirm_capped_at_six(authed_client, fake_db):
 def test_confirm_bad_key_422(authed_client, fake_db):
     _seed_session(fake_db)
     c = authed_client("readonly")
-    for key in ("avatars/testuser.png", "session-photos/../x.png", "session-photos/abc.webp"):
+    for key in ("avatars/testuser.png", "session-images/../x.png", "session-images/abc.webp"):
         resp = c.post("/api/photos", json={"sessionPk": "s1", "key": key}, headers=ORIGIN)
         assert resp.status_code == 422, key
 

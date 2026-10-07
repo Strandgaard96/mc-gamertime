@@ -58,7 +58,7 @@ describe("uploadSessionPhoto", () => {
     vi.mocked(api.requestPhotoUpload).mockResolvedValue({
       uploadUrl: "/u",
       imageUrl: "/i",
-      key: "session-photos/K.jpg",
+      key: "session-images/K.jpg",
     });
     vi.mocked(api.createPhoto).mockResolvedValue({ pk: "p" } as never);
     const fetchMock = vi.fn().mockResolvedValue({ ok: true });
@@ -71,7 +71,7 @@ describe("uploadSessionPhoto", () => {
       body: blob,
       headers: { "Content-Type": "image/jpeg" },
     });
-    expect(api.createPhoto).toHaveBeenCalledWith("s1", "session-photos/K.jpg");
+    expect(api.createPhoto).toHaveBeenCalledWith("s1", "session-images/K.jpg");
   });
 
   it("throws and does not confirm when the PUT fails", async () => {

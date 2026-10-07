@@ -300,7 +300,7 @@ def _photo_put(monkeypatch, *, query: str, body: bytes = b"RIFFxxxxWEBP", key: s
     s3 = _CapturingS3()
     monkeypatch.setattr(storage_module, "make_s3_client", lambda: s3)
     monkeypatch.setattr(storage_module, "_BUCKET", "test-bucket")
-    key = key or f"session-photos/{ULID()!s}.webp"
+    key = key or f"session-images/{ULID()!s}.webp"
     c = TestClient(_make_app(), raise_server_exceptions=False)
     c.cookies.set("token", make_auth_cookie("readonly")["token"])
     url = f"/storage/{key}" + (f"?{query}" if query else "")
@@ -315,7 +315,7 @@ def _token(key: str, length: int, now: int | None = None) -> str:
 
 
 def test_put_object_session_photo_with_valid_token_allowed_for_readonly(fake_db, monkeypatch):
-    key = f"session-photos/{ULID()!s}.webp"
+    key = f"session-images/{ULID()!s}.webp"
     body = b"RIFFxxxxWEBP"
     resp, captured, _ = _photo_put(monkeypatch, key=key, body=body, query=_token(key, len(body)))
     assert resp.status_code == 200
@@ -330,7 +330,7 @@ def test_put_object_session_photo_without_token_forbidden(fake_db, monkeypatch):
 
 
 def test_put_object_session_photo_expired_token_forbidden(fake_db, monkeypatch):
-    key = f"session-photos/{ULID()!s}.webp"
+    key = f"session-images/{ULID()!s}.webp"
     body = b"RIFFxxxxWEBP"
     stale = _token(key, len(body), now=int(time.time()) - 301)
     resp, captured, _ = _photo_put(monkeypatch, key=key, body=body, query=stale)
@@ -340,14 +340,14 @@ def test_put_object_session_photo_expired_token_forbidden(fake_db, monkeypatch):
 
 def test_put_object_session_photo_token_for_other_key_forbidden(fake_db, monkeypatch):
     body = b"RIFFxxxxWEBP"
-    other = _token(f"session-photos/{ULID()!s}.webp", len(body))
+    other = _token(f"session-images/{ULID()!s}.webp", len(body))
     resp, captured, _ = _photo_put(monkeypatch, body=body, query=other)
     assert resp.status_code == 403
     assert captured == {}
 
 
 def test_put_object_session_photo_length_mismatch_forbidden(fake_db, monkeypatch):
-    key = f"session-photos/{ULID()!s}.webp"
+    key = f"session-images/{ULID()!s}.webp"
     body = b"RIFFxxxxWEBP"
     resp, captured, _ = _photo_put(
         monkeypatch, key=key, body=body + b"extra", query=_token(key, len(body))
@@ -361,7 +361,7 @@ def test_put_object_session_photo_bad_key_forbidden(fake_db):
     c = TestClient(app, raise_server_exceptions=False)
     c.cookies.set("token", make_auth_cookie("readonly")["token"])
     resp = c.put(
-        "/storage/session-photos/not-a-ulid.webp",
+        "/storage/session-images/not-a-ulid.webp",
         content=b"RIFFxxxxWEBP",
         headers={"content-type": "image/webp"},
     )
@@ -371,7 +371,7 @@ def test_put_object_session_photo_bad_key_forbidden(fake_db):
 def test_put_object_session_photo_registered_key_forbidden(fake_db, monkeypatch):
     # A valid token is not enough once the key is registered: the registered
     # key is public, so this is what stops overwriting someone else's photo.
-    key = f"session-photos/{ULID()!s}.webp"
+    key = f"session-images/{ULID()!s}.webp"
     body = b"RIFFxxxxWEBP"
     fake_db["reactions"].seed(
         {

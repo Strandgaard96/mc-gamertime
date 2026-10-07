@@ -12,8 +12,8 @@ const photo = (pk: string, uploaderId: string): PhotoItem => ({
   pk,
   type: "photo",
   sessionPk: "s1",
-  key: `session-photos/${pk}.webp`,
-  imageUrl: `/session-photos/${pk}.webp`,
+  key: `session-images/${pk}.webp`,
+  imageUrl: `/session-images/${pk}.webp`,
   uploaderId,
   uploaderName: uploaderId,
   createdAt: "2026-06-01T00:00:00Z",
@@ -83,19 +83,19 @@ describe("SessionPhotos", () => {
 
     it("opens the clicked photo", async () => {
       await openFirst();
-      expect(shown()).toHaveAttribute("src", "/session-photos/p1.webp");
+      expect(shown()).toHaveAttribute("src", "/session-images/p1.webp");
     });
 
     it("ArrowRight advances without focusing the nav buttons", async () => {
       await openFirst();
       fireEvent.keyDown(document, { key: "ArrowRight" });
-      expect(shown()).toHaveAttribute("src", "/session-photos/p2.webp");
+      expect(shown()).toHaveAttribute("src", "/session-images/p2.webp");
     });
 
     it("ArrowLeft from the first photo wraps to the last", async () => {
       await openFirst();
       fireEvent.keyDown(document, { key: "ArrowLeft" });
-      expect(shown()).toHaveAttribute("src", "/session-photos/p3.webp");
+      expect(shown()).toHaveAttribute("src", "/session-images/p3.webp");
     });
   });
 });

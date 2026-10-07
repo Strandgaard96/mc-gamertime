@@ -158,19 +158,19 @@ def test_build_upload_url_selfhost_returns_same_url_for_both(monkeypatch):
 def test_photo_key_re_accepts_valid_keys():
     ulid = str(ULID())
     for ext in ("webp", "jpg", "png"):
-        assert PHOTO_KEY_RE.match(f"session-photos/{ulid}.{ext}")
+        assert PHOTO_KEY_RE.match(f"session-images/{ulid}.{ext}")
 
 
 def test_photo_key_re_rejects_bad_keys():
     ulid = str(ULID())
     for key in (
-        f"session-photos/{ulid}.gif",
-        f"session-photos/{ulid}.jpeg",
-        "session-photos/../avatars/x.png",
+        f"session-images/{ulid}.gif",
+        f"session-images/{ulid}.jpeg",
+        "session-images/../avatars/x.png",
         f"blog-images/{ulid}.png",
-        f"session-photos/{ulid}.png/extra",
-        "session-photos/short.png",
-        f"session-photos/{ulid}.png\n",
+        f"session-images/{ulid}.png/extra",
+        "session-images/short.png",
+        f"session-images/{ulid}.png\n",
     ):
         assert not PHOTO_KEY_RE.match(key), key
 
@@ -187,7 +187,7 @@ def test_build_upload_returns_key_matching_urls(monkeypatch):
 
 # --- photo upload tokens (selfhost /storage proxy) ---
 
-_KEY = f"session-photos/{ULID()!s}.webp"
+_KEY = f"session-images/{ULID()!s}.webp"
 
 
 def _params(query: str) -> dict[str, str]:
@@ -211,7 +211,7 @@ def test_upload_token_expired():
 
 def test_upload_token_tampered_fields_rejected():
     params = _params(sign_photo_upload(_KEY, 1234, secret="s3cret", now=1000))
-    other_key = f"session-photos/{ULID()!s}.webp"
+    other_key = f"session-images/{ULID()!s}.webp"
     assert verify_photo_upload(other_key, params, secret="s3cret", now=1000) is None
     for field, value in (("len", "99999"), ("exp", "999999"), ("sig", "0" * 64)):
         bad = {**params, field: value}
@@ -235,7 +235,7 @@ def test_build_upload_photo_selfhost_url_carries_token(monkeypatch):
     monkeypatch.setenv("STORAGE_BACKEND", "local")
     monkeypatch.delenv("S3_ENDPOINT_URL", raising=False)
     upload_url, image_url, key = build_upload(
-        None, "bucket", "/storage", "session-photos", "image/webp", content_length=4321
+        None, "bucket", "/storage", "session-images", "image/webp", content_length=4321
     )
     assert PHOTO_KEY_RE.match(key)
     assert image_url == f"/storage/{key}"
@@ -257,7 +257,7 @@ def test_build_upload_cloud_presign_binds_content_length(monkeypatch):
             return "https://example.com/upload"
 
     upload_url, _image_url, key = build_upload(
-        FakeS3(), "bucket", "", "session-photos", "image/webp", content_length=4321
+        FakeS3(), "bucket", "", "session-images", "image/webp", content_length=4321
     )
     assert upload_url == "https://example.com/upload"
     assert captured["ContentLength"] == 4321
@@ -268,4 +268,4 @@ def test_build_upload_photo_selfhost_requires_length(monkeypatch):
     monkeypatch.setenv("STORAGE_BACKEND", "local")
     monkeypatch.delenv("S3_ENDPOINT_URL", raising=False)
     with pytest.raises(ValueError, match="content_length"):
-        build_upload(None, "bucket", "/storage", "session-photos", "image/webp")
+        build_upload(None, "bucket", "/storage", "session-images", "image/webp")
