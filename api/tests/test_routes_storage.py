@@ -1,6 +1,7 @@
 import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
+from ulid import ULID
 
 import routes.storage as storage_module
 from lib.auth import AuthUser
@@ -282,3 +283,39 @@ def test_put_object_avatar_own_succeeds(fake_db, monkeypatch):
 
     assert resp.status_code == 200
     assert captured["Key"] == "avatars/testuser.png"
+
+
+def test_put_object_session_photo_allowed_for_readonly(fake_db, monkeypatch):
+    captured = {}
+
+    class FakeS3:
+        def put_object(self, **kwargs):
+            captured.update(kwargs)
+
+    monkeypatch.setattr(storage_module, "make_s3_client", lambda: FakeS3())
+    monkeypatch.setattr(storage_module, "_BUCKET", "test-bucket")
+
+    key = f"session-photos/{ULID()!s}.webp"
+    app = _make_app()
+    c = TestClient(app, raise_server_exceptions=False)
+    c.cookies.set("token", make_auth_cookie("readonly")["token"])
+    resp = c.put(
+        f"/storage/{key}",
+        content=b"RIFFxxxxWEBP",
+        headers={"content-type": "image/webp"},
+    )
+    assert resp.status_code == 200
+    assert captured["Key"] == key
+    assert captured["ContentType"] == "image/webp"
+
+
+def test_put_object_session_photo_bad_key_forbidden(fake_db):
+    app = _make_app()
+    c = TestClient(app, raise_server_exceptions=False)
+    c.cookies.set("token", make_auth_cookie("readonly")["token"])
+    resp = c.put(
+        "/storage/session-photos/not-a-ulid.webp",
+        content=b"RIFFxxxxWEBP",
+        headers={"content-type": "image/webp"},
+    )
+    assert resp.status_code == 403

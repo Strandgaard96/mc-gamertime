@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from pathlib import Path
 
 from ulid import ULID
@@ -130,11 +131,22 @@ EXT_BY_CONTENT_TYPE = {
 }
 
 
-def build_upload_url(
+# Game-night photos: any logged-in user may upload (social write, like comments),
+# so the key shape is validated wherever a client hands one back to us.
+PHOTO_PREFIX = "session-photos"
+PHOTO_CONTENT_TYPES: tuple[str, ...] = ("image/webp", "image/jpeg", "image/png")
+PHOTO_KEY_RE = re.compile(
+    rf"^{PHOTO_PREFIX}/[0-9A-HJKMNP-TV-Z]{{26}}\."
+    rf"({'|'.join(EXT_BY_CONTENT_TYPE[t] for t in PHOTO_CONTENT_TYPES)})$"
+)
+
+
+def build_upload(
     s3_client, bucket: str, object_base_url: str, prefix: str, content_type: str
-) -> tuple[str, str]:
+) -> tuple[str, str, str]:
     """Build a presigned-PUT URL (or, in selfhost mode, an authenticated proxy
-    URL) plus the URL the image will be read back from, under `prefix/`.
+    URL), the URL the image will be read back from, and the storage key, all
+    under `prefix/`.
 
     The read URL is authenticated on every deployment — see
     get_object_base_url. Only the upload leg uses a presigned S3 URL."""
@@ -142,11 +154,20 @@ def build_upload_url(
     key = f"{prefix}/{ULID()!s}.{ext}"
     image_url = f"{object_base_url}/{key}"
     if os.environ.get("S3_ENDPOINT_URL") or is_local_storage():
-        return image_url, image_url
+        return image_url, image_url, key
     upload_url = s3_client.generate_presigned_url(
         "put_object",
         Params={"Bucket": bucket, "Key": key, "ContentType": content_type},
         ExpiresIn=300,
+    )
+    return upload_url, image_url, key
+
+
+def build_upload_url(
+    s3_client, bucket: str, object_base_url: str, prefix: str, content_type: str
+) -> tuple[str, str]:
+    upload_url, image_url, _key = build_upload(
+        s3_client, bucket, object_base_url, prefix, content_type
     )
     return upload_url, image_url
 

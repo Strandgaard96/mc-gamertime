@@ -1,6 +1,8 @@
 import boto3
+from ulid import ULID
 
 import lib.storage as storage
+from lib.storage import PHOTO_KEY_RE, build_upload
 
 
 def test_make_s3_client_uses_real_aws_on_s3_backend(monkeypatch):
@@ -145,3 +147,32 @@ def test_build_upload_url_selfhost_returns_same_url_for_both(monkeypatch):
     assert upload_url == image_url
     assert upload_url.startswith("/storage/game-images/")
     assert upload_url.endswith(".png")
+
+
+def test_photo_key_re_accepts_valid_keys():
+    ulid = str(ULID())
+    for ext in ("webp", "jpg", "png"):
+        assert PHOTO_KEY_RE.match(f"session-photos/{ulid}.{ext}")
+
+
+def test_photo_key_re_rejects_bad_keys():
+    ulid = str(ULID())
+    for key in (
+        f"session-photos/{ulid}.gif",
+        f"session-photos/{ulid}.jpeg",
+        "session-photos/../avatars/x.png",
+        f"blog-images/{ulid}.png",
+        f"session-photos/{ulid}.png/extra",
+        "session-photos/short.png",
+    ):
+        assert not PHOTO_KEY_RE.match(key), key
+
+
+def test_build_upload_returns_key_matching_urls(monkeypatch):
+    monkeypatch.setenv("STORAGE_BACKEND", "local")
+    upload_url, image_url, key = build_upload(
+        None, "bucket", "/storage", "session-photos", "image/webp"
+    )
+    assert image_url == f"/storage/{key}"
+    assert upload_url == image_url
+    assert PHOTO_KEY_RE.match(key)

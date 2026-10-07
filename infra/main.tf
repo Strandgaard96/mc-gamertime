@@ -31,5 +31,5 @@ locals {
   # to the API (served behind require_auth), writable by the Lambda, and denied
   # to CloudFront's direct S3 read. Must equal MEDIA_PREFIXES in
   # api/routes/storage.py — api/tests/test_media_prefixes_sync.py checks it.
-  media_prefixes = ["avatars", "blog-images", "game-images"]
+  media_prefixes = ["avatars", "blog-images", "game-images", "session-photos"]
 }

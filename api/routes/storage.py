@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from lib.auth import AuthUser, require_auth
-from lib.storage import EXT_BY_CONTENT_TYPE, make_s3_client
+from lib.storage import EXT_BY_CONTENT_TYPE, PHOTO_KEY_RE, PHOTO_PREFIX, make_s3_client
 
 router = APIRouter()
 
@@ -25,13 +25,13 @@ except ImportError:  # pragma: no cover - only true inside the selfhost image
 # (incl. boardsite-users: usernames, roles, bcrypt hashes) to the same bucket,
 # and this route only requires require_auth (not require_admin). Matches the
 # only keys the app ever writes here: "avatars/{username}.png" (routes/users.py),
-# "blog-images/{ulid}.{ext}" (routes/posts.py), and "game-images/{ulid}.{ext}"
-# (routes/games.py).
+# "blog-images/{ulid}.{ext}" (routes/posts.py), "game-images/{ulid}.{ext}"
+# (routes/games.py), and "session-photos/{ulid}.{ext}" (routes/photos.py).
 #
 # Single source for the app side: main.py mounts media_router at each of
 # these. The infra side is local.media_prefixes in infra/main.tf, and
 # tests/test_media_prefixes_sync.py fails if the two lists differ.
-MEDIA_PREFIXES = ("avatars", "blog-images", "game-images")
+MEDIA_PREFIXES = ("avatars", "blog-images", "game-images", "session-photos")
 _ALLOWED_PREFIXES = tuple(f"{p}/" for p in MEDIA_PREFIXES)
 
 _MAX_UPLOAD_BYTES = 10 * 1024 * 1024
@@ -46,6 +46,12 @@ def _authorize_write(path: str, user: AuthUser) -> None:
     if path.startswith("avatars/"):
         owner = path.removeprefix("avatars/").removesuffix(".png")
         if user.sub != owner and user.role != "admin":
+            raise HTTPException(status_code=403, detail="Forbidden")
+        return
+    if path.startswith(f"{PHOTO_PREFIX}/"):
+        # Any logged-in user may upload a game-night photo, but only to a key
+        # shaped like the ones routes/photos.py issues.
+        if not PHOTO_KEY_RE.match(path):
             raise HTTPException(status_code=403, detail="Forbidden")
         return
     # blog-images/* and game-images/* are admin-authored (posts, games)
@@ -84,7 +90,7 @@ def get_object(path: str, _: Annotated[AuthUser, Depends(require_auth)]):
 
 # Same objects, addressed the way the app links to them: /avatars/alice.png
 # rather than /storage/avatars/alice.png. On the cloud deployment CloudFront
-# routes exactly these three prefixes to the API instead of reading them
+# routes exactly these prefixes to the API instead of reading them
 # straight out of S3, so uploaded media requires a session there too.
 media_router = APIRouter()
 
