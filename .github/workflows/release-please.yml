@@ -3,6 +3,8 @@ name: Release Please
 on:
   push:
     branches: [main]
+  # Regenerate the release PR on demand (e.g. after editing its config).
+  workflow_dispatch:
 
 # Default token to read-only; only the release-please job itself needs to
 # push tags/releases and open the release PR.
@@ -11,6 +13,8 @@ permissions:
 
 jobs:
   release-please:
+    # A manual dispatch can pick any branch; releases are cut from main only.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
