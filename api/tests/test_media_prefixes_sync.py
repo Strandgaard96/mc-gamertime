@@ -28,6 +28,24 @@ def test_terraform_and_app_media_prefixes_match():
     assert sorted(_terraform_media_prefixes()) == sorted(MEDIA_PREFIXES)
 
 
+def _cloudfront_path_patterns(prefixes) -> set[str]:
+    # Mirrors local.media_path_patterns in infra/main.tf.
+    return {"/*-images/*" if p.endswith("-images") else f"/{p}/*" for p in prefixes}
+
+
+def test_cloudfront_behaviour_budget():
+    # CloudFront's free pricing plan caps a distribution at 5 cache behaviours,
+    # counting the default and /api/*. Only AWS enforces it, at apply time —
+    # a sixth behaviour plans cleanly and then fails `terraform apply`.
+    assert 'endswith(p, "-images") ? "/*-images/*"' in _MAIN_TF.read_text(), (
+        "local.media_path_patterns in infra/main.tf no longer matches this test's mirror"
+    )
+    behaviours = 2 + len(_cloudfront_path_patterns(MEDIA_PREFIXES))
+    assert behaviours <= 5, (
+        f"{behaviours} CloudFront cache behaviours; name new media prefixes '*-images'"
+    )
+
+
 def test_every_media_prefix_is_mounted():
     from main import app
 

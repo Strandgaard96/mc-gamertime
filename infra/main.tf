@@ -31,5 +31,14 @@ locals {
   # to the API (served behind require_auth), writable by the Lambda, and denied
   # to CloudFront's direct S3 read. Must equal MEDIA_PREFIXES in
   # api/routes/storage.py — api/tests/test_media_prefixes_sync.py checks it.
-  media_prefixes = ["avatars", "blog-images", "game-images", "session-photos"]
+  media_prefixes = ["avatars", "blog-images", "game-images", "session-images"]
+
+  # CloudFront path patterns for those prefixes. The free pricing plan allows 5
+  # cache behaviours in total (default + /api/* + these), so every "*-images"
+  # prefix shares one wildcard behaviour instead of getting its own. Name a new
+  # media prefix "<something>-images" and it costs nothing here;
+  # test_media_prefixes_sync.py enforces the budget.
+  media_path_patterns = distinct([
+    for p in local.media_prefixes : endswith(p, "-images") ? "/*-images/*" : "/${p}/*"
+  ])
 }

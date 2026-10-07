@@ -137,7 +137,7 @@ EXT_BY_CONTENT_TYPE = {
 
 # Game-night photos: any logged-in user may upload (social write, like comments),
 # so the key shape is validated wherever a client hands one back to us.
-PHOTO_PREFIX = "session-photos"
+PHOTO_PREFIX = "session-images"
 PHOTO_CONTENT_TYPES: tuple[str, ...] = ("image/webp", "image/jpeg", "image/png")
 PHOTO_KEY_RE = re.compile(
     rf"^{PHOTO_PREFIX}/[0-9A-HJKMNP-TV-Z]{{26}}\."

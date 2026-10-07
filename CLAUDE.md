@@ -145,11 +145,14 @@ The project includes a **"Full Stack" VS Code Launch Configuration**:
 - Per-player notification inbox: `api/lib/db/notifications.py` (`put_notification`, `list_notifications_for_player`); `GET /api/notifications` → `{notifications, unreadCount}` (unread = `createdAt > user.lastReadAt`); `POST /api/notifications/read` → `set_last_read_at` in `api/lib/db/users.py`.
 - Optional result fields handle `None` differently: top-level (`mood`) is popped from the dict before `put_result` (attribute absent); nested `ResultPlayer.score: None` is stored as DynamoDB NULL via `_floats_to_decimal`. Match the existing field's pattern, don't assume they're interchangeable.
 - `playerVariables[].id` is server-derived (slugified label via `_assign_variable_ids` in `api/routes/games.py`) and **changes if the label is edited** — `_validate_player_config` in `api/routes/results.py` requires the `variables` dict's keys to be EXACTLY the current `playerVariables[].id` set (422 on any mismatch, including stale ids). Frontend forms (`LogResultDialog`) must reset `variables`/`seats` state on game switch and build the payload from the *current* `playerVariables` list, not from stale per-player state — otherwise edits after a label rename 422.
-- Uploaded-media prefixes (`avatars`, `blog-images`, `game-images`) live in exactly two places:
+- Uploaded-media prefixes (`avatars`, `blog-images`, `game-images`, `session-images`) live in exactly two places:
   `MEDIA_PREFIXES` in `api/routes/storage.py` (proxy allowlist + the `media_router` mounts in
   `main.py`) and `local.media_prefixes` in `infra/main.tf` (CloudFront behaviours, Lambda S3 IAM,
   the S3 `Deny`). A new image-upload feature adds its prefix to both;
-  `tests/test_media_prefixes_sync.py` fails if they differ.
+  `tests/test_media_prefixes_sync.py` fails if they differ. **Name new prefixes `*-images`**: the
+  CloudFront free plan caps a distribution at 5 cache behaviours (default + `/api/*` + media), so
+  all `*-images` prefixes share one `/*-images/*` behaviour (`local.media_path_patterns`). A
+  sixth behaviour plans cleanly and only fails at `terraform apply`; the sync test checks the budget.
 - PUT/edit routes' `exclude_unset` merge (above) has a frontend-side trap: `JSON.stringify` drops `undefined` values, so a form that sends `undefined` for a blanked field gets treated as "field unchanged," not "field cleared." To actually clear an optional field, send explicit `null`.
 
 ## Infra Notes
