@@ -1,7 +1,7 @@
 services:
   mc-gamertime-init:
     container_name: mc-gamertime-init
-    image: alpine:3
+    image: alpine:3@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
     user: root
     command: >-
       sh -c "mkdir -p /config/app &&
@@ -23,7 +23,7 @@ services:
 
   mc-gamertime:
     container_name: mc-gamertime
-    image: ghcr.io/strandgaard96/mc-gamertime:latest
+    image: ghcr.io/strandgaard96/mc-gamertime:latest@sha256:7f1eb835f3a043b62f7b888ec04893205d8fe4c732abca88376ee31cb8511f73
     # Must match init's chown target above, or the app can't write /data.
     user: "${PUID:-1000}:${PGID:-1000}"
     ports:
