@@ -1,6 +1,11 @@
+import math
+
+import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 from main import app
+from routes.results import ResultPlayer
 from tests.conftest import ORIGIN
 
 
@@ -210,23 +215,6 @@ def test_create_result_invalid_date_returns_422(authed_client):
     assert resp.status_code == 422
 
 
-def test_create_result_negative_score_returns_422(authed_client):
-    c = authed_client("admin")
-    resp = c.post(
-        "/api/results",
-        json={
-            "gameId": "01GAME",
-            "gameName": "Catan",
-            "date": "2026-01-01",
-            "players": [{"playerId": "alice", "playerName": "Alice", "score": -1}],
-            "winnerId": "alice",
-            "winnerName": "Alice",
-        },
-        headers=ORIGIN,
-    )
-    assert resp.status_code == 422
-
-
 def test_create_result_unknown_game_returns_422(authed_client, fake_db):
     _seed_user(fake_db, "alice", "Alice")
     c = authed_client("admin")
@@ -295,20 +283,11 @@ def _result_payload(**overrides):
     }
 
 
-def test_create_result_score_out_of_range_rejected(authed_client, fake_db):
+def test_create_result_accepts_any_finite_score(authed_client, fake_db):
     fake_db["games"].seed({"pk": "01GAME", "name": "Catan", "createdAt": "2026-01-01T00:00:00Z"})
     _seed_user(fake_db, "alice")
     c = authed_client("admin")
-    for bad in (0, 0.5, 11):
-        resp = c.post(
-            "/api/results",
-            json=_result_payload(
-                players=[{"playerId": "alice", "playerName": "Alice", "score": bad}]
-            ),
-            headers=ORIGIN,
-        )
-        assert resp.status_code == 422, f"score {bad} should be rejected"
-    for ok in (1, 10):
+    for ok in (-5, 0, 0.5, 11, 142):
         resp = c.post(
             "/api/results",
             json=_result_payload(
@@ -317,6 +296,46 @@ def test_create_result_score_out_of_range_rejected(authed_client, fake_db):
             headers=ORIGIN,
         )
         assert resp.status_code == 201, f"score {ok} should be accepted"
+        assert resp.json()["players"][0]["score"] == ok
+
+
+def test_result_player_rejects_non_finite_score():
+    # Tested on the model: over HTTP, FastAPI's 422 body echoes the NaN input and
+    # fails to JSON-encode it, so the request is rejected but not with a clean 422.
+    for bad in (math.nan, math.inf, -math.inf):
+        with pytest.raises(ValidationError):
+            ResultPlayer(playerId="alice", playerName="Alice", score=bad)
+
+
+def test_create_result_with_notes_stored_trimmed(authed_client, fake_db):
+    fake_db["games"].seed({"pk": "01GAME", "name": "Catan", "createdAt": "2026-01-01T00:00:00Z"})
+    _seed_user(fake_db, "alice")
+    c = authed_client("admin")
+    resp = c.post(
+        "/api/results", json=_result_payload(notes="  Birds 34, eggs 12  "), headers=ORIGIN
+    )
+    assert resp.status_code == 201
+    assert resp.json()["notes"] == "Birds 34, eggs 12"
+
+
+def test_create_result_blank_or_missing_notes_omits_attribute(authed_client, fake_db):
+    fake_db["games"].seed({"pk": "01GAME", "name": "Catan", "createdAt": "2026-01-01T00:00:00Z"})
+    _seed_user(fake_db, "alice")
+    c = authed_client("admin")
+    for payload in (_result_payload(), _result_payload(notes="   "), _result_payload(notes=None)):
+        resp = c.post("/api/results", json=payload, headers=ORIGIN)
+        assert resp.status_code == 201
+        assert "notes" not in resp.json()
+
+
+def test_create_result_notes_too_long_rejected(authed_client, fake_db):
+    fake_db["games"].seed({"pk": "01GAME", "name": "Catan", "createdAt": "2026-01-01T00:00:00Z"})
+    _seed_user(fake_db, "alice")
+    c = authed_client("admin")
+    resp = c.post("/api/results", json=_result_payload(notes="x" * 1001), headers=ORIGIN)
+    assert resp.status_code == 422
+    resp = c.post("/api/results", json=_result_payload(notes="x" * 1000), headers=ORIGIN)
+    assert resp.status_code == 201
 
 
 def test_create_result_with_mood_stored(authed_client, fake_db):
@@ -561,6 +580,19 @@ def test_update_result_null_mood_clears_it(authed_client, fake_db):
     resp = c.put("/api/results/01RESULT", json={"mood": None}, headers=ORIGIN)
     assert resp.status_code == 200
     assert "mood" not in resp.json()
+
+
+def test_update_result_sets_and_clears_notes(authed_client, fake_db):
+    fake_db["games"].seed({"pk": "01GAME", "name": "Catan", "createdAt": "2026-01-01T00:00:00Z"})
+    _seed_user(fake_db, "alice")
+    _seed_result(fake_db)
+    c = authed_client("admin")
+    resp = c.put("/api/results/01RESULT", json={"notes": "Close game"}, headers=ORIGIN)
+    assert resp.status_code == 200
+    assert resp.json()["notes"] == "Close game"
+    resp = c.put("/api/results/01RESULT", json={"notes": None}, headers=ORIGIN)
+    assert resp.status_code == 200
+    assert "notes" not in resp.json()
 
 
 def test_update_result_winner_must_be_player(authed_client, fake_db):

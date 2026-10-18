@@ -9,7 +9,6 @@ from .rules import (
     game_name_is,
     game_weight_at_least,
     is_win,
-    score_at_least,
     streak_threshold,
     variable_equals,
 )
@@ -81,13 +80,6 @@ ACHIEVEMENT_DEFS: list[dict] = [
         "icon": "💪",
         "description": "Win rate ≥ 70% with at least 10 games played",
         "evaluate": _dominant,
-    },
-    {
-        "id": "perfect_10",
-        "label": "Perfect 10",
-        "icon": "🎯",
-        "description": "Scored a perfect 10",
-        "evaluate": counter_threshold(score_at_least(10), 1),
     },
     # --- game-attribute-based ---
     {
