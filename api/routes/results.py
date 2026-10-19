@@ -1,3 +1,4 @@
+import math
 from datetime import UTC, datetime
 from typing import Annotated, Any
 
@@ -33,11 +34,26 @@ class ResultPlayer(BaseModel):
 
     @field_validator("score")
     @classmethod
-    def score_in_range(cls, v: float | None) -> float | None:
-        # Mirrors the frontend rule in LogResultDialog.tsx (1-10)
-        if v is not None and not (1 <= v <= 10):
-            raise ValueError("score must be between 1 and 10")
+    def score_finite(cls, v: float | None) -> float | None:
+        # No range: game scores vary (Wingspan ~100, some games go negative)
+        if v is not None and not math.isfinite(v):
+            raise ValueError("score must be a finite number")
         return v
+
+
+# Top-level fields stored only when set; explicit null on update clears them
+OPTIONAL_RESULT_FIELDS = ("mood", "notes")
+NOTES_MAX_LENGTH = 1000
+
+
+def _clean_notes(v: str | None) -> str | None:
+    # Blank notes are treated as absent, like an unset mood
+    if v is None or not v.strip():
+        return None
+    v = v.strip()
+    if len(v) > NOTES_MAX_LENGTH:
+        raise ValueError(f"notes must be at most {NOTES_MAX_LENGTH} characters")
+    return v
 
 
 def _validate_player_config(game: dict, players: list[dict]) -> None:
@@ -92,6 +108,7 @@ class AddResultBody(BaseModel):
     winnerId: str
     winnerName: str
     mood: int | None = None
+    notes: str | None = None
 
     @field_validator("gameId", "gameName", "winnerId", "winnerName")
     @classmethod
@@ -106,6 +123,11 @@ class AddResultBody(BaseModel):
         if v is not None and not (1 <= v <= 5):
             raise ValueError("mood must be between 1 and 5")
         return v
+
+    @field_validator("notes")
+    @classmethod
+    def notes_length(cls, v: str | None) -> str | None:
+        return _clean_notes(v)
 
     @field_validator("date")
     @classmethod
@@ -130,6 +152,7 @@ class UpdateResultBody(BaseModel):
     winnerId: str | None = None
     winnerName: str | None = None
     mood: int | None = None
+    notes: str | None = None
 
     @field_validator("gameId", "winnerId", "winnerName")
     @classmethod
@@ -159,6 +182,11 @@ class UpdateResultBody(BaseModel):
         if v is not None and not (1 <= v <= 5):
             raise ValueError("mood must be between 1 and 5")
         return v
+
+    @field_validator("notes")
+    @classmethod
+    def notes_length(cls, v: str | None) -> str | None:
+        return _clean_notes(v)
 
 
 def detect_milestone(winner_id: str, winner_name: str, all_results: list) -> str | None:
@@ -272,8 +300,9 @@ def create_result(body: AddResultBody, _: Annotated[AuthUser, Depends(require_ad
 
     body_dump = body.model_dump()
     _validate_player_config(game, body_dump["players"])
-    if body_dump.get("mood") is None:
-        body_dump.pop("mood", None)
+    for key in OPTIONAL_RESULT_FIELDS:
+        if body_dump.get(key) is None:
+            body_dump.pop(key, None)
     result = {
         "pk": str(ULID()),
         "createdAt": datetime.now(UTC).isoformat(),
@@ -304,9 +333,9 @@ def update_result(
     updated: dict[str, Any] = {**existing}
     for key, value in body.model_dump(exclude_unset=True).items():
         if value is None:
-            if key != "mood":
+            if key not in OPTIONAL_RESULT_FIELDS:
                 raise HTTPException(status_code=422, detail=f"{key} cannot be null")
-            updated.pop("mood", None)
+            updated.pop(key, None)
         else:
             updated[key] = value
 

@@ -21,7 +21,6 @@ import { toast } from "sonner";
 import { AchievementBadge } from "../components/AchievementBadge";
 import { Avatar } from "../components/Avatar";
 import { PageTransition } from "../components/PageTransition";
-import { ScoreTrendChart } from "../components/ScoreTrendChart";
 import { Badge } from "../components/ui/badge";
 import { Skeleton } from "../components/ui/skeleton";
 import { WinRateTrendChart } from "../components/WinRateTrendChart";
@@ -291,20 +290,6 @@ export default function PlayerProfilePage() {
 
   const recent = [...myResults].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10);
 
-  const scoreByMonth: Record<string, { sum: number; count: number }> = {};
-  for (const r of myResults) {
-    const mine = r.players.find((p) => p.playerId === id);
-    if (mine?.score != null) {
-      const m = r.date.slice(0, 7);
-      if (!scoreByMonth[m]) scoreByMonth[m] = { sum: 0, count: 0 };
-      scoreByMonth[m].sum += mine.score;
-      scoreByMonth[m].count++;
-    }
-  }
-  const scoreTrend = Object.entries(scoreByMonth)
-    .map(([month, v]) => ({ month, avgScore: v.sum / v.count }))
-    .sort((a, b) => a.month.localeCompare(b.month));
-
   function gameLink(gameId: string) {
     const g = games.find((g) => idFromPk(g.pk) === gameId || g.pk === gameId);
     return g ? idFromPk(g.pk) : gameId;
@@ -520,15 +505,6 @@ export default function PlayerProfilePage() {
             <h2 className="text-lg font-display font-semibold mb-3">Win Rate Trend</h2>
             <div className="bg-card rounded-lg border p-4">
               <WinRateTrendChart data={playerStats.winRateTrend} />
-            </div>
-          </section>
-        )}
-
-        {scoreTrend.length >= 2 && (
-          <section>
-            <h2 className="text-lg font-display font-semibold mb-3">Score Trend</h2>
-            <div className="bg-card rounded-lg border p-4">
-              <ScoreTrendChart data={scoreTrend} />
             </div>
           </section>
         )}

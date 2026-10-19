@@ -28,6 +28,9 @@ interface Props {
   editResult?: Result;
 }
 
+// Mirrors NOTES_MAX_LENGTH in api/routes/results.py
+const NOTES_MAX_LENGTH = 1000;
+
 export interface FormState {
   gameId: string;
   gameSearch: string;
@@ -36,6 +39,7 @@ export interface FormState {
   winnerId: string;
   scores: Record<string, string>;
   mood: number | null;
+  notes: string;
   variables: Record<string, Record<string, string>>;
   seats: Record<string, number | null>;
 }
@@ -48,6 +52,7 @@ export type Action =
   | { type: "SET_WINNER"; playerId: string }
   | { type: "SET_SCORE"; playerId: string; value: string }
   | { type: "SET_MOOD"; mood: number | null }
+  | { type: "SET_NOTES"; notes: string }
   | { type: "SET_VARIABLE"; playerId: string; variableId: string; value: string }
   | { type: "SET_SEAT"; playerId: string; seat: number | null }
   | { type: "RESET"; init: { defaultGameId?: string; editResult?: Result } };
@@ -68,6 +73,7 @@ export function buildInitialState(init: {
         r.players.filter((p) => p.score != null).map((p) => [p.playerId, String(p.score)]),
       ),
       mood: r.mood ?? null,
+      notes: r.notes ?? "",
       variables: Object.fromEntries(r.players.map((p) => [p.playerId, p.variables ?? {}])),
       seats: Object.fromEntries(r.players.map((p) => [p.playerId, p.seat ?? null])),
     };
@@ -80,6 +86,7 @@ export function buildInitialState(init: {
     winnerId: "",
     scores: {},
     mood: null,
+    notes: "",
     variables: {},
     seats: {},
   };
@@ -126,6 +133,9 @@ export function formReducer(state: FormState, action: Action): FormState {
 
     case "SET_MOOD":
       return { ...state, mood: action.mood };
+
+    case "SET_NOTES":
+      return { ...state, notes: action.notes };
 
     case "SET_VARIABLE":
       return {
@@ -176,6 +186,7 @@ export function LogResultDialog({ open, onClose, defaultGameId, editResult }: Pr
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const gameSearchId = useId();
+  const notesId = useId();
 
   useLayoutEffect(() => {
     if (open) searchInputRef.current?.focus();
@@ -243,15 +254,6 @@ export function LogResultDialog({ open, onClose, defaultGameId, editResult }: Pr
       return;
     }
 
-    const hasInvalidScore = state.selected.some((username) => {
-      const score = parseFloat(state.scores[username] ?? "");
-      return !Number.isNaN(score) && (score < 1 || score > 10);
-    });
-    if (hasInvalidScore) {
-      setErrors({ scores: "Scores must be between 1 and 10" });
-      return;
-    }
-
     if (playerVariables.length > 0) {
       const missing = state.selected.some((username) =>
         playerVariables.some((v) => !state.variables[username]?.[v.id]),
@@ -284,6 +286,7 @@ export function LogResultDialog({ open, onClose, defaultGameId, editResult }: Pr
       return;
     }
 
+    const notes = state.notes.trim();
     const payload = {
       gameId: state.gameId,
       gameName: game.name,
@@ -308,6 +311,7 @@ export function LogResultDialog({ open, onClose, defaultGameId, editResult }: Pr
       winnerId: state.winnerId,
       winnerName: winner.displayName,
       ...(state.mood != null ? { mood: state.mood } : {}),
+      ...(notes ? { notes } : {}),
     };
 
     let createdPk: string | undefined;
@@ -315,8 +319,8 @@ export function LogResultDialog({ open, onClose, defaultGameId, editResult }: Pr
       if (editResult) {
         await updateResultMut.mutateAsync({
           id: editResult.pk,
-          // explicit null clears a previously-set mood on the server
-          data: { ...payload, mood: state.mood ?? null },
+          // explicit null clears a previously-set mood/notes on the server
+          data: { ...payload, mood: state.mood ?? null, notes: notes || null },
         });
       } else {
         createdPk = (await addResult.mutateAsync(payload)).pk;
@@ -457,7 +461,6 @@ export function LogResultDialog({ open, onClose, defaultGameId, editResult }: Pr
                 );
               })}
             </div>
-            {errors.scores && <p className="text-destructive text-xs mt-1">{errors.scores}</p>}
           </div>
         )}
         {state.selected.length > 0 && playerVariables.length > 0 && (
@@ -557,6 +560,21 @@ export function LogResultDialog({ open, onClose, defaultGameId, editResult }: Pr
                 </button>
               ))}
             </div>
+          </div>
+        )}
+        {state.selected.length > 0 && (
+          <div>
+            <label htmlFor={notesId} className="text-sm font-medium">
+              Notes (optional)
+            </label>
+            <textarea
+              id={notesId}
+              value={state.notes}
+              onChange={(e) => dispatch({ type: "SET_NOTES", notes: e.target.value })}
+              maxLength={NOTES_MAX_LENGTH}
+              placeholder="e.g. score breakdown: birds 34, bonus cards 8, eggs 12"
+              className="mt-1 flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[60px] resize-y"
+            />
           </div>
         )}
         {state.selected.length > 0 && (

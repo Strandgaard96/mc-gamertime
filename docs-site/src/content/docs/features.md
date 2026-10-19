@@ -25,7 +25,7 @@ Search the Board Game Geek database to add games to your library. Each game stor
 
 ![The chronicle of logged sessions, grouped by month](../../assets/screenshot-log.png)
 
-Record who played, who won, seat positions, player scores, and session mood. Supports per-game custom variables (e.g. faction played, role). Past results can be edited.
+Record who played, who won, seat positions, player scores (any number — no fixed range), session mood, and free-text notes (e.g. a per-category score breakdown). Supports per-game custom variables (e.g. faction played, role). Past results can be edited.
 
 ## Achievements
 
