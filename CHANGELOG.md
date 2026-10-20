@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.0](https://github.com/Strandgaard96/mc-gamertime/compare/v0.3.3...v0.4.0) (2026-10-20)
+
+
+### Features
+
+* **api:** add six achievements ([d7c7422](https://github.com/Strandgaard96/mc-gamertime/commit/d7c7422ba84fef609d79615ca5a39af0b5743cae))
+* **api:** add six achievements ([3a34945](https://github.com/Strandgaard96/mc-gamertime/commit/3a34945969c8645370d8e8db8912081eb478fd59))
+
 ## [0.3.3](https://github.com/Strandgaard96/mc-gamertime/compare/v0.3.2...v0.3.3) (2026-10-12)
 
 
