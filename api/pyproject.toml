@@ -3,15 +3,15 @@ name = "mc-gamertime-api"
 version = "0.3.3"
 requires-python = ">=3.11"
 dependencies = [
-    "fastapi==0.141.1",
+    "fastapi==0.143.3",
     "bcrypt==5.0.0",
     "httpx==0.28.1",
     "python-ulid==4.0.1",
     "pillow>=12.3.0",
-    "pydantic==2.13.5",
-    "starlette==1.6.0",
+    "pydantic==2.14.1",
+    "starlette==1.8.0",
     "anyio==4.15.1",
-    "cryptography==50.0.1",
+    "cryptography==50.0.2",
     "defusedxml==0.7.1",
     "slowapi==0.1.10",
     "prometheus-client==0.26.0",
@@ -30,7 +30,7 @@ aws = [
     "mangum==0.22.0",
 ]
 selfhost = [
-    "uvicorn==0.52.4",
+    "uvicorn==0.54.0",
 ]
 dev = [
     "pytest",
