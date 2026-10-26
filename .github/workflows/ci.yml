@@ -357,6 +357,26 @@ jobs:
       - name: shellcheck
         run: git ls-files -z '*.sh' | xargs -0 shellcheck
 
+  # PRs are rebase-merged, so each commit reaches main as written and
+  # release-please reads its subject. Same script as the commit-msg hook.
+  commits:
+    name: Commit messages
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Conventional Commits
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: git log --no-merges --format=%s "$BASE_SHA..$HEAD_SHA" | scripts/check-commit-msg.sh
+
   secrets-scan:
     name: Secrets scan
     runs-on: ubuntu-latest
