@@ -26,7 +26,7 @@ dependencies = [
 # or container-only one goes in its group (`uv add --group aws <pkg>`).
 [dependency-groups]
 aws = [
-    "boto3==1.43.90",
+    "boto3==1.43.115",
     "mangum==0.22.0",
 ]
 selfhost = [
