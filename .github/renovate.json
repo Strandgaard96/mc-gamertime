@@ -10,6 +10,9 @@
   "automerge": false,
   "labels": ["dependencies"],
   "minimumReleaseAge": "7 days",
+  "constraints": {
+    "npm": "<12"
+  },
   "pre-commit": {
     "enabled": true
   },

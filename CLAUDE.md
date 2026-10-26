@@ -128,6 +128,7 @@ The project includes a **"Full Stack" VS Code Launch Configuration**:
   Grouping: non-major bumps go into one weekly "tooling (non-major)" PR, runtime deps into one "runtime deps" PR
   (majors split out by `separateMajorMinor`), Docker into "docker images". `docker-compose.yml` is never digest-pinned
   (`pinDigests: false`): `:latest@sha256:…` would freeze self-hosters on one image.
+  `constraints.npm: "<12"` holds Renovate's npm below 12: npm 12's `allow-remote=none` default fails lockfile updates with `EALLOWREMOTE` on Tailwind's `oxide-wasm32-wasi` (bundled deps), leaving `package.json` bumped but `package-lock.json` stale so `npm ci` fails. Drop it once npm/cli fixes the gate.
 - release-please: `docs:`/`ci:`/`chore:` are hidden changelog sections → they do NOT cut a release on their own; `feat:`/`fix:`/`perf:` do. `web/package.json` and `api/pyproject.toml` versions are bumped by `extra-files` in `release-please-config.json`.
   `api/uv.lock`'s root `mc-gamertime-api` `[[package]]` version is bumped the same way (filter uses `@.name.value` — release-please's toml parser wraps strings as `{value,start,end}`), because `--locked` consumers (CI `uv sync`, Dockerfile, `build.sh`) reject a pyproject/lock version mismatch.
 - Starlette 1.0.1 deprecated per-request cookies — use `client.cookies.set()` on TestClient instead
