@@ -95,7 +95,8 @@ The project includes a **"Full Stack" VS Code Launch Configuration**:
   + the `Terraform` job. Trivy (CI only): report-only (SARIF → Security tab) in ci.yml's `Docker build` on PRs,
   blocking in `publish.yml` before any push, blocking weekly in `security-scan.yml` (image + lockfiles).
 - `Docker build` in ci.yml runs on PRs only: on push to main, `publish.yml` (same path list) builds,
-  Trivy-scans and healthcheck-smoke-tests the image before pushing `:main`. Keep the two smoke tests in sync.
+  Trivy-scans and smoke-tests the image before pushing `:main`. Both call `docker/smoke-test.sh` (healthy +
+  SPA served + no traceback/`ERROR` line in the logs); change the smoke test there, not in the workflows.
 - `web/.oxlintrc.json` is the ONLY place lint severities live — never pass `--deny=...`/`--warn=...` on
   the CLI (a CLI category flag re-enables rules the config turned off; pre-commit and CI must match).
   `categories.correctness` also enables type-aware rules; `typescript/no-floating-promises` is off on
