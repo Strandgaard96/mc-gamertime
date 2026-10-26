@@ -10,6 +10,7 @@
   "automerge": false,
   "labels": ["dependencies"],
   "minimumReleaseAge": "7 days",
+  "osvVulnerabilityAlerts": true,
   "constraints": {
     "npm": "<12"
   },
@@ -28,6 +29,35 @@
       "groupName": "tooling (non-major)"
     },
     {
+      "description": "Linters and formatters add rules in minor releases; their own PR keeps a new finding from blocking every other tooling bump",
+      "matchPackageNames": [
+        "oxlint",
+        "oxlint-tsgolint",
+        "oxfmt",
+        "ruff",
+        "astral-sh/ruff-pre-commit",
+        "ty",
+        "zizmorcore/zizmor-pre-commit",
+        "zizmorcore/zizmor-action"
+      ],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest", "pinDigest"],
+      "groupName": "linters (non-major)"
+    },
+    {
+      "description": "astro-mermaid peers on mermaid's major: bump them together or npm can't resolve the lock file",
+      "matchPackageNames": ["mermaid", "astro-mermaid"],
+      "groupName": "mermaid",
+      "separateMajorMinor": false
+    },
+    {
+      "description": "Green non-major and digest bumps merge themselves (rebase, per repo convention). Runtime deps and majors opt back out below / by update type",
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest", "pinDigest"],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "rebase",
+      "platformAutomerge": false
+    },
+    {
       "matchManagers": ["dockerfile", "docker-compose"],
       "groupName": "docker images",
       "enabled": true
@@ -43,7 +73,8 @@
       "matchFileNames": ["web/package.json"],
       "matchDepTypes": ["dependencies"],
       "semanticCommitType": "fix",
-      "groupName": "runtime deps"
+      "groupName": "runtime deps",
+      "automerge": false
     },
     {
       "description": "Runtime API deps ([project.dependencies]) change what ships: fix(deps)",
@@ -51,7 +82,8 @@
       "matchFileNames": ["api/pyproject.toml"],
       "matchDepTypes": ["project.dependencies"],
       "semanticCommitType": "fix",
-      "groupName": "runtime deps"
+      "groupName": "runtime deps",
+      "automerge": false
     },
     {
       "description": "uvicorn (selfhost group) ships in the release image; dependency-groups can't be told apart by depType, so match by name. The aws group (boto3, mangum) stays chore: releases ship only the selfhost image, and Lambda deploys don't use releases",
@@ -59,7 +91,8 @@
       "matchFileNames": ["api/pyproject.toml"],
       "matchPackageNames": ["uvicorn"],
       "semanticCommitType": "fix",
-      "groupName": "runtime deps"
+      "groupName": "runtime deps",
+      "automerge": false
     },
     {
       "description": "Weekly lock file refresh is maintenance: chore(deps)",

@@ -192,23 +192,10 @@ jobs:
           sarif_file: trivy-image.sarif
           category: trivy-image
 
-      # The image built, but does it serve? The HEALTHCHECK probes
-      # /api/health, which 503s if startup failed, so "healthy" means the app
-      # initialised, migrated a fresh SQLite DB and bootstrapped an admin.
+      # The image built, but does it serve? Waits for healthy, checks the SPA
+      # is served and fails on any traceback/ERROR in the startup logs.
       - name: Smoke-test the container
-        run: |
-          docker run -d --name smoke \
-            -e ADMIN_USERNAME=smoke -e ADMIN_PASSWORD=smoke-test-password \
-            mc-gamertime:ci
-          for _ in $(seq 30); do
-            status=$(docker inspect -f '{{.State.Health.Status}}' smoke)
-            [ "$status" = healthy ] && exit 0
-            [ "$status" = unhealthy ] && break
-            sleep 2
-          done
-          docker inspect -f '{{.State.Health.Status}}' smoke
-          docker logs smoke
-          exit 1
+        run: docker/smoke-test.sh mc-gamertime:ci
 
   terraform:
     name: Terraform
