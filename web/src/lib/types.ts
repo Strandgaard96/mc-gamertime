@@ -47,6 +47,7 @@ export interface Result {
   milestone?: string | null;
   newAchievements?: NewAchievement[];
   mood?: number | null;
+  notes?: string | null;
 }
 export interface ReactionItem {
   pk: string;

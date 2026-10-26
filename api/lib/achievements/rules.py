@@ -24,14 +24,6 @@ def beat_the_leader(ctx: AchievementContext, result: dict) -> bool:
     return any(p.get("playerId") == leader for p in result["players"])
 
 
-def score_at_least(n: float) -> Predicate:
-    def pred(ctx: AchievementContext, result: dict) -> bool:
-        entry = ctx.my_entry(result)
-        return entry is not None and entry.get("score") is not None and float(entry["score"]) >= n
-
-    return pred
-
-
 def game_weight_at_least(weight: float) -> Predicate:
     def pred(ctx: AchievementContext, result: dict) -> bool:
         game_weight = ctx.game(result).get("weight")

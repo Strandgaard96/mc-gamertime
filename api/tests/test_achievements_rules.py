@@ -7,7 +7,6 @@ from lib.achievements.rules import (
     game_name_is,
     game_weight_at_least,
     is_win,
-    score_at_least,
     streak_threshold,
     variable_equals,
 )
@@ -81,24 +80,6 @@ def test_is_win_true_for_winner():
 def test_is_win_false_for_loser():
     ctx = AchievementContext("p1", {})
     assert is_win(ctx, _result(winner_id="p2")) is False
-
-
-def test_score_at_least_true_when_score_meets_threshold():
-    ctx = AchievementContext("p1", {})
-    r = _result(score=10)
-    assert score_at_least(10)(ctx, r) is True
-
-
-def test_score_at_least_false_when_score_below_threshold():
-    ctx = AchievementContext("p1", {})
-    r = _result(score=9.5)
-    assert score_at_least(10)(ctx, r) is False
-
-
-def test_score_at_least_false_when_no_score():
-    ctx = AchievementContext("p1", {})
-    r = _result()
-    assert score_at_least(10)(ctx, r) is False
 
 
 def test_game_weight_at_least_true_when_weight_meets_threshold():

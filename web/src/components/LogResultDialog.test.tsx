@@ -194,6 +194,40 @@ describe("LogResultDialog", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it("accepts scores above 10 and sends trimmed notes", async () => {
+    const onClose = vi.fn();
+    renderOpen({ onClose });
+    await fillValidForm();
+    const [aliceScore, bobScore] = screen.getAllByPlaceholderText("Score");
+    fireEvent.change(aliceScore, { target: { value: "142" } });
+    fireEvent.change(bobScore, { target: { value: "-3" } });
+    fireEvent.change(screen.getByLabelText(/notes/i), {
+      target: { value: "  birds 34, eggs 12  " },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Log session" }));
+
+    await vi.waitFor(() => expect(api.addResult).toHaveBeenCalled());
+    const payload = vi.mocked(api.addResult).mock.calls[0][0];
+    expect(payload.players.map((p) => p.score)).toEqual([142, -3]);
+    expect(payload.notes).toBe("birds 34, eggs 12");
+  });
+
+  it("clears notes with an explicit null when blanked in edit mode", async () => {
+    vi.mocked(api.updateResult).mockResolvedValue(created);
+    renderOpen({ onClose: vi.fn(), editResult: { ...created, notes: "old notes" } });
+    // Submit looks the game up in the games query, so wait for it to resolve.
+    await screen.findByRole("option", { name: "Catan" });
+    const notes = await screen.findByLabelText(/notes/i);
+    expect(notes).toHaveValue("old notes");
+    fireEvent.change(notes, { target: { value: "   " } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await vi.waitFor(() => expect(api.updateResult).toHaveBeenCalled());
+    expect(vi.mocked(api.updateResult).mock.calls[0][1]).toMatchObject({ notes: null });
+  });
+
   it("hides the photo picker in edit mode", async () => {
     // Positive control: the same dialog in create mode does show the picker.
     const createMode = renderOpen({ onClose: vi.fn() });

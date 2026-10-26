@@ -237,7 +237,7 @@ Looks up the game by `idFromPk` match against `useGames()`, then derives session
 
 #### `/players/:id` — `PlayerProfilePage`
 
-The most data-dense page. Combines `usePlayerStats(id)` (achievements, win-rate trend, per-game stats), `useResults()`, `useGames()`, and `useStats()` (for the player's Elo rank) into: a hero card with avatar/stats, current/best win streaks, favorite game, nemesis/"favourite prey" (head-to-head records requiring 2+ shared games), an achievements grid (`AchievementBadge`), win-rate and score trend charts, a "Game Passport" (visual grid of played vs. unplayed games), and recent sessions. `canEdit` (own profile or admin) unlocks avatar upload/removal (`uploadAvatar`/`deleteAvatar`, with an optimistic local-preview URL before the real CDN URL lands) and a "My Wrapped" button that opens `WrappedOverlay` — a Spotify-Wrapped-style slideshow built from the same stats.
+The most data-dense page. Combines `usePlayerStats(id)` (achievements, win-rate trend, per-game stats), `useResults()`, `useGames()`, and `useStats()` (for the player's Elo rank) into: a hero card with avatar/stats, current/best win streaks, favorite game, nemesis/"favourite prey" (head-to-head records requiring 2+ shared games), an achievements grid (`AchievementBadge`), a win-rate trend chart, a "Game Passport" (visual grid of played vs. unplayed games), and recent sessions. `canEdit` (own profile or admin) unlocks avatar upload/removal (`uploadAvatar`/`deleteAvatar`, with an optimistic local-preview URL before the real CDN URL lands) and a "My Wrapped" button that opens `WrappedOverlay` — a Spotify-Wrapped-style slideshow built from the same stats.
 
 #### `/posts` — `PostsPage`
 

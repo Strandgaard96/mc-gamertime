@@ -222,6 +222,12 @@ export default function LogResult() {
                                 })}
                               </div>
 
+                              {r.notes && (
+                                <p className="mt-1.5 text-xs text-muted-foreground whitespace-pre-line break-words">
+                                  {r.notes}
+                                </p>
+                              )}
+
                               {isConfirming ? (
                                 <div className="mt-2 flex items-center gap-2 text-xs">
                                   <span className="text-muted-foreground">Delete?</span>

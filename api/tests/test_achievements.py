@@ -46,7 +46,6 @@ def test_all_achievement_ids_present_in_empty_results():
         "wins_10",
         "wins_25",
         "dominant",
-        "perfect_10",
         "explorer_10",
         "heavyweight",
         "party_winner",
@@ -161,47 +160,6 @@ def test_achievement_defs_have_required_fields():
         assert "label" in d
         assert "description" in d
         assert "icon" in d
-
-
-def test_perfect_10_earned_on_score_of_ten():
-    results = [
-        {
-            "pk": "01A",
-            "gameId": "game-1",
-            "gameName": "Catan",
-            "date": "2026-01-01",
-            "winnerId": "bob",
-            "winnerName": "Bob",
-            "players": [{"playerId": "alice", "playerName": "Alice", "score": 7}],
-        },
-        {
-            "pk": "01B",
-            "gameId": "game-1",
-            "gameName": "Catan",
-            "date": "2026-02-01",
-            "winnerId": "alice",
-            "winnerName": "Alice",
-            "players": [{"playerId": "alice", "playerName": "Alice", "score": 10}],
-        },
-    ]
-    achievements = {a["id"]: a for a in compute_achievements("alice", results, {})}
-    assert achievements["perfect_10"]["earnedAt"] == "2026-02-01"
-
-
-def test_perfect_10_not_earned_without_ten():
-    results = [
-        {
-            "pk": "01A",
-            "gameId": "game-1",
-            "gameName": "Catan",
-            "date": "2026-01-01",
-            "winnerId": "alice",
-            "winnerName": "Alice",
-            "players": [{"playerId": "alice", "playerName": "Alice", "score": 9.5}],
-        },
-    ]
-    achievements = {a["id"]: a for a in compute_achievements("alice", results, {})}
-    assert achievements["perfect_10"]["earnedAt"] is None
 
 
 def test_explorer_10_earned_on_tenth_distinct_game():
