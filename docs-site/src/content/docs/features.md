@@ -29,7 +29,7 @@ Record who played, who won, seat positions, player scores (any number — no fix
 
 ## Achievements
 
-Awarded automatically when a result is logged — first win, win streaks, games-played milestones, and more. Players see earned achievements on their profile. **Giant Slayer** is awarded for winning a game in which the player ranked first on Elo at the time took part and lost. New achievement definitions are added in code.
+Awarded automatically when a result is logged — first win, win streaks, games-played milestones, and more. Players see earned achievements on their profile. **Giant Slayer** is awarded for winning a game in which the player ranked first on Elo at the time took part and lost. Other achievements reward breadth and grit: **Polymath** (won 10 different games), **Specialist** (won the same game 5 times), **Comeback Kid** (a win after 5 or more losses in a row), **Marathon** (won a game of 2 hours or more), **Crowd Pleaser** (won a game with 5 or more players) and **Half Century** (played 50 games). New achievement definitions are added in code.
 
 ## Game-night photos
 

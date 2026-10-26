@@ -51,6 +51,12 @@ def test_all_achievement_ids_present_in_empty_results():
         "party_winner",
         "harkonnen_5",
         "giant_slayer",
+        "comeback",
+        "polymath",
+        "specialist",
+        "games_50",
+        "marathon",
+        "crowd_pleaser",
     }
     assert ids == expected
 
@@ -311,3 +317,115 @@ def test_giant_slayer_accepts_precomputed_leader_map():
     forced: dict[str, str | None] = {"result-2026-01-03": "p2"}
     by_id = {a["id"]: a for a in compute_achievements("p3", rs, {}, leader_before=forced)}
     assert by_id["giant_slayer"]["earnedAt"] == "2026-01-03"
+
+
+def _earned(player_id: str, results: list[dict], games_by_id: dict | None = None) -> dict:
+    return {
+        a["id"]: a["earnedAt"] for a in compute_achievements(player_id, results, games_by_id or {})
+    }
+
+
+def _day(i: int) -> str:
+    return f"2026-{(i // 28) + 1:02d}-{(i % 28) + 1:02d}"
+
+
+def test_comeback_earned_on_win_after_five_losses():
+    results = [_r("p2", PLAYERS, _day(i)) for i in range(5)] + [_r("p1", PLAYERS, _day(5))]
+    assert _earned("p1", results)["comeback"] == _day(5)
+
+
+def test_comeback_earned_after_longer_losing_streak():
+    results = [_r("p2", PLAYERS, _day(i)) for i in range(7)] + [_r("p1", PLAYERS, _day(7))]
+    assert _earned("p1", results)["comeback"] == _day(7)
+
+
+def test_comeback_not_earned_after_four_losses():
+    results = [_r("p2", PLAYERS, _day(i)) for i in range(4)] + [_r("p1", PLAYERS, _day(4))]
+    assert _earned("p1", results)["comeback"] is None
+
+
+def test_comeback_not_earned_when_streak_broken_by_win():
+    results = (
+        [_r("p2", PLAYERS, _day(i)) for i in range(3)]
+        + [_r("p1", PLAYERS, _day(3))]
+        + [_r("p2", PLAYERS, _day(i)) for i in range(4, 6)]
+        + [_r("p1", PLAYERS, _day(6))]
+    )
+    assert _earned("p1", results)["comeback"] is None
+
+
+def test_comeback_not_earned_while_still_losing():
+    results = [_r("p2", PLAYERS, _day(i)) for i in range(6)]
+    assert _earned("p1", results)["comeback"] is None
+
+
+def test_polymath_earned_on_tenth_distinct_game_won():
+    results = [_r("p1", PLAYERS, _day(i), game_id=f"game-{i}") for i in range(10)]
+    assert _earned("p1", results)["polymath"] == _day(9)
+
+
+def test_polymath_ignores_distinct_games_lost():
+    results = [_r("p1", PLAYERS, _day(i), game_id=f"game-{i}") for i in range(9)] + [
+        _r("p2", PLAYERS, _day(9), game_id="game-9")
+    ]
+    assert _earned("p1", results)["polymath"] is None
+
+
+def test_specialist_earned_on_fifth_win_of_same_game():
+    results = [_r("p1", PLAYERS, _day(i), game_id="game-x") for i in range(5)]
+    assert _earned("p1", results)["specialist"] == _day(4)
+
+
+def test_specialist_not_earned_when_wins_spread_across_games():
+    results = [_r("p1", PLAYERS, _day(i), game_id=f"game-{i % 2}") for i in range(5)]
+    assert _earned("p1", results)["specialist"] is None
+
+
+def test_games_50_earned_on_fiftieth_game():
+    results = [_r("p2", PLAYERS, _day(i)) for i in range(50)]
+    earned = _earned("p1", results)
+    assert earned["games_50"] == _day(49)
+
+
+def test_games_50_not_earned_at_49():
+    results = [_r("p2", PLAYERS, _day(i)) for i in range(49)]
+    assert _earned("p1", results)["games_50"] is None
+
+
+def test_marathon_earned_on_win_of_long_game():
+    games = {"game-long": {**_g("game-long"), "playTime": 120}}
+    results = [_r("p1", PLAYERS, _day(0), game_id="game-long")]
+    assert _earned("p1", results, games)["marathon"] == _day(0)
+
+
+def test_marathon_not_earned_for_short_or_unknown_play_time():
+    games = {"game-short": {**_g("game-short"), "playTime": 90}, "game-unknown": _g("game-unknown")}
+    results = [
+        _r("p1", PLAYERS, _day(0), game_id="game-short"),
+        _r("p1", PLAYERS, _day(1), game_id="game-unknown"),
+    ]
+    assert _earned("p1", results, games)["marathon"] is None
+
+
+def test_marathon_not_earned_on_loss():
+    games = {"game-long": {**_g("game-long"), "playTime": 180}}
+    results = [_r("p2", PLAYERS, _day(0), game_id="game-long")]
+    assert _earned("p1", results, games)["marathon"] is None
+
+
+FIVE = [A, B, C, D, ("p5", "Eve")]
+
+
+def test_crowd_pleaser_earned_on_win_with_five_players():
+    results = [_r("p1", FIVE, _day(0))]
+    assert _earned("p1", results)["crowd_pleaser"] == _day(0)
+
+
+def test_crowd_pleaser_not_earned_with_four_players():
+    results = [_r("p1", FIVE[:4], _day(0))]
+    assert _earned("p1", results)["crowd_pleaser"] is None
+
+
+def test_crowd_pleaser_not_earned_on_loss():
+    results = [_r("p2", FIVE, _day(0))]
+    assert _earned("p1", results)["crowd_pleaser"] is None

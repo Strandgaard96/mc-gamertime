@@ -32,6 +32,21 @@ def game_weight_at_least(weight: float) -> Predicate:
     return pred
 
 
+def game_play_time_at_least(minutes: int) -> Predicate:
+    def pred(ctx: AchievementContext, result: dict) -> bool:
+        play_time = ctx.game(result).get("playTime")
+        return play_time is not None and int(play_time) >= minutes
+
+    return pred
+
+
+def player_count_at_least(n: int) -> Predicate:
+    def pred(ctx: AchievementContext, result: dict) -> bool:
+        return len(result["players"]) >= n
+
+    return pred
+
+
 def game_has_tag(tag: str) -> Predicate:
     def pred(ctx: AchievementContext, result: dict) -> bool:
         tags = ctx.game(result).get("tags") or []
@@ -107,16 +122,58 @@ def streak_threshold(predicate: Predicate, length: int) -> Evaluate:
 
 
 def distinct_count_threshold(
-    key_fn: Callable[[AchievementContext, dict], object], threshold: int
+    key_fn: Callable[[AchievementContext, dict], object],
+    threshold: int,
+    predicate: Predicate | None = None,
 ) -> Evaluate:
-    """Earned when the running set of distinct key_fn(ctx, result) values reaches threshold."""
+    """Earned when the running set of distinct key_fn(ctx, result) values reaches threshold.
+    With `predicate`, only matching results contribute a key."""
 
     def evaluate(ctx: AchievementContext, player_results: list[dict]) -> str | None:
         seen = set()
         for r in player_results:
+            if predicate is not None and not predicate(ctx, r):
+                continue
             seen.add(key_fn(ctx, r))
             if len(seen) == threshold:
                 return r["date"]
+        return None
+
+    return evaluate
+
+
+def per_key_counter_threshold(
+    predicate: Predicate,
+    key_fn: Callable[[AchievementContext, dict], object],
+    threshold: int,
+) -> Evaluate:
+    """Earned when matching results sharing one key_fn(ctx, result) value reach threshold."""
+
+    def evaluate(ctx: AchievementContext, player_results: list[dict]) -> str | None:
+        counts: dict[object, int] = {}
+        for r in player_results:
+            if predicate(ctx, r):
+                key = key_fn(ctx, r)
+                counts[key] = counts.get(key, 0) + 1
+                if counts[key] == threshold:
+                    return r["date"]
+        return None
+
+    return evaluate
+
+
+def comeback_after(losses: int) -> Evaluate:
+    """Earned on a win that ends a run of at least `losses` consecutive losses."""
+
+    def evaluate(ctx: AchievementContext, player_results: list[dict]) -> str | None:
+        losing_streak = 0
+        for r in player_results:
+            if not is_win(ctx, r):
+                losing_streak += 1
+            elif losing_streak >= losses:
+                return r["date"]
+            else:
+                losing_streak = 0
         return None
 
     return evaluate
