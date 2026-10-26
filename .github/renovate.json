@@ -95,9 +95,13 @@
       "automerge": false
     },
     {
-      "description": "Weekly lock file refresh is maintenance: chore(deps)",
+      "description": "Weekly lock file refresh is maintenance: chore(deps). It is also the only thing that moves transitive deps (e.g. certifi in uv.lock), so it merges itself once green rather than waiting for a review",
       "matchUpdateTypes": ["lockFileMaintenance"],
-      "semanticCommitType": "chore"
+      "semanticCommitType": "chore",
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "rebase",
+      "platformAutomerge": false
     }
   ]
 }
