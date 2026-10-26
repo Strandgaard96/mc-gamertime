@@ -79,7 +79,7 @@ The project includes a **"Full Stack" VS Code Launch Configuration**:
   `Lint` and `Secrets scan` always run. Skipped jobs still
   satisfy the required checks on `main` — never add a workflow-level `paths:` filter to `ci.yml`,
   that leaves required checks stuck at "Expected". Editing `ci.yml` itself re-runs everything.
-  `publish.yml`'s `push` trigger has the same path list, so docs/README merges don't rebuild `:main`.
+  `publish.yml`'s `push` trigger has the same path list minus workflow files (not even `publish.yml` itself), so docs/README/workflow-only merges don't rebuild `:main`.
 - Workflow `uses:` are SHA-pinned (`owner/action@<sha> # vN`); Renovate's `helpers:pinGitHubActionDigests`
   keeps them current and its `pre-commit` manager bumps hook `rev:`s. New action → resolve the tag
   SHA (`gh api repos/<owner>/<repo>/git/ref/tags/<tag>`), never paste a bare tag or zizmor fails CI.
