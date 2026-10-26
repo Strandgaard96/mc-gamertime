@@ -13,7 +13,6 @@ from .rules import (
     is_win,
     per_key_counter_threshold,
     player_count_at_least,
-    score_at_least,
     streak_threshold,
     variable_equals,
 )
