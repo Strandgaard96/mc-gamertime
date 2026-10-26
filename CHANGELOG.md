@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.4.0](https://github.com/Strandgaard96/mc-gamertime/compare/v0.3.3...v0.4.0) (2026-10-26)
+
+
+### Features
+
+* **api:** add six achievements ([d7c7422](https://github.com/Strandgaard96/mc-gamertime/commit/d7c7422ba84fef609d79615ca5a39af0b5743cae))
+* **api:** add six achievements ([3a34945](https://github.com/Strandgaard96/mc-gamertime/commit/3a34945969c8645370d8e8db8912081eb478fd59))
+* uncap session scores and add session notes ([7ed081b](https://github.com/Strandgaard96/mc-gamertime/commit/7ed081bd9bd37ff74e70f832162c8b9045bbf745))
+* uncap session scores and add session notes ([52b32e5](https://github.com/Strandgaard96/mc-gamertime/commit/52b32e502ae5bb6ee0d8ce61e640d7923804326e)), closes [#86](https://github.com/Strandgaard96/mc-gamertime/issues/86)
+
+
+### Bug Fixes
+
+* **deps:** bump certifi to 2026.10.23 (GHSA-6q48-6c7w-9gw2) ([7aebee8](https://github.com/Strandgaard96/mc-gamertime/commit/7aebee8e0d231fcae0fc3a6b1b5cf686d96c62fd))
+* **deps:** bump certifi to 2026.10.23 (GHSA-6q48-6c7w-9gw2) ([b5490ad](https://github.com/Strandgaard96/mc-gamertime/commit/b5490adee170d2d8ec194657dcc412ec51dd028e))
+* **deps:** update dependency dompurify to v3.4.17 [security] ([#103](https://github.com/Strandgaard96/mc-gamertime/issues/103)) ([79f7f02](https://github.com/Strandgaard96/mc-gamertime/commit/79f7f02a8c10493560edef44557acf96c3472cf6))
+* **deps:** update dependency pillow to v13 [security] ([0c7c98e](https://github.com/Strandgaard96/mc-gamertime/commit/0c7c98ebf17b60f947af8e566b04c1fb6056dd29))
+* **deps:** update dependency pillow to v13 [security] ([4c48d0e](https://github.com/Strandgaard96/mc-gamertime/commit/4c48d0eae81a51830d17d515adb78dec65b853c1))
+* **deps:** update dependency zod to v4.6.6 [security] ([#104](https://github.com/Strandgaard96/mc-gamertime/issues/104)) ([381b2ee](https://github.com/Strandgaard96/mc-gamertime/commit/381b2ee5ce90092e611e2e803731258d24fdfc20))
+* drop leftover score_at_least import after merge with main ([b94f80e](https://github.com/Strandgaard96/mc-gamertime/commit/b94f80eb1de8da4570ae312e152c7af83869e18b))
+
 ## [0.3.3](https://github.com/Strandgaard96/mc-gamertime/compare/v0.3.2...v0.3.3) (2026-10-12)
 
 
