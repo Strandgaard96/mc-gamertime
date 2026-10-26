@@ -36,16 +36,20 @@ export default function HomePage() {
     [results],
   );
 
-  const thisWeek = useMemo(() => {
+  // Lazy initializer: `new Date()` is impure, so it must not run on every render.
+  const [cutoffStr] = useState(() => {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 7);
-    const cutoffStr = cutoff.toISOString().slice(0, 10);
+    return cutoff.toISOString().slice(0, 10);
+  });
+
+  const thisWeek = useMemo(() => {
     const week = results.filter((r) => r.date >= cutoffStr);
     return {
       count: week.length,
       myWins: week.filter((r) => r.winnerId === user?.sub).length,
     };
-  }, [results, user]);
+  }, [results, user, cutoffStr]);
 
   const isLoading = rL || sL;
 
