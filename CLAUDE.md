@@ -68,8 +68,10 @@ The project includes a **"Full Stack" VS Code Launch Configuration**:
   (boto3, mangum), image = `[project.dependencies]` + the `selfhost` group (uvicorn). `uv add <pkg>`
   for both; `uv add --group aws|selfhost <pkg>` for one. All groups are `default-groups`, so the
   local venv/tests have everything. CI's `API tests` job builds the zip and imports it under
-  Python 3.12, so a missing dep fails there, not as a prod cold-start `ImportModuleError`. Local uv
-  older than the lock's writer rewrites `uv.lock` on `uv run`: use `--frozen`, or `uvx uv@latest lock`.
+  Python 3.12, so a missing dep fails there, not as a prod cold-start `ImportModuleError`. `[tool.uv]
+  required-version` in `api/pyproject.toml` is both the local floor (older uv rewrites `uv.lock`, so it refuses to run) and the exact
+  uv CI installs (setup-uv `resolution-strategy: lowest`); Renovate's "uv" group bumps it with the Dockerfile's uv image.
+  Node's major lives in root `.nvmrc` (every workflow's `node-version-file`) plus the Dockerfile `FROM`.
 - **`boto3`/`botocore`/`mangum` are imported lazily** (inside the DynamoDB/S3/SSM branches and `main.handler`) because the selfhost image doesn't ship them. Never add a module-level `import boto3` to code that runs on the selfhost path — tests can't catch it (the uv venv has boto3); CI's `Docker build` job does: it runs the image and waits for `healthy`.
 - Image tags on GHCR: `main` = every push to main (edge); `X.Y.Z`/`X.Y`/`latest` = releases only, published by the `publish-image` job in `release-please.yml` calling `publish.yml` via `workflow_call` (a tag pushed by release-please's `GITHUB_TOKEN` never triggers a `tags:` workflow on its own).
 - CI (`.github/workflows/ci.yml`) is path-scoped via a `Detect changes` job (`dorny/paths-filter`):

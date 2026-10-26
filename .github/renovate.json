@@ -17,6 +17,16 @@
   "pre-commit": {
     "enabled": true
   },
+  "customManagers": [
+    {
+      "description": "uv's required-version floor in api/pyproject.toml is also the exact uv CI installs",
+      "customType": "regex",
+      "managerFilePatterns": ["/^api/pyproject\\.toml$/"],
+      "matchStrings": ["required-version = \">=(?<currentValue>[0-9.]+)\""],
+      "depNameTemplate": "uv",
+      "datasourceTemplate": "pypi"
+    }
+  ],
   "packageRules": [
     {
       "description": "Default: chore(deps) so tooling bumps (devDependencies, GitHub Actions, pre-commit hook revs, Docker base digests, docs-site) don't cut a release",
@@ -66,6 +76,11 @@
       "description": "docker-compose.yml is what self-hosters run: a digest pin would freeze them on one :latest image",
       "matchManagers": ["docker-compose"],
       "pinDigests": false
+    },
+    {
+      "description": "uv in CI/dev (api/pyproject.toml floor) and in the Dockerfile move together, after the docker images rule so this group wins",
+      "matchPackageNames": ["uv", "ghcr.io/astral-sh/uv"],
+      "groupName": "uv"
     },
     {
       "description": "Runtime web deps change what ships: fix(deps) cuts a release",

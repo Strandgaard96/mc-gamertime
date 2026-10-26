@@ -91,7 +91,10 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
-          version: "latest"
+          # The floor in api/pyproject.toml, so CI, devs and the Dockerfile
+          # all run the same uv instead of whatever is newest today.
+          version-file: api/pyproject.toml
+          resolution-strategy: lowest
           enable-cache: true
 
       # --locked: fail if pyproject.toml changed without a re-lock. uv.lock is
@@ -263,7 +266,7 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: "24"
+          node-version-file: .nvmrc
           cache: "npm"
           cache-dependency-path: web/package-lock.json
 
@@ -289,7 +292,7 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: "24"
+          node-version-file: .nvmrc
           cache: "npm"
           cache-dependency-path: web/package-lock.json
 
@@ -316,7 +319,10 @@ jobs:
         if: needs.changes.outputs.api == 'true'
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
-          version: "latest"
+          # The floor in api/pyproject.toml, so CI, devs and the Dockerfile
+          # all run the same uv instead of whatever is newest today.
+          version-file: api/pyproject.toml
+          resolution-strategy: lowest
           enable-cache: true
 
       - name: Install Python dependencies
@@ -351,7 +357,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         if: needs.changes.outputs.web == 'true'
         with:
-          node-version: "24"
+          node-version-file: .nvmrc
           cache: "npm"
           cache-dependency-path: web/package-lock.json
 
