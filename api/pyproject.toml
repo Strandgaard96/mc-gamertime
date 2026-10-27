@@ -45,7 +45,7 @@ dev = [
 # Floor for local uv (an older uv rewrites uv.lock on `uv run`) and the exact
 # version CI installs (setup-uv `resolution-strategy: lowest`). Renovate bumps it
 # together with the uv image in the Dockerfile.
-required-version = ">=0.12.23"
+required-version = ">=0.13.4"
 # Local dev and tests get every runtime set: tests import boto3 (moto) and the
 # dev server runs uvicorn.
 default-groups = ["dev", "aws", "selfhost"]
