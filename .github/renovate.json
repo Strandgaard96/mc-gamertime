@@ -17,6 +17,16 @@
   "pre-commit": {
     "enabled": true
   },
+  "customManagers": [
+    {
+      "description": "uv's required-version floor in api/pyproject.toml is also the exact uv CI installs",
+      "customType": "regex",
+      "managerFilePatterns": ["/^api/pyproject\\.toml$/"],
+      "matchStrings": ["required-version = \">=(?<currentValue>[0-9.]+)\""],
+      "depNameTemplate": "uv",
+      "datasourceTemplate": "pypi"
+    }
+  ],
   "packageRules": [
     {
       "description": "Default: chore(deps) so tooling bumps (devDependencies, GitHub Actions, pre-commit hook revs, Docker base digests, docs-site) don't cut a release",
@@ -68,6 +78,11 @@
       "pinDigests": false
     },
     {
+      "description": "uv in CI/dev (api/pyproject.toml floor) and in the Dockerfile move together, after the docker images rule so this group wins",
+      "matchPackageNames": ["uv", "ghcr.io/astral-sh/uv"],
+      "groupName": "uv"
+    },
+    {
       "description": "Runtime web deps change what ships: fix(deps) cuts a release",
       "matchManagers": ["npm"],
       "matchFileNames": ["web/package.json"],
@@ -95,9 +110,13 @@
       "automerge": false
     },
     {
-      "description": "Weekly lock file refresh is maintenance: chore(deps)",
+      "description": "Weekly lock file refresh is maintenance: chore(deps). It is also the only thing that moves transitive deps (e.g. certifi in uv.lock), so it merges itself once green rather than waiting for a review",
       "matchUpdateTypes": ["lockFileMaintenance"],
-      "semanticCommitType": "chore"
+      "semanticCommitType": "chore",
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "rebase",
+      "platformAutomerge": false
     }
   ]
 }

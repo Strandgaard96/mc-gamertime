@@ -95,6 +95,11 @@ This repo uses [Conventional Commits](https://www.conventionalcommits.org/) — 
 `release-please` reads these to decide the next version number and to write
 `CHANGELOG.md`, so an unprefixed commit is invisible in the release notes.
 
+PRs are merged with "Rebase and merge", so every commit on your branch lands on `main` as
+written: each one needs the prefix, not just the PR title. `prek install` adds a
+`commit-msg` hook that checks this, and CI's **Commit messages** job runs the same
+check (`scripts/check-commit-msg.sh`) on every PR.
+
 If you change the SQLite schema, add a migration to `api/lib/db/migrations.py` and put a
 `BREAKING CHANGE:` footer in the commit so self-hosters see it before upgrading.
 
