@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/Strandgaard96/mc-gamertime/compare/v0.4.0...v0.4.1) (2026-10-27)
+
+
+### Bug Fixes
+
+* **deps:** update runtime deps ([#89](https://github.com/Strandgaard96/mc-gamertime/issues/89)) ([4bdb43a](https://github.com/Strandgaard96/mc-gamertime/commit/4bdb43a6ac89c8c67aa69d80d155b5a9c4ab12ed))
+
 ## [0.4.0](https://github.com/Strandgaard96/mc-gamertime/compare/v0.3.3...v0.4.0) (2026-10-26)
 
 
